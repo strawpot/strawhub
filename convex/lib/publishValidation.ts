@@ -75,3 +75,18 @@ export function validateFiles(
     );
   }
 }
+
+/**
+ * Validate that a role upload contains exactly one file: ROLE.md.
+ * Roles are single-file by design — they should not bundle other files.
+ */
+export function validateRoleFiles(
+  files: Array<{ path: string; size: number }>,
+): void {
+  if (files.length !== 1) {
+    throw new Error("Role uploads must contain exactly one file: ROLE.md");
+  }
+  if (files[0].path !== "ROLE.md") {
+    throw new Error("Role uploads must contain exactly one file: ROLE.md");
+  }
+}
