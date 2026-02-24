@@ -4,6 +4,7 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { api } from "../../convex/_generated/api";
 import { useState, useRef, useEffect } from "react";
 import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 import "../styles.css";
 
 export const Route = createRootRoute({
@@ -52,6 +53,7 @@ function RootLayout() {
         <Outlet />
       </main>
       <Analytics />
+      <SpeedInsights />
     </div>
   );
 }
