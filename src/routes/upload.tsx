@@ -8,11 +8,12 @@ import { splitDependencies } from "../lib/versionSpec";
 import { sha256Hex } from "../lib/hash";
 import { fetchFromGitHub } from "../lib/githubImport";
 
-type UploadSearch = { mode?: "import" };
+type UploadSearch = { mode?: "import"; updateSlug?: string };
 
 export const Route = createFileRoute("/upload")({
   validateSearch: (search: Record<string, unknown>): UploadSearch => ({
     mode: search.mode === "import" ? "import" : undefined,
+    updateSlug: typeof search.updateSlug === "string" ? search.updateSlug : undefined,
   }),
   component: UploadPage,
 });

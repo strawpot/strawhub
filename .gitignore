@@ -9,3 +9,5 @@ dist/
 !.env.example
 app.config.*
 coverage/
+.claude/
+.tanstack/

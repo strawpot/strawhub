@@ -1,9 +1,14 @@
 import { v } from "convex/values";
+import type { GenericId } from "convex/values";
 import { mutation, query, internalMutation } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { parseFrontmatter } from "./lib/frontmatter";
 import { parseDependencySpec, satisfiesVersion, splitDependencies } from "./lib/versionSpec";
 import { validateSlug, validateVersion, validateDisplayName, validateChangelog, validateFiles } from "./lib/publishValidation";
+
+// ctx.storage.get() works in mutations at runtime but is only typed on StorageActionWriter.
+const storageGet = (storage: unknown, id: GenericId<"_storage">) =>
+  (storage as { get(id: GenericId<"_storage">): Promise<Blob | null> }).get(id);
 
 // ─── Queries ─────────────────────────────────────────────────────────────────
 
@@ -141,7 +146,7 @@ export const publishInternal = internalMutation({
     let parsed = { frontmatter: {} as Record<string, unknown>, metadata: undefined as unknown };
     const roleMd = args.files.find((f) => f.path === "ROLE.md");
     if (roleMd) {
-      const content = await ctx.storage.get(roleMd.storageId);
+      const content = await storageGet(ctx.storage, roleMd.storageId);
       if (content) {
         const text = await content.text();
         const { frontmatter } = parseFrontmatter(text);
@@ -290,7 +295,7 @@ export const publish = mutation({
     let parsed = { frontmatter: {} as Record<string, unknown>, metadata: undefined as unknown };
     const roleMd = args.files.find((f) => f.path === "ROLE.md");
     if (roleMd) {
-      const content = await ctx.storage.get(roleMd.storageId);
+      const content = await storageGet(ctx.storage, roleMd.storageId);
       if (content) {
         const text = await content.text();
         const { frontmatter } = parseFrontmatter(text);

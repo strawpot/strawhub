@@ -52,7 +52,8 @@ function SearchPage() {
           {results.map((result: any) => (
             <Link
               key={`${result.kind}-${result.slug}`}
-              to={`/${result.kind}s/${result.slug}`}
+              to={result.kind === "skill" ? "/skills/$slug" : "/roles/$slug"}
+              params={{ slug: result.slug }}
               className="flex items-center gap-4 rounded-lg border border-gray-800 p-4 hover:border-gray-600 transition-colors"
             >
               <span className="shrink-0 rounded bg-gray-800 px-2 py-1 text-xs text-gray-400">

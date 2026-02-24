@@ -24,8 +24,7 @@ export const search = query({
       const skillEmbedding = await generateEmbedding(args.query);
       const skillResults = await ctx.db
         .query("skillEmbeddings")
-        .withIndex("by_embedding", (q) => q.eq("visibility", "public"))
-        // Note: actual vector search syntax depends on Convex version
+        .filter((q) => q.eq(q.field("visibility"), "public"))
         .take(limit * 2);
 
       for (const emb of skillResults) {
@@ -50,7 +49,7 @@ export const search = query({
     if (kind === "all" || kind === "role") {
       const roleResults = await ctx.db
         .query("roleEmbeddings")
-        .withIndex("by_embedding", (q) => q.eq("visibility", "public"))
+        .filter((q) => q.eq(q.field("visibility"), "public"))
         .take(limit * 2);
 
       for (const emb of roleResults) {

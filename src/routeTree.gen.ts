@@ -16,6 +16,10 @@ import { Route as SearchRouteImport } from './routes/search'
 import { Route as RolesRouteImport } from './routes/roles'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SkillsIndexRouteImport } from './routes/skills.index'
+import { Route as RolesIndexRouteImport } from './routes/roles.index'
+import { Route as SkillsSlugRouteImport } from './routes/skills.$slug'
+import { Route as RolesSlugRouteImport } from './routes/roles.$slug'
 
 const UploadRoute = UploadRouteImport.update({
   id: '/upload',
@@ -52,34 +56,64 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SkillsIndexRoute = SkillsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SkillsRoute,
+} as any)
+const RolesIndexRoute = RolesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => RolesRoute,
+} as any)
+const SkillsSlugRoute = SkillsSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => SkillsRoute,
+} as any)
+const RolesSlugRoute = RolesSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => RolesRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
-  '/roles': typeof RolesRoute
+  '/roles': typeof RolesRouteWithChildren
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
-  '/skills': typeof SkillsRoute
+  '/skills': typeof SkillsRouteWithChildren
   '/upload': typeof UploadRoute
+  '/roles/$slug': typeof RolesSlugRoute
+  '/skills/$slug': typeof SkillsSlugRoute
+  '/roles/': typeof RolesIndexRoute
+  '/skills/': typeof SkillsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
-  '/roles': typeof RolesRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
-  '/skills': typeof SkillsRoute
   '/upload': typeof UploadRoute
+  '/roles/$slug': typeof RolesSlugRoute
+  '/skills/$slug': typeof SkillsSlugRoute
+  '/roles': typeof RolesIndexRoute
+  '/skills': typeof SkillsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
-  '/roles': typeof RolesRoute
+  '/roles': typeof RolesRouteWithChildren
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
-  '/skills': typeof SkillsRoute
+  '/skills': typeof SkillsRouteWithChildren
   '/upload': typeof UploadRoute
+  '/roles/$slug': typeof RolesSlugRoute
+  '/skills/$slug': typeof SkillsSlugRoute
+  '/roles/': typeof RolesIndexRoute
+  '/skills/': typeof SkillsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -91,15 +125,21 @@ export interface FileRouteTypes {
     | '/settings'
     | '/skills'
     | '/upload'
+    | '/roles/$slug'
+    | '/skills/$slug'
+    | '/roles/'
+    | '/skills/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/dashboard'
-    | '/roles'
     | '/search'
     | '/settings'
-    | '/skills'
     | '/upload'
+    | '/roles/$slug'
+    | '/skills/$slug'
+    | '/roles'
+    | '/skills'
   id:
     | '__root__'
     | '/'
@@ -109,15 +149,19 @@ export interface FileRouteTypes {
     | '/settings'
     | '/skills'
     | '/upload'
+    | '/roles/$slug'
+    | '/skills/$slug'
+    | '/roles/'
+    | '/skills/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRoute: typeof DashboardRoute
-  RolesRoute: typeof RolesRoute
+  RolesRoute: typeof RolesRouteWithChildren
   SearchRoute: typeof SearchRoute
   SettingsRoute: typeof SettingsRoute
-  SkillsRoute: typeof SkillsRoute
+  SkillsRoute: typeof SkillsRouteWithChildren
   UploadRoute: typeof UploadRoute
 }
 
@@ -172,16 +216,69 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/skills/': {
+      id: '/skills/'
+      path: '/'
+      fullPath: '/skills/'
+      preLoaderRoute: typeof SkillsIndexRouteImport
+      parentRoute: typeof SkillsRoute
+    }
+    '/roles/': {
+      id: '/roles/'
+      path: '/'
+      fullPath: '/roles/'
+      preLoaderRoute: typeof RolesIndexRouteImport
+      parentRoute: typeof RolesRoute
+    }
+    '/skills/$slug': {
+      id: '/skills/$slug'
+      path: '/$slug'
+      fullPath: '/skills/$slug'
+      preLoaderRoute: typeof SkillsSlugRouteImport
+      parentRoute: typeof SkillsRoute
+    }
+    '/roles/$slug': {
+      id: '/roles/$slug'
+      path: '/$slug'
+      fullPath: '/roles/$slug'
+      preLoaderRoute: typeof RolesSlugRouteImport
+      parentRoute: typeof RolesRoute
+    }
   }
 }
+
+interface RolesRouteChildren {
+  RolesSlugRoute: typeof RolesSlugRoute
+  RolesIndexRoute: typeof RolesIndexRoute
+}
+
+const RolesRouteChildren: RolesRouteChildren = {
+  RolesSlugRoute: RolesSlugRoute,
+  RolesIndexRoute: RolesIndexRoute,
+}
+
+const RolesRouteWithChildren = RolesRoute._addFileChildren(RolesRouteChildren)
+
+interface SkillsRouteChildren {
+  SkillsSlugRoute: typeof SkillsSlugRoute
+  SkillsIndexRoute: typeof SkillsIndexRoute
+}
+
+const SkillsRouteChildren: SkillsRouteChildren = {
+  SkillsSlugRoute: SkillsSlugRoute,
+  SkillsIndexRoute: SkillsIndexRoute,
+}
+
+const SkillsRouteWithChildren =
+  SkillsRoute._addFileChildren(SkillsRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRoute: DashboardRoute,
-  RolesRoute: RolesRoute,
+  RolesRoute: RolesRouteWithChildren,
   SearchRoute: SearchRoute,
   SettingsRoute: SettingsRoute,
-  SkillsRoute: SkillsRoute,
+  SkillsRoute: SkillsRouteWithChildren,
   UploadRoute: UploadRoute,
 }
 export const routeTree = rootRouteImport
