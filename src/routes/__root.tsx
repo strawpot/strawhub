@@ -3,6 +3,7 @@ import { useConvexAuth, useQuery } from "convex/react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { api } from "../../convex/_generated/api";
 import { useState, useRef, useEffect } from "react";
+import { Analytics } from "@vercel/analytics/react";
 import "../styles.css";
 
 export const Route = createRootRoute({
@@ -50,6 +51,7 @@ function RootLayout() {
       <main className="mx-auto max-w-6xl px-4 py-8">
         <Outlet />
       </main>
+      <Analytics />
     </div>
   );
 }

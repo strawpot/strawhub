@@ -11,3 +11,7 @@ app.config.*
 coverage/
 .claude/
 .tanstack/
+
+# Playwright
+test-results/
+playwright-report/
