@@ -1,0 +1,144 @@
+# StrawHub Specification
+
+## Overview
+
+StrawHub is a web registry for Strawpot roles and skills. Users discover, publish, and install reusable agent components through a web UI or REST API.
+
+## Content Types
+
+### Skills
+
+A skill is a markdown instruction module that agents load into context. Skills can declare dependencies on other skills.
+
+**Files:**
+- `SKILL.md` (required) — YAML frontmatter + markdown body
+- Supporting files (optional) — scripts, references, examples
+
+**Frontmatter:**
+```yaml
+name: code-review
+version: 1.0.0
+description: "One-line summary"
+tags: [review, quality]
+author: strawpot
+dependencies:
+  - security-baseline
+```
+
+### Roles
+
+A role defines agent behavior, default tools, model configuration, and dependencies on skills and other roles.
+
+**Files:**
+- `ROLE.md` (required) — YAML frontmatter + markdown body (includes dependency declarations)
+
+**Frontmatter:**
+```yaml
+name: implementer
+version: 1.0.0
+description: "One-line summary"
+tags: [coding]
+author: strawpot
+dependencies:
+  - git-workflow>=1.0.0
+  - code-review
+  - python-testing^2.0.0
+  - role:reviewer
+default_tools:
+  allowed: [Bash, Read, Write, Edit, Glob, Grep]
+default_model:
+  provider: claude_session
+  id: claude-opus-4-6
+```
+
+## Dependency Version Specifiers
+
+Dependencies support optional version constraints. By default, entries are skill dependencies. In role frontmatter, prefix with `role:` for role dependencies. Skills can only depend on other skills.
+
+| Format | Meaning | Example |
+|--------|---------|---------|
+| `slug` | Skill dep, latest version | `git-workflow` |
+| `slug==X.Y.Z` | Skill dep, exact version | `git-workflow==1.0.0` |
+| `slug>=X.Y.Z` | Skill dep, minimum version | `git-workflow>=1.0.0` |
+| `slug^X.Y.Z` | Skill dep, compatible (same major, >= specified) | `git-workflow^1.0.0` |
+| `role:slug` | Role dep, latest version | `role:reviewer` |
+| `role:slug>=X.Y.Z` | Role dep with version constraint | `role:reviewer>=1.0.0` |
+
+Versions follow semver (`major.minor.patch`). Constraints are validated at publish time — if no published version satisfies the constraint, the publish is rejected.
+
+## Dependency Resolution
+
+When a consumer (Strawpot CLI) installs a role:
+
+1. Fetch role → get dependencies (skills + roles) with version constraints from frontmatter
+2. For each dependency, check its own dependencies for transitive deps
+3. Resolve version constraints (find best matching version for each)
+4. Topological sort with cycle detection
+5. Return install order with resolved versions (leaves first)
+
+The `/api/v1/roles/{slug}/resolve` endpoint handles this server-side, returning:
+
+```json
+{
+  "role": "implementer",
+  "dependencies": [
+    { "kind": "skill", "slug": "git-workflow", "version": "1.2.0" },
+    { "kind": "skill", "slug": "code-review", "version": "2.0.0" },
+    { "kind": "role", "slug": "reviewer", "version": "1.0.0" }
+  ]
+}
+```
+
+## Architecture
+
+- **Frontend**: Vite + React 19 + TanStack Router + Tailwind CSS v4
+- **Backend**: Convex (serverless DB + file storage + auth)
+- **Auth**: GitHub OAuth via `@convex-dev/auth`
+- **Search**: OpenAI embeddings + Convex vector search + lexical boosting
+- **API**: HTTP actions on Convex (v1 REST endpoints)
+
+## Web Pages
+
+| Route | Description |
+|-------|-------------|
+| `/` | Landing page |
+| `/skills` | Browse skills |
+| `/roles` | Browse roles |
+| `/search` | Search skills and roles |
+| `/upload` | Publish — file upload, GitHub import, form auto-fill from frontmatter |
+| `/dashboard` | My content — manage published skills and roles |
+| `/settings` | Profile editing, API tokens, account deletion |
+
+### Authentication
+
+- GitHub OAuth sign-in via `@convex-dev/auth`
+- Signed-in users see an avatar + @handle dropdown in the nav with links to Dashboard, Settings, and Sign out
+- Deleted accounts are soft-deleted (`deactivatedAt`); re-signing in reactivates the account
+
+### Publishing
+
+- **Web UI**: Drag-and-drop files or use the GitHub import (paste a URL, files are fetched via GitHub Contents API)
+- SKILL.md / ROLE.md frontmatter is auto-parsed to populate form fields (slug, display name, version, dependencies)
+- **REST API**: `POST /api/v1/skills` and `POST /api/v1/roles` with bearer token auth (multipart form data)
+
+### API Tokens
+
+- Created and managed from Settings > API Tokens
+- Token format: `sh_` prefix + 32 random hex bytes
+- Raw token shown once on creation; only the SHA-256 hash is stored
+- Tokens can be revoked from Settings
+
+## Database Tables
+
+- `users` — GitHub-authed users with profile (handle, displayName, bio), roles (admin/moderator/user), soft-delete support
+- `skills` — skill registry entries with stats, badges, moderation status
+- `skillVersions` — versioned skill bundles (files in Convex storage, optional skill dependency declarations)
+- `skillEmbeddings` — vector embeddings for search
+- `roles` — role registry entries (parallel to skills)
+- `roleVersions` — versioned role bundles with skill/role dependency declarations (version specifiers)
+- `roleEmbeddings` — vector embeddings for search
+- `stars` — user stars on skills/roles
+- `comments` — user comments on skills/roles
+- `apiTokens` — SHA-256 hashed bearer tokens for CLI/API auth
+- `auditLogs` — moderation action trail
+- `rateLimits` — per-IP/per-token rate limiting

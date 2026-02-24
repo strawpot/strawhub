@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.output/
+.vinxi/
+.convex/
+convex/_generated/
+*.local
+.env
+.env.*
+!.env.example
+app.config.*
