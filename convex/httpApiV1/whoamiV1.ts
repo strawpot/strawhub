@@ -1,11 +1,14 @@
 import { httpAction } from "../_generated/server";
 import { internal } from "../_generated/api";
-import { jsonResponse, errorResponse, extractBearerToken } from "./shared";
+import { jsonResponse, errorResponse, extractBearerToken, checkHttpRateLimit } from "./shared";
 
 /**
  * GET /api/v1/whoami — validate token and return user info
  */
 export const whoami = httpAction(async (ctx, request) => {
+  const rateLimited = await checkHttpRateLimit(ctx, request, "read");
+  if (rateLimited) return rateLimited;
+
   const token = extractBearerToken(request);
   if (!token) return errorResponse("Bearer token required", 401);
 

@@ -1,11 +1,15 @@
 import { httpAction } from "../_generated/server";
 import { api, internal } from "../_generated/api";
-import { jsonResponse, errorResponse, getSearchParams, resolveTokenToUser, hashToken } from "./shared";
+import { jsonResponse, errorResponse, getSearchParams, resolveTokenToUser, hashToken, checkHttpRateLimit } from "./shared";
+import { validateSlug, validateVersion, validateDisplayName, validateChangelog, MAX_FILE_SIZE } from "../lib/publishValidation";
 
 /**
  * GET /api/v1/skills — list skills
  */
 export const listSkills = httpAction(async (ctx, request) => {
+  const rateLimited = await checkHttpRateLimit(ctx, request, "read");
+  if (rateLimited) return rateLimited;
+
   const params = getSearchParams(request);
   const limit = Math.min(parseInt(params.get("limit") ?? "50", 10), 200);
   const sort = params.get("sort") ?? "updated";
@@ -25,6 +29,9 @@ export const listSkills = httpAction(async (ctx, request) => {
  * GET /api/v1/skills/:slug — get skill by slug
  */
 export const getSkill = httpAction(async (ctx, request) => {
+  const rateLimited = await checkHttpRateLimit(ctx, request, "read");
+  if (rateLimited) return rateLimited;
+
   const url = new URL(request.url);
   const slug = url.pathname.split("/").pop();
   if (!slug) return errorResponse("Slug required", 400);
@@ -39,6 +46,9 @@ export const getSkill = httpAction(async (ctx, request) => {
  * GET /api/v1/skills/:slug/file — get raw file content
  */
 export const getSkillFile = httpAction(async (ctx, request) => {
+  const rateLimited = await checkHttpRateLimit(ctx, request, "read");
+  if (rateLimited) return rateLimited;
+
   const url = new URL(request.url);
   const parts = url.pathname.split("/");
   // /api/v1/skills/:slug/file
@@ -70,6 +80,9 @@ export const getSkillFile = httpAction(async (ctx, request) => {
  * POST /api/v1/skills — publish a skill via API (Bearer token auth, multipart form data)
  */
 export const publishSkill = httpAction(async (ctx, request) => {
+  const rateLimited = await checkHttpRateLimit(ctx, request, "write");
+  if (rateLimited) return rateLimited;
+
   const authResult = await resolveTokenToUser(ctx, request);
   if (authResult instanceof Response) return authResult;
   const { userId } = authResult;
@@ -112,10 +125,23 @@ export const publishSkill = httpAction(async (ctx, request) => {
       return errorResponse("slug, displayName, and version are required", 400);
     }
 
+    // Validate inputs before storing files
+    try {
+      validateSlug(slug);
+      validateVersion(version);
+      validateDisplayName(displayName);
+      validateChangelog(changelog);
+    } catch (e: any) {
+      return errorResponse(e.message, 400);
+    }
+
     // Process file fields
     for (const [key, value] of formData.entries()) {
       if (key === "files" && value instanceof Blob) {
         const file = value as File;
+        if (file.size > MAX_FILE_SIZE) {
+          return errorResponse(`File '${file.name}' exceeds ${MAX_FILE_SIZE / 1024}KB limit`, 400);
+        }
         const storageId = await ctx.storage.store(file);
         // Compute SHA-256
         const buffer = await file.arrayBuffer();
