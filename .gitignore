@@ -9,3 +9,4 @@ convex/_generated/
 .env.*
 !.env.example
 app.config.*
+coverage/

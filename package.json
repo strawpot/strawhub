@@ -7,8 +7,11 @@
     "dev": "concurrently \"convex dev\" \"vite dev\"",
     "build": "vite build",
     "start": "vite preview",
+    "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest"
+    "test": "vitest",
+    "test:ci": "vitest run",
+    "coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@convex-dev/auth": "^0.0.90",
@@ -19,14 +22,20 @@
     "react-dom": "^19.2.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.3",
     "@tailwindcss/vite": "^4.2.0",
     "@tanstack/router-plugin": "^1.162.8",
+    "@types/node": "^25.3.0",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
     "@vitejs/plugin-react": "^4.5.0",
+    "@vitest/coverage-v8": "^3.2.4",
     "concurrently": "^9.1.0",
+    "eslint": "^9.39.3",
+    "eslint-plugin-react-hooks": "^7.0.1",
     "tailwindcss": "^4.2.0",
     "typescript": "^5.9.0",
+    "typescript-eslint": "^8.56.1",
     "vite": "^7.3.0",
     "vitest": "^3.0.0"
   }
