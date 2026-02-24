@@ -3,6 +3,7 @@ import { mutation, query, internalMutation } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { parseFrontmatter } from "./lib/frontmatter";
 import { parseDependencySpec, satisfiesVersion, splitDependencies } from "./lib/versionSpec";
+import { validateSlug, validateVersion, validateDisplayName, validateChangelog, validateFiles } from "./lib/publishValidation";
 
 // ─── Queries ─────────────────────────────────────────────────────────────────
 
@@ -125,6 +126,12 @@ const publishArgs = {
 export const publishInternal = internalMutation({
   args: { ...publishArgs, userId: v.id("users") },
   handler: async (ctx, args) => {
+    validateSlug(args.slug);
+    validateVersion(args.version);
+    validateDisplayName(args.displayName);
+    validateChangelog(args.changelog);
+    validateFiles(args.files);
+
     const user = await ctx.db.get(args.userId);
     if (!user) throw new Error("User not found");
     if (user.deactivatedAt) throw new Error("Account is deactivated");
@@ -264,6 +271,12 @@ export const publishInternal = internalMutation({
 export const publish = mutation({
   args: publishArgs,
   handler: async (ctx, args) => {
+    validateSlug(args.slug);
+    validateVersion(args.version);
+    validateDisplayName(args.displayName);
+    validateChangelog(args.changelog);
+    validateFiles(args.files);
+
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 

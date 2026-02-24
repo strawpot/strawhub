@@ -1,12 +1,16 @@
 import { httpAction } from "../_generated/server";
 import { api, internal } from "../_generated/api";
-import { jsonResponse, errorResponse, getSearchParams, resolveTokenToUser } from "./shared";
+import { jsonResponse, errorResponse, getSearchParams, resolveTokenToUser, checkHttpRateLimit } from "./shared";
 import { parseDependencySpec, satisfiesVersion } from "../lib/versionSpec";
+import { validateSlug, validateVersion, validateDisplayName, validateChangelog, MAX_FILE_SIZE } from "../lib/publishValidation";
 
 /**
  * GET /api/v1/roles — list roles
  */
 export const listRoles = httpAction(async (ctx, request) => {
+  const rateLimited = await checkHttpRateLimit(ctx, request, "read");
+  if (rateLimited) return rateLimited;
+
   const params = getSearchParams(request);
   const limit = Math.min(parseInt(params.get("limit") ?? "50", 10), 200);
   const sort = params.get("sort") ?? "updated";
@@ -26,6 +30,9 @@ export const listRoles = httpAction(async (ctx, request) => {
  * GET /api/v1/roles/:slug — get role by slug
  */
 export const getRole = httpAction(async (ctx, request) => {
+  const rateLimited = await checkHttpRateLimit(ctx, request, "read");
+  if (rateLimited) return rateLimited;
+
   const url = new URL(request.url);
   const slug = url.pathname.split("/").pop();
   if (!slug) return errorResponse("Slug required", 400);
@@ -40,6 +47,9 @@ export const getRole = httpAction(async (ctx, request) => {
  * GET /api/v1/roles/:slug/file — get raw file content
  */
 export const getRoleFile = httpAction(async (ctx, request) => {
+  const rateLimited = await checkHttpRateLimit(ctx, request, "read");
+  if (rateLimited) return rateLimited;
+
   const url = new URL(request.url);
   const parts = url.pathname.split("/");
   const slug = parts[parts.length - 2];
@@ -70,6 +80,9 @@ export const getRoleFile = httpAction(async (ctx, request) => {
  * GET /api/v1/roles/:slug/resolve — resolve dependencies recursively
  */
 export const resolveRoleDeps = httpAction(async (ctx, request) => {
+  const rateLimited = await checkHttpRateLimit(ctx, request, "read");
+  if (rateLimited) return rateLimited;
+
   const url = new URL(request.url);
   const parts = url.pathname.split("/");
   const slug = parts[parts.length - 2];
@@ -196,6 +209,9 @@ export const resolveRoleDeps = httpAction(async (ctx, request) => {
  * POST /api/v1/roles — publish a role via API (Bearer token auth, multipart form data)
  */
 export const publishRole = httpAction(async (ctx, request) => {
+  const rateLimited = await checkHttpRateLimit(ctx, request, "write");
+  if (rateLimited) return rateLimited;
+
   const authResult = await resolveTokenToUser(ctx, request);
   if (authResult instanceof Response) return authResult;
   const { userId } = authResult;
@@ -238,9 +254,22 @@ export const publishRole = httpAction(async (ctx, request) => {
       return errorResponse("slug, displayName, and version are required", 400);
     }
 
+    // Validate inputs before storing files
+    try {
+      validateSlug(slug);
+      validateVersion(version);
+      validateDisplayName(displayName);
+      validateChangelog(changelog);
+    } catch (e: any) {
+      return errorResponse(e.message, 400);
+    }
+
     for (const [key, value] of formData.entries()) {
       if (key === "files" && value instanceof Blob) {
         const file = value as File;
+        if (file.size > MAX_FILE_SIZE) {
+          return errorResponse(`File '${file.name}' exceeds ${MAX_FILE_SIZE / 1024}KB limit`, 400);
+        }
         const storageId = await ctx.storage.store(file);
         const buffer = await file.arrayBuffer();
         const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);

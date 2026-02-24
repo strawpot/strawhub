@@ -77,6 +77,45 @@ export async function resolveTokenToUser(
 }
 
 /**
+ * Extract client IP from request headers.
+ */
+export function getClientIp(request: Request): string {
+  return (
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    request.headers.get("x-real-ip") ??
+    "unknown"
+  );
+}
+
+/**
+ * Check rate limit for an HTTP request. Returns a 429 Response if limited, null if allowed.
+ */
+export async function checkHttpRateLimit(
+  ctx: ActionCtx,
+  request: Request,
+  bucket: string,
+): Promise<Response | null> {
+  const ip = getClientIp(request);
+  const key = `ip:${ip}`;
+  const { allowed } = await ctx.runQuery(internal.lib.rateLimit.check, {
+    key,
+    bucket,
+  });
+  if (!allowed) {
+    return new Response(JSON.stringify({ error: "Rate limit exceeded" }), {
+      status: 429,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Retry-After": "60",
+      },
+    });
+  }
+  await ctx.runMutation(internal.lib.rateLimit.consume, { key, bucket });
+  return null;
+}
+
+/**
  * CORS preflight response.
  */
 export function corsResponse(): Response {
