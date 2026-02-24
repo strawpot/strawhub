@@ -3,7 +3,6 @@ dist/
 .output/
 .vinxi/
 .convex/
-convex/_generated/
 *.local
 .env
 .env.*

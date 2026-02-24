@@ -30,20 +30,8 @@ jobs:
       - name: Coverage
         run: npm run coverage
 
-      - name: Convex codegen
-        if: vars.CONVEX_DEPLOYMENT != ''
-        env:
-          CONVEX_DEPLOYMENT: ${{ vars.CONVEX_DEPLOYMENT }}
-        run: npx convex codegen
-
       - name: Build
-        if: vars.CONVEX_DEPLOYMENT != ''
-        env:
-          CONVEX_DEPLOYMENT: ${{ vars.CONVEX_DEPLOYMENT }}
         run: npm run build
 
       - name: Typecheck
-        if: vars.CONVEX_DEPLOYMENT != ''
-        env:
-          CONVEX_DEPLOYMENT: ${{ vars.CONVEX_DEPLOYMENT }}
         run: npm run typecheck
