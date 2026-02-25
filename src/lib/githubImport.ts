@@ -41,7 +41,7 @@ function parseGitHubUrl(url: string): ParsedGitHubUrl {
     };
   }
 
-  return { owner, repo, branch: "main", path: "" };
+  return { owner, repo, branch: "", path: "" };
 }
 
 /**
@@ -60,9 +60,10 @@ export async function fetchFromGitHub(url: string): Promise<GitHubFile[]> {
     return [{ path: fileName, content: blob }];
   }
 
+  const refParam = branch ? `?ref=${branch}` : "";
   const apiUrl = path
-    ? `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${branch}`
-    : `https://api.github.com/repos/${owner}/${repo}/contents?ref=${branch}`;
+    ? `https://api.github.com/repos/${owner}/${repo}/contents/${path}${refParam}`
+    : `https://api.github.com/repos/${owner}/${repo}/contents${refParam}`;
 
   const resp = await fetch(apiUrl, {
     headers: { Accept: "application/vnd.github.v3+json" },
@@ -81,19 +82,34 @@ export async function fetchFromGitHub(url: string): Promise<GitHubFile[]> {
     return [{ path: data.name, content: blob }];
   }
 
-  // Directory listing — fetch each file
+  // Directory listing — recursively fetch all files
+  const headers = { Accept: "application/vnd.github.v3+json" };
   const files: GitHubFile[] = [];
-  const fileEntries = data.filter(
-    (item: { type: string; size: number }) =>
-      item.type === "file" && item.size < 1_000_000, // skip files > 1MB
-  );
 
-  for (const entry of fileEntries) {
-    const fileResp = await fetch(entry.download_url);
-    if (!fileResp.ok) continue;
-    const blob = await fileResp.blob();
-    files.push({ path: entry.name, content: blob });
+  async function fetchDir(
+    entries: Array<{ type: string; size: number; name: string; path: string; download_url: string }>,
+    prefix: string,
+  ) {
+    for (const entry of entries) {
+      if (entry.name === ".git") continue;
+      if (entry.type === "file" && entry.size < 1_000_000) {
+        const fileResp = await fetch(entry.download_url);
+        if (!fileResp.ok) continue;
+        const blob = await fileResp.blob();
+        const relativePath = prefix ? `${prefix}/${entry.name}` : entry.name;
+        files.push({ path: relativePath, content: blob });
+      } else if (entry.type === "dir") {
+        const dirUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${entry.path}${refParam}`;
+        const dirResp = await fetch(dirUrl, { headers });
+        if (!dirResp.ok) continue;
+        const dirData = await dirResp.json();
+        if (Array.isArray(dirData)) {
+          await fetchDir(dirData, prefix ? `${prefix}/${entry.name}` : entry.name);
+        }
+      }
+    }
   }
 
+  await fetchDir(data, "");
   return files;
 }

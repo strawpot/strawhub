@@ -7,6 +7,7 @@ import { parseFrontmatter } from "../lib/parseFrontmatter";
 import { useSEO } from "../lib/useSEO";
 import { buildJsonLd } from "../lib/buildJsonLd";
 import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 export const Route = createFileRoute("/roles/$slug")({
   component: RoleDetailPage,
@@ -302,7 +303,7 @@ function RoleMdViewer({
           )}
           {body.trim() && (
             <div className="prose prose-invert prose-sm max-w-none text-gray-300 [&_h1]:text-white [&_h2]:text-white [&_h3]:text-white [&_a]:text-orange-400 [&_code]:bg-gray-800 [&_code]:px-1 [&_code]:rounded [&_pre]:bg-gray-950 [&_pre]:rounded-lg">
-              <Markdown>{body}</Markdown>
+              <Markdown remarkPlugins={[remarkGfm]}>{body}</Markdown>
             </div>
           )}
         </div>
