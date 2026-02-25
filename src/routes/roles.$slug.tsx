@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { extractSlug } from "../lib/versionSpec";
+import { parseFrontmatter } from "../lib/parseFrontmatter";
+import Markdown from "react-markdown";
 
 export const Route = createFileRoute("/roles/$slug")({
   component: RoleDetailPage,
@@ -16,6 +18,9 @@ function RoleDetailPage() {
     role ? { roleId: role._id } : "skip",
   );
   const trackDownload = useMutation(api.downloads.trackDownload);
+  const currentUser = useQuery(api.users.me);
+  const navigate = useNavigate();
+  const isOwner = !!(currentUser && role && role.ownerUserId === currentUser._id);
 
   if (role === undefined) {
     return <p className="text-gray-400">Loading...</p>;
@@ -54,37 +59,60 @@ function RoleDetailPage() {
           <p className="text-sm text-gray-500 font-mono mt-1">/{role.slug}</p>
         </div>
 
-        {role.latestVersion && role.zipUrl && (
-          <button
-            onClick={async () => {
-              trackDownload({ targetKind: "role", slug: role.slug });
-              const res = await fetch(role.zipUrl!);
-              const blob = await res.blob();
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement("a");
-              a.href = url;
-              a.download = `${role.slug}-v${role.latestVersion!.version}.zip`;
-              a.click();
-              URL.revokeObjectURL(url);
-            }}
-            className="inline-flex items-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-500 transition-colors shrink-0"
-          >
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          {isOwner && (
+            <button
+              onClick={() => navigate({ to: "/upload", search: { updateSlug: role.slug, kind: "role" } })}
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 transition-colors"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-              />
-            </svg>
-            Download .zip
-          </button>
-        )}
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m4-8l-4-4m0 0l-4 4m4-4v12"
+                />
+              </svg>
+              Update
+            </button>
+          )}
+          {role.latestVersion && role.zipUrl && (
+            <button
+              onClick={async () => {
+                trackDownload({ targetKind: "role", slug: role.slug });
+                const res = await fetch(role.zipUrl!);
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `${role.slug}-v${role.latestVersion!.version}.zip`;
+                a.click();
+                URL.revokeObjectURL(url);
+              }}
+              className="inline-flex items-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-500 transition-colors"
+            >
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                />
+              </svg>
+              Download .zip
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Author */}
@@ -174,6 +202,91 @@ function RoleDetailPage() {
   );
 }
 
+function RoleMdViewer({
+  file,
+}: {
+  file: { path: string; size: number; url: string | null } | undefined;
+}) {
+  const [content, setContent] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!file?.url) return;
+    let cancelled = false;
+    fetch(file.url)
+      .then((res) => res.text())
+      .then((text) => {
+        if (!cancelled) setContent(text);
+      })
+      .catch(() => {
+        if (!cancelled) setContent(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [file?.url]);
+
+  if (!file) return null;
+
+  const { frontmatter, body } = content
+    ? parseFrontmatter(content)
+    : { frontmatter: {}, body: "" };
+
+  return (
+    <div className="space-y-3">
+      <h3 className="text-base font-bold text-white">ROLE.md</h3>
+      {content === null ? (
+        <p className="text-gray-500 text-sm">Loading...</p>
+      ) : (
+        <div className="space-y-3">
+          {Object.keys(frontmatter).length > 0 && (
+            <div className="rounded-lg bg-gray-900/50 overflow-x-auto">
+              <table className="w-full text-sm">
+                <tbody>
+                  {Object.entries(frontmatter).map(([key, value]) => (
+                    <tr
+                      key={key}
+                      className="border-b border-gray-800 last:border-0"
+                    >
+                      <td className="px-4 py-2 text-gray-400 font-mono whitespace-nowrap align-top">
+                        {key}
+                      </td>
+                      <td className="px-4 py-2 text-gray-200">
+                        {Array.isArray(value) ? (
+                          <div className="flex flex-wrap gap-1.5">
+                            {value.map((v, i) => (
+                              <span
+                                key={i}
+                                className="rounded bg-gray-800 px-2 py-0.5 text-xs font-mono text-gray-300"
+                              >
+                                {String(v)}
+                              </span>
+                            ))}
+                          </div>
+                        ) : typeof value === "object" && value !== null ? (
+                          <pre className="text-xs font-mono text-gray-300">
+                            {JSON.stringify(value, null, 2)}
+                          </pre>
+                        ) : (
+                          <span className="font-mono">{String(value)}</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {body.trim() && (
+            <div className="prose prose-invert prose-sm max-w-none text-gray-300 [&_h1]:text-white [&_h2]:text-white [&_h3]:text-white [&_a]:text-orange-400 [&_code]:bg-gray-800 [&_code]:px-1 [&_code]:rounded [&_pre]:bg-gray-950 [&_pre]:rounded-lg">
+              <Markdown>{body}</Markdown>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function DetailTabs({
   files,
   versions,
@@ -196,15 +309,19 @@ function DetailTabs({
   trackDownload: (args: { targetKind: "skill" | "role"; slug: string }) => void;
 }) {
   const [tab, setTab] = useState<"files" | "versions">("files");
+
+  const roleMdFile = files.find((f) => f.path === "ROLE.md");
+  const otherFiles = files.filter((f) => f.path !== "ROLE.md");
+
   const [selectedFile, setSelectedFile] = useState<string | null>(
-    files[0]?.path ?? null,
+    otherFiles[0]?.path ?? null,
   );
   const [fetchResult, setFetchResult] = useState<{
     url: string;
     content: string | null;
   } | null>(null);
 
-  const selected = files.find((f) => f.path === selectedFile);
+  const selected = otherFiles.find((f) => f.path === selectedFile);
   const loading = selected?.url != null && fetchResult?.url !== selected.url;
   const displayContent =
     selected?.url && fetchResult?.url === selected.url
@@ -234,23 +351,23 @@ function DetailTabs({
   return (
     <div className="rounded-lg border border-gray-800 overflow-hidden">
       {/* Tab bar */}
-      <div className="flex gap-4 border-b border-gray-800 px-4 pt-2">
+      <div className="flex gap-6 border-b border-gray-800 px-4 pt-3">
         <button
           onClick={() => setTab("files")}
-          className={`pb-2 text-sm font-medium transition-colors ${
+          className={`pb-3 text-base font-semibold transition-colors ${
             tab === "files"
               ? "text-white border-b-2 border-orange-500"
-              : "text-gray-400 hover:text-gray-200"
+              : "text-gray-500 hover:text-gray-200"
           }`}
         >
           Files
         </button>
         <button
           onClick={() => setTab("versions")}
-          className={`pb-2 text-sm font-medium transition-colors ${
+          className={`pb-3 text-base font-semibold transition-colors ${
             tab === "versions"
               ? "text-white border-b-2 border-orange-500"
-              : "text-gray-400 hover:text-gray-200"
+              : "text-gray-500 hover:text-gray-200"
           }`}
         >
           Versions
@@ -258,43 +375,51 @@ function DetailTabs({
       </div>
 
       {/* Files tab */}
-      {tab === "files" && files.length > 0 && (
-        <div className="p-4">
-          <div className="flex border-b border-gray-800 bg-gray-900/50 overflow-x-auto rounded-t-lg">
-            {files.map((file) => (
-              <button
-                key={file.path}
-                onClick={() => setSelectedFile(file.path)}
-                className={`px-4 py-2 text-xs font-mono whitespace-nowrap transition-colors ${
-                  selectedFile === file.path
-                    ? "text-white bg-gray-800 border-b-2 border-orange-500"
-                    : "text-gray-400 hover:text-gray-200 hover:bg-gray-800/50"
-                }`}
-              >
-                {file.path}
-                <span className="ml-2 text-gray-600">
-                  {formatFileSize(file.size)}
-                </span>
-              </button>
-            ))}
-          </div>
-          <div className="p-4 max-h-96 overflow-auto bg-gray-950 rounded-b-lg">
-            {loading ? (
-              <p className="text-gray-500 text-sm">Loading...</p>
-            ) : displayContent !== null ? (
-              selected && isLikelyBinary(selected.path, displayContent) ? (
-                <p className="text-gray-500 text-sm">
-                  Binary file not shown.
-                </p>
-              ) : (
-                <pre className="text-sm text-gray-300 font-mono whitespace-pre-wrap break-words">
-                  {displayContent}
-                </pre>
-              )
-            ) : (
-              <p className="text-gray-500 text-sm">Unable to load file.</p>
-            )}
-          </div>
+      {tab === "files" && (
+        <div className="p-4 space-y-4">
+          {/* ROLE.md always shown at top */}
+          {roleMdFile && <RoleMdViewer file={roleMdFile} />}
+
+          {/* Other files */}
+          {otherFiles.length > 0 && (
+            <div>
+              <div className="flex border-b border-gray-800 bg-gray-900/50 overflow-x-auto rounded-t-lg">
+                {otherFiles.map((file) => (
+                  <button
+                    key={file.path}
+                    onClick={() => setSelectedFile(file.path)}
+                    className={`px-4 py-2 text-xs font-mono whitespace-nowrap transition-colors ${
+                      selectedFile === file.path
+                        ? "text-white bg-gray-800 border-b-2 border-orange-500"
+                        : "text-gray-400 hover:text-gray-200 hover:bg-gray-800/50"
+                    }`}
+                  >
+                    {file.path}
+                    <span className="ml-2 text-gray-600">
+                      {formatFileSize(file.size)}
+                    </span>
+                  </button>
+                ))}
+              </div>
+              <div className="p-4 max-h-96 overflow-auto bg-gray-950 rounded-b-lg">
+                {loading ? (
+                  <p className="text-gray-500 text-sm">Loading...</p>
+                ) : displayContent !== null ? (
+                  selected && isLikelyBinary(selected.path, displayContent) ? (
+                    <p className="text-gray-500 text-sm">
+                      Binary file not shown.
+                    </p>
+                  ) : (
+                    <pre className="text-sm text-gray-300 font-mono whitespace-pre-wrap break-words">
+                      {displayContent}
+                    </pre>
+                  )
+                ) : (
+                  <p className="text-gray-500 text-sm">Unable to load file.</p>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

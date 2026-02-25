@@ -1,14 +1,14 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useAuthActions } from "@convex-dev/auth/react";
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import { api } from "../../convex/_generated/api";
 import { parseFrontmatter } from "../lib/parseFrontmatter";
 import { sha256Hex } from "../lib/hash";
 import { fetchFromGitHub } from "../lib/githubImport";
 import JSZip from "jszip";
 
-type UploadSearch = { mode?: "import"; updateSlug?: string };
+type UploadSearch = { mode?: "import"; updateSlug?: string; kind?: "skill" | "role" };
 
 /** Recursively read all files from a dropped directory entry. */
 async function readDirectoryRecursively(
@@ -55,6 +55,7 @@ export const Route = createFileRoute("/upload")({
   validateSearch: (search: Record<string, unknown>): UploadSearch => ({
     mode: search.mode === "import" ? "import" : undefined,
     updateSlug: typeof search.updateSlug === "string" ? search.updateSlug : undefined,
+    kind: search.kind === "role" ? "role" : search.kind === "skill" ? "skill" : undefined,
   }),
   component: UploadPage,
 });
@@ -71,9 +72,9 @@ function UploadPage() {
   const { isAuthenticated, isLoading } = useConvexAuth();
   const { signIn } = useAuthActions();
   const navigate = useNavigate();
-  const { mode, updateSlug } = Route.useSearch();
+  const { mode, updateSlug, kind: initialKind } = Route.useSearch();
 
-  const [kind, setKind] = useState<"skill" | "role">("skill");
+  const [kind, setKind] = useState<"skill" | "role">(initialKind ?? "skill");
   const [slug, setSlug] = useState(updateSlug ?? "");
   const [displayName, setDisplayName] = useState(
     updateSlug
@@ -128,6 +129,25 @@ function UploadPage() {
     return null;
   })();
 
+  const primaryFile = kind === "skill" ? "SKILL.md" : "ROLE.md";
+  const hasPrimaryFile = files.some((f) => f.path === primaryFile);
+
+  const validationErrors = useMemo(() => {
+    const errors: string[] = [];
+    if (!slug.trim()) errors.push("Slug is required.");
+    else if (slugError) errors.push(slugError);
+    if (isCrossKindConflict)
+      errors.push(`Slug is already used by a ${kind === "skill" ? "role" : "skill"}.`);
+    if (isOwnedByOther) errors.push("Slug is owned by another user.");
+    if (!isUpdate && !displayName.trim()) errors.push("Display name is required.");
+    if (files.length === 0) errors.push(`At least one file is required.`);
+    else if (!hasPrimaryFile) errors.push(`${primaryFile} file is required.`);
+    if (kind === "role" && files.length > 0 && (files.length !== 1 || files[0].path !== "ROLE.md"))
+      errors.push("Role uploads must contain exactly one file: ROLE.md.");
+    if (versionError) errors.push(versionError);
+    return errors;
+  }, [slug, slugError, isCrossKindConflict, isOwnedByOther, kind, displayName, isUpdate, files, hasPrimaryFile, primaryFile, versionError]);
+
   const processFiles = useCallback(
     (newFiles: Array<{ file: File; path: string }>) => {
       // Roles only accept a single ROLE.md file
@@ -139,6 +159,8 @@ function UploadPage() {
         }
         newFiles = [roleMd];
       }
+
+      setError(null);
 
       const incoming: UploadFile[] = newFiles.map((f) => ({
         file: f.file,
@@ -154,13 +176,12 @@ function UploadPage() {
         return Array.from(merged.values());
       });
 
-      // Auto-detect kind and parse frontmatter
-      const skillMd = newFiles.find((f) => f.path === "SKILL.md");
-      const roleMd = newFiles.find((f) => f.path === "ROLE.md");
+      // Parse frontmatter from the primary file matching the current kind
+      const mdFile = kind === "role"
+        ? newFiles.find((f) => f.path === "ROLE.md")
+        : newFiles.find((f) => f.path === "SKILL.md");
 
-      const mdFile = roleMd ?? skillMd;
       if (mdFile) {
-        setKind(roleMd ? "role" : "skill");
         mdFile.file.text().then((text) => {
           const { frontmatter } = parseFrontmatter(text);
           if (frontmatter.name && typeof frontmatter.name === "string") {
@@ -485,7 +506,7 @@ function UploadPage() {
         {/* Kind Toggle */}
         <div className="flex gap-4">
           <button
-            onClick={() => setKind("skill")}
+            onClick={() => { setKind("skill"); setFiles([]); setError(null); }}
             className={`rounded px-4 py-2 text-sm font-medium transition-colors ${
               kind === "skill"
                 ? "bg-orange-500 text-white"
@@ -495,7 +516,7 @@ function UploadPage() {
             Skill
           </button>
           <button
-            onClick={() => setKind("role")}
+            onClick={() => { setKind("role"); setFiles([]); setError(null); }}
             className={`rounded px-4 py-2 text-sm font-medium transition-colors ${
               kind === "role"
                 ? "bg-orange-500 text-white"
@@ -545,6 +566,19 @@ function UploadPage() {
             </p>
           ) : (
             <div className="space-y-2">
+              {kind === "skill" && !isPublishing && files.length > 1 && (
+                <div className="flex justify-end">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setFiles([]);
+                    }}
+                    className="text-red-400 hover:text-red-300 text-xs underline"
+                  >
+                    Clear all
+                  </button>
+                </div>
+              )}
               {files.map((f, i) => (
                 <div
                   key={i}
@@ -731,10 +765,22 @@ function UploadPage() {
           <p className="text-sm text-orange-400">{uploadProgress}</p>
         )}
 
+        {/* Validation Errors */}
+        {validationErrors.length > 0 && (
+          <div className="rounded border border-yellow-800 bg-yellow-950 px-4 py-3 text-sm text-yellow-300">
+            <p className="font-medium mb-1">Requirements not met:</p>
+            <ul className="list-disc list-inside space-y-0.5 text-yellow-400">
+              {validationErrors.map((msg: string, i: number) => (
+                <li key={i}>{msg}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {/* Publish Button */}
         <button
           onClick={handlePublish}
-          disabled={isPublishing || files.length === 0 || !!slugError || isOwnedByOther || isCrossKindConflict || !!versionError}
+          disabled={isPublishing || validationErrors.length > 0}
           className="w-full rounded bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isPublishing

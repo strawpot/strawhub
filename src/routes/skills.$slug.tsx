@@ -328,23 +328,23 @@ function DetailTabs({
   return (
     <div className="rounded-lg border border-gray-800 overflow-hidden">
       {/* Tab bar */}
-      <div className="flex gap-4 border-b border-gray-800 px-4 pt-2">
+      <div className="flex gap-6 border-b border-gray-800 px-4 pt-3">
         <button
           onClick={() => setTab("files")}
-          className={`pb-2 text-sm font-medium transition-colors ${
+          className={`pb-3 text-base font-semibold transition-colors ${
             tab === "files"
               ? "text-white border-b-2 border-orange-500"
-              : "text-gray-400 hover:text-gray-200"
+              : "text-gray-500 hover:text-gray-200"
           }`}
         >
           Files
         </button>
         <button
           onClick={() => setTab("versions")}
-          className={`pb-2 text-sm font-medium transition-colors ${
+          className={`pb-3 text-base font-semibold transition-colors ${
             tab === "versions"
               ? "text-white border-b-2 border-orange-500"
-              : "text-gray-400 hover:text-gray-200"
+              : "text-gray-500 hover:text-gray-200"
           }`}
         >
           Versions
