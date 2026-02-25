@@ -224,6 +224,7 @@ export const publishRole = httpAction(async (ctx, request) => {
   let changelog: string;
   let customTags: string[] | undefined;
   let dependencies: { skills?: string[]; roles?: string[] } | undefined;
+  let roleMdText: string | undefined;
   const fileEntries: Array<{
     path: string;
     size: number;
@@ -276,8 +277,12 @@ export const publishRole = httpAction(async (ctx, request) => {
         const sha256 = Array.from(new Uint8Array(hashBuffer))
           .map((b) => b.toString(16).padStart(2, "0"))
           .join("");
+        const filePath = file.name || "ROLE.md";
+        if (filePath === "ROLE.md") {
+          roleMdText = await file.text();
+        }
         fileEntries.push({
-          path: file.name || "ROLE.md",
+          path: filePath,
           size: file.size,
           storageId: storageId as unknown as string,
           sha256,
@@ -309,6 +314,7 @@ export const publishRole = httpAction(async (ctx, request) => {
       files: fileEntries as any,
       dependencies,
       customTags,
+      roleMdText,
     });
     return jsonResponse(result, 201);
   } catch (e: any) {

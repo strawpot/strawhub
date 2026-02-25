@@ -1,9 +1,6 @@
 ---
 name: git-workflow
-version: 1.0.0
 description: "Git branching and commit conventions for Strawpot agents"
-tags: [git, workflow, conventions]
-author: strawpot
 ---
 
 # Git Workflow

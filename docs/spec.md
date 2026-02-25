@@ -17,17 +17,14 @@ A skill is a markdown instruction module that agents load into context. Skills c
 **Frontmatter:**
 ```yaml
 name: code-review
-version: 1.0.0
 description: "One-line summary"
-tags: [review, quality]
-author: strawpot
 dependencies:
   - security-baseline
 ```
 
 ### Roles
 
-A role defines agent behavior, default tools, model configuration, and dependencies on skills and other roles.
+A role defines agent behavior, model configuration, and dependencies on skills and other roles.
 
 **Files:**
 - `ROLE.md` (required) — YAML frontmatter + markdown body (includes dependency declarations)
@@ -35,20 +32,17 @@ A role defines agent behavior, default tools, model configuration, and dependenc
 **Frontmatter:**
 ```yaml
 name: implementer
-version: 1.0.0
 description: "One-line summary"
-tags: [coding]
-author: strawpot
 dependencies:
   - git-workflow>=1.0.0
   - code-review
   - python-testing^2.0.0
   - role:reviewer
-default_tools:
-  allowed: [Bash, Read, Write, Edit, Glob, Grep]
-default_model:
-  provider: claude_session
-  id: claude-opus-4-6
+metadata:
+  strawpot:
+    default_model:
+      provider: claude_session
+      id: claude-opus-4-6
 ```
 
 ## Dependency Version Specifiers
@@ -118,7 +112,8 @@ The resolution logic exists server-side (handler in `rolesV1.ts`) but is not yet
 ### Publishing
 
 - **Web UI**: Drag-and-drop files or use the GitHub import (paste a URL, files are fetched via GitHub Contents API)
-- SKILL.md / ROLE.md frontmatter is auto-parsed to populate form fields (slug, display name, version, dependencies)
+- SKILL.md / ROLE.md frontmatter is auto-parsed to populate form fields (slug, display name)
+- Slug ownership: if a slug already exists and belongs to another user, publishing is blocked
 - **REST API**: `POST /api/v1/skills` and `POST /api/v1/roles` with bearer token auth (multipart form data)
 
 ### API Tokens
@@ -132,7 +127,8 @@ The resolution logic exists server-side (handler in `rolesV1.ts`) but is not yet
 
 | Action | Who |
 |--------|-----|
-| Publish skill/role | Any authenticated user |
+| Publish new skill/role | Any authenticated user |
+| Update existing skill/role | Owner only |
 | Delete (soft-delete) skill/role | Admin only |
 | Restore skill/role | Admin only |
 | Delete own account | Authenticated user (self) |

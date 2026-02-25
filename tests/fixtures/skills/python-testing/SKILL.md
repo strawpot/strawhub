@@ -1,9 +1,6 @@
 ---
 name: python-testing
-version: 1.0.0
 description: "Python testing patterns with pytest"
-tags: [python, testing, pytest]
-author: strawpot
 ---
 
 # Python Testing

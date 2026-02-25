@@ -1,14 +1,14 @@
 ---
 name: planner
-version: 1.0.0
 description: "Decomposes objectives into task DAGs"
-tags: [planning, architecture]
-author: strawpot
-default_tools:
-  allowed: [Read, Glob, Grep, Bash]
-default_model:
-  provider: claude_session
-  id: claude-opus-4-6
+metadata:
+  version: 1.0.0
+  tags: [planning, architecture]
+  author: strawpot
+  strawpot:
+    default_model:
+      provider: claude_session
+      id: claude-opus-4-6
 ---
 
 # Planner

@@ -1,14 +1,14 @@
 ---
 name: documenter
-version: 1.0.0
 description: "Writes and updates documentation and changelogs"
-tags: [documentation, writing]
-author: strawpot
-default_tools:
-  allowed: [Read, Write, Edit, Glob, Grep, Bash]
-default_model:
-  provider: claude_session
-  id: claude-opus-4-6
+metadata:
+  version: 1.0.0
+  tags: [documentation, writing]
+  author: strawpot
+  strawpot:
+    default_model:
+      provider: claude_session
+      id: claude-opus-4-6
 ---
 
 # Documenter
