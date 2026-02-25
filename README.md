@@ -1,10 +1,10 @@
 # StrawHub
 
-Role and skill registry for [Strawpot](https://github.com/user/strawpot).
+Role and skill registry for [StrawPot](https://github.com/user/strawpot).
 
 ## Overview
 
-StrawHub is a web service that lets users discover, publish, and install reusable roles and skills for Strawpot agents. Following the same architecture as [ClawHub](https://clawhub.ai/), it extends the pattern to manage both **roles** and **skills** with recursive dependency resolution.
+StrawHub is a web service that lets users discover, publish, and install reusable roles and skills for StrawPot agents. Following the same architecture as [ClawHub](https://clawhub.ai/), it extends the pattern to manage both **roles** and **skills** with recursive dependency resolution.
 
 - **Roles** define agent behavior, default tools, model config, and dependent skills
 - **Skills** are markdown instruction modules that agents load into context
