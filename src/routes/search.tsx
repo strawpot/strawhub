@@ -18,9 +18,9 @@ function SearchPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-white">Search</h1>
+      <h1 className="text-2xl md:text-3xl font-bold text-white">Search</h1>
 
-      <div className="flex gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
         <input
           type="text"
           value={query}

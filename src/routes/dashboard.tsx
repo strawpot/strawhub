@@ -19,8 +19,8 @@ function DashboardPage() {
   if (!isAuthenticated) {
     return (
       <div className="space-y-6">
-        <h1 className="text-3xl font-bold text-white">Dashboard</h1>
-        <div className="rounded-lg border border-gray-800 p-8 text-center">
+        <h1 className="text-2xl md:text-3xl font-bold text-white">Dashboard</h1>
+        <div className="rounded-lg border border-gray-800 p-5 md:p-8 text-center">
           <p className="text-gray-400 mb-4">
             Sign in with GitHub to manage your published roles and skills.
           </p>
@@ -38,8 +38,8 @@ function DashboardPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-white">My Content</h1>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-2xl md:text-3xl font-bold text-white">My Content</h1>
         <Link
           to="/upload"
           className="rounded bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-500"
@@ -68,7 +68,7 @@ function UserContent({ userId, handle }: { userId: string; handle?: string }) {
 
   if (empty) {
     return (
-      <div className="rounded-lg border border-gray-800 p-12 text-center">
+      <div className="rounded-lg border border-gray-800 p-6 md:p-12 text-center">
         <p className="text-lg font-medium text-gray-400 mb-2">
           No content yet
         </p>
@@ -95,7 +95,7 @@ function UserContent({ userId, handle }: { userId: string; handle?: string }) {
             {skills.map((s) => (
               <div
                 key={s._id}
-                className="flex items-center justify-between rounded-lg border border-gray-800 p-4"
+                className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-lg border border-gray-800 p-4"
               >
                 <div className="min-w-0 flex-1">
                   <Link
@@ -111,13 +111,13 @@ function UserContent({ userId, handle }: { userId: string; handle?: string }) {
                       {s.summary}
                     </p>
                   )}
-                  <div className="mt-2 flex items-center gap-4 text-xs text-gray-500">
+                  <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-gray-500">
                     <span>{s.stats.downloads} downloads</span>
                     <span>{s.stats.stars} stars</span>
                     <span>{s.stats.versions} versions</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 ml-4 shrink-0">
+                <div className="flex items-center gap-2 shrink-0">
                   <Link
                     to="/upload"
                     search={{ updateSlug: s.slug }}
@@ -147,7 +147,7 @@ function UserContent({ userId, handle }: { userId: string; handle?: string }) {
             {roles.map((r) => (
               <div
                 key={r._id}
-                className="flex items-center justify-between rounded-lg border border-gray-800 p-4"
+                className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-lg border border-gray-800 p-4"
               >
                 <div className="min-w-0 flex-1">
                   <Link
@@ -163,13 +163,13 @@ function UserContent({ userId, handle }: { userId: string; handle?: string }) {
                       {r.summary}
                     </p>
                   )}
-                  <div className="mt-2 flex items-center gap-4 text-xs text-gray-500">
+                  <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-gray-500">
                     <span>{r.stats.downloads} downloads</span>
                     <span>{r.stats.stars} stars</span>
                     <span>{r.stats.versions} versions</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 ml-4 shrink-0">
+                <div className="flex items-center gap-2 shrink-0">
                   <Link
                     to="/upload"
                     search={{ updateSlug: r.slug }}

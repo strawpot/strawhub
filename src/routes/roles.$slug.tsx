@@ -39,10 +39,10 @@ function RoleDetailPage() {
       </Link>
 
       {/* Header: title + version on left, download on right */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold text-white">
+          <div className="flex flex-wrap items-center gap-2 md:gap-3">
+            <h1 className="text-2xl md:text-3xl font-bold text-white">
               {role.displayName}
             </h1>
             {role.latestVersion && (

@@ -20,8 +20,8 @@ function SettingsPage() {
   if (!isAuthenticated) {
     return (
       <div className="space-y-6">
-        <h1 className="text-3xl font-bold text-white">Settings</h1>
-        <div className="rounded-lg border border-gray-800 p-8 text-center">
+        <h1 className="text-2xl md:text-3xl font-bold text-white">Settings</h1>
+        <div className="rounded-lg border border-gray-800 p-5 md:p-8 text-center">
           <p className="text-gray-400 mb-4">
             Sign in with GitHub to manage your account settings.
           </p>
@@ -38,11 +38,11 @@ function SettingsPage() {
 
   return (
     <div className="space-y-8">
-      <h1 className="text-3xl font-bold text-white">Settings</h1>
+      <h1 className="text-2xl md:text-3xl font-bold text-white">Settings</h1>
 
       {/* Profile card */}
       {user && (
-        <div className="flex items-center gap-4 rounded-lg border border-gray-800 bg-gray-900/50 p-5">
+        <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-center rounded-lg border border-gray-800 bg-gray-900/50 p-5">
           {user.image ? (
             <img
               src={user.image}
@@ -189,7 +189,7 @@ function ApiTokensSection() {
       </p>
 
       {/* Create token */}
-      <div className="flex gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row">
         <input
           type="text"
           value={newTokenName}
@@ -245,7 +245,7 @@ function ApiTokensSection() {
           {activeTokens.map((t) => (
             <div
               key={t._id}
-              className="flex items-center justify-between rounded border border-gray-800 p-3"
+              className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between rounded border border-gray-800 p-3"
             >
               <div>
                 <p className="text-sm font-medium text-white">{t.name}</p>
@@ -279,7 +279,7 @@ function ApiTokensSection() {
             {revokedTokens.map((t) => (
               <div
                 key={t._id}
-                className="flex items-center justify-between rounded border border-gray-800/50 p-3 opacity-50"
+                className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between rounded border border-gray-800/50 p-3 opacity-50"
               >
                 <div>
                   <p className="text-sm text-gray-400 line-through">{t.name}</p>
@@ -328,7 +328,7 @@ function DangerZone() {
           Delete account
         </button>
       ) : (
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <button
             onClick={() => void handleDelete()}
             disabled={deleting}

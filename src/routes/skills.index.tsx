@@ -25,8 +25,8 @@ function SkillsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-white">Skills</h1>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-2xl md:text-3xl font-bold text-white">Skills</h1>
         <Link
           to="/upload"
           className="rounded bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600"
@@ -71,15 +71,15 @@ function SkillCard({ skill }: { skill: any }) {
       params={{ slug: skill.slug }}
       className="block rounded-lg border border-gray-800 p-4 hover:border-gray-600 transition-colors"
     >
-      <div className="flex items-start justify-between">
-        <div>
-          <div className="flex items-center gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-lg font-semibold text-white">{skill.displayName}</h3>
             <span className="text-sm text-gray-500 font-mono">/{skill.slug}</span>
           </div>
           <p className="text-sm text-gray-400 mt-1">{skill.summary}</p>
         </div>
-        <div className="flex gap-4 text-xs text-gray-500">
+        <div className="flex gap-4 text-xs text-gray-500 shrink-0">
           <span>{skill.stats.downloads} downloads</span>
           <span>{skill.stats.stars} stars</span>
         </div>

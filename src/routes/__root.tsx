@@ -14,28 +14,33 @@ export const Route = createRootRoute({
 function RootLayout() {
   const { isAuthenticated, isLoading } = useConvexAuth();
   const { signIn, signOut } = useAuthActions();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100">
       <header className="border-b border-gray-800">
-        <nav className="mx-auto flex max-w-6xl items-center gap-6 px-4 py-3">
+        <nav className="mx-auto flex max-w-6xl items-center gap-2 md:gap-6 px-4 py-3">
           <Link to="/" className="flex items-center gap-2 text-2xl font-bold text-white hover:text-orange-400">
             <img src="/favicon.png" alt="" className="h-9 w-9" />
-            StrawHub
+            <span className="hidden sm:inline">StrawHub</span>
           </Link>
-          <Link to="/skills" className="text-sm text-gray-400 hover:text-white">
+
+          {/* Desktop nav links */}
+          <Link to="/skills" className="hidden md:block text-sm text-gray-400 hover:text-white">
             Skills
           </Link>
-          <Link to="/roles" className="text-sm text-gray-400 hover:text-white">
+          <Link to="/roles" className="hidden md:block text-sm text-gray-400 hover:text-white">
             Roles
           </Link>
-          <Link to="/search" className="text-sm text-gray-400 hover:text-white">
+          <Link to="/search" className="hidden md:block text-sm text-gray-400 hover:text-white">
             Search
           </Link>
-          <Link to="/upload" className="text-sm text-gray-400 hover:text-white">
+          <Link to="/upload" className="hidden md:block text-sm text-gray-400 hover:text-white">
             Publish
           </Link>
+
           <div className="flex-1" />
+
           {isLoading ? (
             <span className="text-sm text-gray-500">...</span>
           ) : isAuthenticated ? (
@@ -48,9 +53,42 @@ function RootLayout() {
               Sign in
             </button>
           )}
+
+          {/* Mobile hamburger */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden ml-2 p-1.5 text-gray-400 hover:text-white"
+            aria-label="Toggle menu"
+          >
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              {mobileMenuOpen ? (
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+              )}
+            </svg>
+          </button>
         </nav>
+
+        {/* Mobile menu dropdown */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-gray-800 px-4 py-3 space-y-1">
+            <Link to="/skills" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-sm text-gray-400 hover:text-white">
+              Skills
+            </Link>
+            <Link to="/roles" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-sm text-gray-400 hover:text-white">
+              Roles
+            </Link>
+            <Link to="/search" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-sm text-gray-400 hover:text-white">
+              Search
+            </Link>
+            <Link to="/upload" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-sm text-gray-400 hover:text-white">
+              Publish
+            </Link>
+          </div>
+        )}
       </header>
-      <main className="mx-auto max-w-6xl px-4 py-8">
+      <main className="mx-auto max-w-6xl px-4 py-6 md:py-8">
         <Outlet />
       </main>
       <Analytics />
