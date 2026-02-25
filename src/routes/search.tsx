@@ -12,17 +12,18 @@ const PAGE_SIZE = 20;
 function SearchPage() {
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState<"all" | "skill" | "role">("all");
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-
   const results = useQuery(
     api.search.search,
     query.length >= 2 ? { query, limit: 100, kind } : "skip",
   );
 
-  // Reset visible count when query or kind changes
-  useEffect(() => {
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [prevKey, setPrevKey] = useState(`${query}\0${kind}`);
+  const currentKey = `${query}\0${kind}`;
+  if (prevKey !== currentKey) {
+    setPrevKey(currentKey);
     setVisibleCount(PAGE_SIZE);
-  }, [query, kind]);
+  }
 
   const visibleResults = results?.slice(0, visibleCount);
   const canLoadMore = results && visibleCount < results.length;

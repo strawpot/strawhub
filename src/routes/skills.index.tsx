@@ -18,10 +18,11 @@ function SkillsPage() {
   });
 
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-
-  useEffect(() => {
+  const [prevFilter, setPrevFilter] = useState(trimmed);
+  if (prevFilter !== trimmed) {
+    setPrevFilter(trimmed);
     setVisibleCount(PAGE_SIZE);
-  }, [trimmed]);
+  }
 
   const visibleResults = results?.slice(0, visibleCount);
   const canLoadMore = results !== undefined && visibleCount < results.length;
