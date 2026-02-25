@@ -1,10 +1,12 @@
 # StrawHub
 
-[![CI](https://img.shields.io/github/actions/workflow/status/strawpot/strawhub/ci.yml?branch=main&style=for-the-badge)](https://github.com/strawpot/strawhub/actions/workflows/ci.yml?branch=main)
-[![Discord](https://img.shields.io/discord/1476285531464929505?label=Discord&logo=discord&logoColor=white&color=5865F2&style=for-the-badge)](https://discord.gg/buEbvEMC)
-[![MIT License](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
-
 Role and skill registry for [StrawPot](https://strawpot.com).
+
+<p align="center">
+  <a href="https://github.com/strawpot/strawhub/actions/workflows/ci.yml?branch=main"><img src="https://img.shields.io/github/actions/workflow/status/strawpot/strawhub/ci.yml?branch=main&style=for-the-badge" alt="CI"></a>
+  <a href="https://discord.gg/buEbvEMC"><img src="https://img.shields.io/discord/1476285531464929505?label=Discord&logo=discord&logoColor=white&color=5865F2&style=for-the-badge" alt="Discord"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="MIT License"></a>
+</p>
 
 ## Overview
 
