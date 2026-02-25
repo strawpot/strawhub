@@ -420,7 +420,7 @@ export const publish = mutation({
 });
 
 /**
- * Soft-delete a skill (owner, moderator, or admin).
+ * Soft-delete a skill (admin only).
  */
 export const softDelete = mutation({
   args: { slug: v.string() },
@@ -430,6 +430,7 @@ export const softDelete = mutation({
 
     const user = await ctx.db.get(userId);
     if (!user) throw new Error("User not found");
+    if (user.role !== "admin") throw new Error("Unauthorized");
 
     const skill = await ctx.db
       .query("skills")
@@ -437,16 +438,12 @@ export const softDelete = mutation({
       .first();
     if (!skill) throw new Error("Skill not found");
 
-    const isOwner = skill.ownerUserId === user._id;
-    const isMod = user.role === "moderator" || user.role === "admin";
-    if (!isOwner && !isMod) throw new Error("Unauthorized");
-
     await ctx.db.patch(skill._id, { softDeletedAt: Date.now() });
   },
 });
 
 /**
- * Restore a soft-deleted skill.
+ * Restore a soft-deleted skill (admin only).
  */
 export const restore = mutation({
   args: { slug: v.string() },
@@ -456,16 +453,13 @@ export const restore = mutation({
 
     const user = await ctx.db.get(userId);
     if (!user) throw new Error("User not found");
+    if (user.role !== "admin") throw new Error("Unauthorized");
 
     const skill = await ctx.db
       .query("skills")
       .withIndex("by_slug", (q) => q.eq("slug", args.slug))
       .first();
     if (!skill) throw new Error("Skill not found");
-
-    const isOwner = skill.ownerUserId === user._id;
-    const isMod = user.role === "moderator" || user.role === "admin";
-    if (!isOwner && !isMod) throw new Error("Unauthorized");
 
     await ctx.db.patch(skill._id, { softDeletedAt: undefined });
   },

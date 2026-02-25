@@ -76,7 +76,7 @@ When a consumer (Strawpot CLI) installs a role:
 4. Topological sort with cycle detection
 5. Return install order with resolved versions (leaves first)
 
-The `/api/v1/roles/{slug}/resolve` endpoint handles this server-side, returning:
+The resolution logic exists server-side (handler in `rolesV1.ts`) but is not yet routed as an HTTP endpoint. When wired up, it will return:
 
 ```json
 {
@@ -127,6 +127,21 @@ The `/api/v1/roles/{slug}/resolve` endpoint handles this server-side, returning:
 - Token format: `sh_` prefix + 32 random hex bytes
 - Raw token shown once on creation; only the SHA-256 hash is stored
 - Tokens can be revoked from Settings
+
+## Authorization
+
+| Action | Who |
+|--------|-----|
+| Publish skill/role | Any authenticated user |
+| Delete (soft-delete) skill/role | Admin only |
+| Restore skill/role | Admin only |
+| Delete own account | Authenticated user (self) |
+
+Users cannot delete their own published skills or roles. Only administrators can remove content from the registry.
+
+### Admin Assignment
+
+Admins are designated via the `ADMIN_GITHUB_LOGINS` Convex environment variable — a comma-separated list of GitHub logins (case-insensitive). The role is synced on every sign-in: users in the list get `admin`, everyone else gets `user`.
 
 ## Database Tables
 

@@ -14,13 +14,15 @@ Tokens are created via Settings > API Tokens.
 
 ## Rate Limits
 
-| Bucket   | Per IP (anon) | Per Token |
-|----------|--------------|-----------|
-| Read     | 120/min      | 600/min   |
-| Write    | 30/min       | 120/min   |
-| Download | 20/min       | 120/min   |
+All rate limits are per IP address.
 
-Headers: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`, `Retry-After`
+| Bucket | Limit    |
+|--------|----------|
+| Read   | 100/min  |
+| Write  | 10/min   |
+| Search | 30/min   |
+
+A `429` response includes a `Retry-After: 60` header.
 
 ---
 
@@ -36,26 +38,21 @@ Query params:
 - `limit` (1-200, default 50)
 - `sort` (`updated` | `downloads` | `stars`)
 
-### Get Skill
-
-```
-GET /api/v1/skills/{slug}
-```
-
-Response includes `dependencies` — `{ skills: string[] }` with optional version constraints (e.g. `{"skills": ["security-baseline", "git-workflow>=1.0.0"]}`). Skills can only depend on other skills.
-
-### Get Skill File
-
-```
-GET /api/v1/skills/{slug}/file?path=SKILL.md
-```
-
-Returns raw file content (text/markdown).
-
-### Get Skill Versions
-
-```
-GET /api/v1/skills/{slug}/versions
+Response:
+```json
+{
+  "items": [
+    {
+      "slug": "git-workflow",
+      "displayName": "Git Workflow",
+      "summary": "...",
+      "stats": { "downloads": 0, "stars": 0, "versions": 1, "comments": 0 },
+      "badges": {},
+      "updatedAt": 1700000000000
+    }
+  ],
+  "count": 1
+}
 ```
 
 ### Publish Skill (auth required)
@@ -64,22 +61,12 @@ GET /api/v1/skills/{slug}/versions
 POST /api/v1/skills
 Content-Type: multipart/form-data
 
-payload: { slug, displayName, version, changelog, dependencies?, files[] }
+payload: { slug, displayName, version, changelog, dependencies?, customTags?, files[] }
 ```
 
 The `dependencies` field is optional JSON: `{"skills": ["security-baseline", "git-workflow>=1.0.0"]}`. Skills can only depend on other skills. If omitted, dependencies are read from the SKILL.md frontmatter.
 
-### Delete Skill (auth required)
-
-```
-DELETE /api/v1/skills/{slug}
-```
-
-### Restore Skill (auth required)
-
-```
-POST /api/v1/skills/{slug}/undelete
-```
+File constraints: up to 20 files, 512 KB each. Allowed extensions: `.md`, `.txt`, `.json`, `.yaml`, `.yml`, `.toml`.
 
 ---
 
@@ -91,39 +78,11 @@ POST /api/v1/skills/{slug}/undelete
 GET /api/v1/roles?limit=50&sort=updated
 ```
 
-### Get Role
+Query params:
+- `limit` (1-200, default 50)
+- `sort` (`updated` | `downloads` | `stars`)
 
-```
-GET /api/v1/roles/{slug}
-```
-
-Response includes `dependencies` — `{ skills: string[], roles: string[] }` with optional version constraints (e.g. `{"skills": ["git-workflow>=1.0.0", "code-review"], "roles": ["reviewer"]}`).
-
-### Get Role File
-
-```
-GET /api/v1/roles/{slug}/file?path=ROLE.md
-```
-
-### Resolve Dependencies
-
-```
-GET /api/v1/roles/{slug}/resolve
-```
-
-Returns the full transitive dependency list (skills and roles) with resolved versions in install order:
-
-```json
-{
-  "role": "implementer",
-  "dependencies": [
-    { "kind": "skill", "slug": "security-baseline", "version": "1.0.0" },
-    { "kind": "skill", "slug": "git-workflow", "version": "1.2.0" },
-    { "kind": "skill", "slug": "code-review", "version": "2.0.0" },
-    { "kind": "role", "slug": "reviewer", "version": "1.0.0" }
-  ]
-}
-```
+Response shape matches List Skills.
 
 ### Publish Role (auth required)
 
@@ -131,16 +90,12 @@ Returns the full transitive dependency list (skills and roles) with resolved ver
 POST /api/v1/roles
 Content-Type: multipart/form-data
 
-payload: { slug, displayName, version, changelog, dependencies?, files[] }
+payload: { slug, displayName, version, changelog, dependencies?, customTags?, files[] }
 ```
 
 The `dependencies` field is optional JSON: `{"skills": ["git-workflow>=1.0.0", "code-review"], "roles": ["reviewer"]}`. If omitted, dependencies are read from the ROLE.md frontmatter.
 
-### Delete Role (auth required)
-
-```
-DELETE /api/v1/roles/{slug}
-```
+Roles must contain exactly one file named `ROLE.md`.
 
 ---
 
@@ -171,19 +126,3 @@ Authorization: Bearer sh_xxxxx
 ```
 
 Returns current user info: `{ handle, displayName, email, role, image }`.
-
----
-
-## Download
-
-### Download Skill
-
-```
-GET /api/v1/download?slug=git-workflow&version=1.0.0
-```
-
-### Download Role
-
-```
-GET /api/v1/download?slug=implementer&kind=role&version=1.0.0
-```

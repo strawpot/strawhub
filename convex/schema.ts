@@ -236,7 +236,7 @@ export default defineSchema({
 
   rateLimits: defineTable({
     key: v.string(), // "ip:{ip}" or "token:{hash}"
-    bucket: v.string(), // "read", "write", "download"
+    bucket: v.string(), // "read", "write", "search"
     count: v.number(),
     windowStart: v.number(),
   }).index("by_key_bucket", ["key", "bucket"]),
