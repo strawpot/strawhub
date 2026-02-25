@@ -1,22 +1,22 @@
 # StrawHub
 
-Role and skill registry for [StrawPot](https://strawpot.com).
-
 <p align="center">
   <a href="https://github.com/strawpot/strawhub/actions/workflows/ci.yml?branch=main"><img src="https://img.shields.io/github/actions/workflow/status/strawpot/strawhub/ci.yml?branch=main&style=for-the-badge" alt="CI"></a>
   <a href="https://discord.gg/buEbvEMC"><img src="https://img.shields.io/discord/1476285531464929505?label=Discord&logo=discord&logoColor=white&color=5865F2&style=for-the-badge" alt="Discord"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="MIT License"></a>
 </p>
 
-## Overview
+StrawHub is the public role and skill registry for [StrawPot](https://strawpot.com): discover, publish, and install reusable roles and skills for StrawPot agents. 
 
-StrawHub is a web service that lets users discover, publish, and install reusable roles and skills for StrawPot agents. Following the same architecture as [ClawHub](https://clawhub.ai/), it extends the pattern to manage both **roles** and **skills** with recursive dependency resolution.
+
+Live: [`https://strawhub.dev`](https://strawhub.dev)
+
+Following the same architecture as [ClawHub](https://clawhub.ai/), it extends the pattern to manage both **roles** and **skills** with recursive dependency resolution.
 
 - **Skills** are markdown instruction modules that agents load into context — based on the [Agent Skills](https://agentskills.io/) open spec, extended with a `dependencies` frontmatter key
 - **Roles** define agent behavior, default tools, model config, and dependent skills — follow the same markdown-with-frontmatter pattern, extended for agent configuration
 - Skills can depend on other skills; roles depend on both skills and other roles
 - Dependencies are resolved recursively on install
-- Only administrators can delete published content
 
 ## Features
 
