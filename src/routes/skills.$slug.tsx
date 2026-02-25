@@ -160,28 +160,32 @@ function FileViewer({
   const [selectedFile, setSelectedFile] = useState<string | null>(
     files[0]?.path ?? null,
   );
-  const [content, setContent] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [fetchResult, setFetchResult] = useState<{
+    url: string;
+    content: string | null;
+  } | null>(null);
 
   const selected = files.find((f) => f.path === selectedFile);
+  const loading = selected?.url != null && fetchResult?.url !== selected.url;
+  const displayContent =
+    selected?.url && fetchResult?.url === selected.url
+      ? fetchResult.content
+      : null;
 
   useEffect(() => {
     if (!selected?.url) {
-      setContent(null);
       return;
     }
     let cancelled = false;
-    setLoading(true);
     fetch(selected.url)
       .then((res) => res.text())
       .then((text) => {
-        if (!cancelled) setContent(text);
+        if (!cancelled)
+          setFetchResult({ url: selected.url!, content: text });
       })
       .catch(() => {
-        if (!cancelled) setContent(null);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled)
+          setFetchResult({ url: selected.url!, content: null });
       });
     return () => {
       cancelled = true;
@@ -216,9 +220,9 @@ function FileViewer({
         <div className="p-4 max-h-96 overflow-auto bg-gray-950">
           {loading ? (
             <p className="text-gray-500 text-sm">Loading...</p>
-          ) : content !== null ? (
+          ) : displayContent !== null ? (
             <pre className="text-sm text-gray-300 font-mono whitespace-pre-wrap break-words">
-              {content}
+              {displayContent}
             </pre>
           ) : (
             <p className="text-gray-500 text-sm">Unable to load file.</p>
