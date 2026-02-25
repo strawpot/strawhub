@@ -97,9 +97,11 @@ The resolution logic exists server-side (handler in `rolesV1.ts`) but is not yet
 |-------|-------------|
 | `/` | Landing page |
 | `/skills` | Browse skills |
+| `/skills/$slug` | Skill detail — file viewer with frontmatter table, version history, zip download, owner update button |
 | `/roles` | Browse roles |
+| `/roles/$slug` | Role detail — file viewer, version history, zip download |
 | `/search` | Search skills and roles |
-| `/upload` | Publish — file upload, GitHub import, form auto-fill from frontmatter |
+| `/upload` | Publish — drag-and-drop files or folders, GitHub import, form auto-fill from frontmatter, update mode via `?updateSlug=` |
 | `/dashboard` | My content — manage published skills and roles |
 | `/settings` | Profile editing, API tokens, account deletion |
 
@@ -114,6 +116,10 @@ The resolution logic exists server-side (handler in `rolesV1.ts`) but is not yet
 - **Web UI**: Drag-and-drop files or use the GitHub import (paste a URL, files are fetched via GitHub Contents API)
 - SKILL.md / ROLE.md frontmatter is auto-parsed to populate form fields (slug, display name)
 - Slug ownership: if a slug already exists and belongs to another user, publishing is blocked
+- Cross-kind slug uniqueness: a slug cannot be used by both a skill and a role
+- Version monotonicity: new versions must be strictly greater than the latest published version; auto-incremented patch if omitted
+- Dependency validation errors are aggregated — all issues are reported together rather than failing on the first one
+- Zip archives nest files under `{slug}-{version}/` so they extract into a named directory
 - **REST API**: `POST /api/v1/skills` and `POST /api/v1/roles` with bearer token auth (multipart form data)
 
 ### API Tokens

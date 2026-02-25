@@ -5,6 +5,7 @@ import {
   validateDisplayName,
   validateChangelog,
   validateFiles,
+  validateRoleFiles,
   MAX_SLUG_LENGTH,
   MAX_DISPLAY_NAME_LENGTH,
   MAX_CHANGELOG_LENGTH,
@@ -169,5 +170,36 @@ describe("validateFiles", () => {
     for (const ext of allowed) {
       expect(() => validateFiles([{ path: `test${ext}`, size: 100 }])).not.toThrow();
     }
+  });
+});
+
+describe("validateRoleFiles", () => {
+  it("accepts exactly one ROLE.md file", () => {
+    expect(() => validateRoleFiles([{ path: "ROLE.md", size: 500 }])).not.toThrow();
+  });
+
+  it("rejects empty file list", () => {
+    expect(() => validateRoleFiles([])).toThrow(/exactly one file: ROLE.md/);
+  });
+
+  it("rejects multiple files", () => {
+    expect(() =>
+      validateRoleFiles([
+        { path: "ROLE.md", size: 500 },
+        { path: "extra.md", size: 100 },
+      ]),
+    ).toThrow(/exactly one file: ROLE.md/);
+  });
+
+  it("rejects single file that is not ROLE.md", () => {
+    expect(() => validateRoleFiles([{ path: "SKILL.md", size: 500 }])).toThrow(
+      /exactly one file: ROLE.md/,
+    );
+  });
+
+  it("rejects lowercase role.md", () => {
+    expect(() => validateRoleFiles([{ path: "role.md", size: 500 }])).toThrow(
+      /exactly one file: ROLE.md/,
+    );
   });
 });

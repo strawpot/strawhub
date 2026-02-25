@@ -68,6 +68,11 @@ The `dependencies` field is optional JSON: `{"skills": ["security-baseline", "gi
 
 File constraints: up to 20 files, 512 KB each. Allowed extensions: `.md`, `.txt`, `.json`, `.yaml`, `.yml`, `.toml`.
 
+Additional constraints:
+- Slug must be unique across both skills and roles. If the slug is already used by a role, the request is rejected.
+- If the skill already has published versions, the new version must be strictly greater than the latest.
+- Dependency validation errors are aggregated — all issues are reported together in a single error message.
+
 ---
 
 ## Roles
@@ -96,6 +101,11 @@ payload: { slug, displayName, version, changelog, dependencies?, customTags?, fi
 The `dependencies` field is optional JSON: `{"skills": ["git-workflow>=1.0.0", "code-review"], "roles": ["reviewer"]}`. If omitted, dependencies are read from the ROLE.md frontmatter.
 
 Roles must contain exactly one file named `ROLE.md`.
+
+Additional constraints:
+- Slug must be unique across both skills and roles. If the slug is already used by a skill, the request is rejected.
+- If the role already has published versions, the new version must be strictly greater than the latest.
+- Dependency validation errors are aggregated — all issues are reported together in a single error message.
 
 ---
 

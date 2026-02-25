@@ -31,4 +31,9 @@ test.describe("Smoke tests", () => {
     await page.goto("/");
     await expect(page.locator("nav")).toContainText("Sign in");
   });
+
+  test("upload page requires authentication", async ({ page }) => {
+    await page.goto("/upload");
+    await expect(page.locator("text=Sign in with GitHub to publish roles and skills.")).toBeVisible();
+  });
 });
