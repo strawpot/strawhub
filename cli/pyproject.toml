@@ -1,0 +1,20 @@
+[project]
+name = "strawhub"
+version = "0.1.0"
+description = "CLI for the StrawHub agent skill and role registry"
+requires-python = ">=3.10"
+dependencies = [
+    "click>=8.1",
+    "httpx>=0.27",
+    "rich>=13.0",
+]
+
+[project.scripts]
+strawhub = "strawhub.cli:cli"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/strawhub"]

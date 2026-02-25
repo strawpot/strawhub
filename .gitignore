@@ -17,3 +17,10 @@ coverage/
 test-results/
 playwright-report/
 .vercel
+
+# Python CLI
+__pycache__/
+*.pyc
+*.egg-info/
+cli/dist/
+cli/.venv/
