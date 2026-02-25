@@ -5,6 +5,7 @@ import { api } from "../../convex/_generated/api";
 import { extractSlug } from "../lib/versionSpec";
 import { parseFrontmatter } from "../lib/parseFrontmatter";
 import { useSEO } from "../lib/useSEO";
+import { buildJsonLd } from "../lib/buildJsonLd";
 import Markdown from "react-markdown";
 
 export const Route = createFileRoute("/roles/$slug")({
@@ -34,20 +35,13 @@ function RoleDetailPage() {
   }
 
   const jsonLd = role
-    ? {
-        "@context": "https://schema.org",
-        "@type": "SoftwareSourceCode",
-        name: role.displayName,
-        description: role.summary || undefined,
-        url: `https://strawhub.dev/roles/${role.slug}`,
-        codeRepository: `https://strawhub.dev/roles/${role.slug}`,
-        ...(role.owner && {
-          author: {
-            "@type": "Person",
-            name: role.owner.displayName ?? role.owner.handle ?? "unknown",
-          },
-        }),
-      }
+    ? buildJsonLd({
+        displayName: role.displayName,
+        summary: role.summary,
+        slug: role.slug,
+        kind: "roles",
+        owner: role.owner,
+      })
     : null;
 
   if (role === null) {
