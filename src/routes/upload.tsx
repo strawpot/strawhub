@@ -10,6 +10,47 @@ import JSZip from "jszip";
 
 type UploadSearch = { mode?: "import"; updateSlug?: string };
 
+/** Recursively read all files from a dropped directory entry. */
+async function readDirectoryRecursively(
+  dirEntry: FileSystemDirectoryEntry,
+  basePath: string = "",
+): Promise<Array<{ file: File; path: string }>> {
+  const entries = await new Promise<FileSystemEntry[]>((resolve, reject) => {
+    const all: FileSystemEntry[] = [];
+    const reader = dirEntry.createReader();
+    const readBatch = () => {
+      reader.readEntries((batch) => {
+        if (batch.length === 0) resolve(all);
+        else {
+          all.push(...batch);
+          readBatch();
+        }
+      }, reject);
+    };
+    readBatch();
+  });
+
+  const results: Array<{ file: File; path: string }> = [];
+  for (const entry of entries) {
+    // Skip hidden files/directories
+    if (entry.name.startsWith(".")) continue;
+    const entryPath = basePath ? `${basePath}/${entry.name}` : entry.name;
+    if (entry.isFile) {
+      const file = await new Promise<File>((resolve, reject) => {
+        (entry as FileSystemFileEntry).file(resolve, reject);
+      });
+      results.push({ file, path: entryPath });
+    } else if (entry.isDirectory) {
+      const sub = await readDirectoryRecursively(
+        entry as FileSystemDirectoryEntry,
+        entryPath,
+      );
+      results.push(...sub);
+    }
+  }
+  return results;
+}
+
 export const Route = createFileRoute("/upload")({
   validateSearch: (search: Record<string, unknown>): UploadSearch => ({
     mode: search.mode === "import" ? "import" : undefined,
@@ -30,11 +71,15 @@ function UploadPage() {
   const { isAuthenticated, isLoading } = useConvexAuth();
   const { signIn } = useAuthActions();
   const navigate = useNavigate();
-  const { mode } = Route.useSearch();
+  const { mode, updateSlug } = Route.useSearch();
 
   const [kind, setKind] = useState<"skill" | "role">("skill");
-  const [slug, setSlug] = useState("");
-  const [displayName, setDisplayName] = useState("");
+  const [slug, setSlug] = useState(updateSlug ?? "");
+  const [displayName, setDisplayName] = useState(
+    updateSlug
+      ? updateSlug.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")
+      : "",
+  );
   const [version, setVersion] = useState("");
   const [changelog, setChangelog] = useState("");
   const [files, setFiles] = useState<UploadFile[]>([]);
@@ -48,6 +93,7 @@ function UploadPage() {
   const [showImport, setShowImport] = useState(mode === "import");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const folderInputRef = useRef<HTMLInputElement>(null);
   const generateUploadUrl = useMutation(api.files.generateUploadUrl);
   const publishSkill = useMutation(api.skills.publish);
   const publishRole = useMutation(api.roles.publish);
@@ -59,11 +105,24 @@ function UploadPage() {
   const isOwnedByOther = !!(existing && currentUser && existing.ownerUserId !== currentUser._id);
   const isUpdate = !!existing && !isOwnedByOther;
 
+  const versionError = (() => {
+    const v = version.trim();
+    if (!v) return null;
+    if (!/^\d+\.\d+\.\d+$/.test(v)) return "Version must be in X.Y.Z format.";
+    const latestVer = existing?.latestVersion?.version;
+    if (!latestVer) return null;
+    const [aMaj, aMin, aPat] = v.split(".").map(Number);
+    const [bMaj, bMin, bPat] = latestVer.split(".").map(Number);
+    const cmp = aMaj !== bMaj ? aMaj - bMaj : aMin !== bMin ? aMin - bMin : aPat - bPat;
+    if (cmp <= 0) return `Version must be greater than the latest version ${latestVer}.`;
+    return null;
+  })();
+
   const processFiles = useCallback(
-    (newFiles: File[]) => {
+    (newFiles: Array<{ file: File; path: string }>) => {
       // Roles only accept a single ROLE.md file
       if (kind === "role") {
-        const roleMd = newFiles.find((f) => f.name === "ROLE.md");
+        const roleMd = newFiles.find((f) => f.path === "ROLE.md");
         if (!roleMd) {
           setError("Role uploads must contain exactly one file: ROLE.md");
           return;
@@ -71,28 +130,36 @@ function UploadPage() {
         newFiles = [roleMd];
       }
 
-      const uploadFiles: UploadFile[] = newFiles.map((f) => ({
-        file: f,
-        path: f.name,
+      const incoming: UploadFile[] = newFiles.map((f) => ({
+        file: f.file,
+        path: f.path,
         status: "pending" as const,
       }));
-      setFiles(uploadFiles);
+
+      // Merge into existing files: new files override same-path entries
+      setFiles((prev) => {
+        if (kind === "role") return incoming;
+        const merged = new Map(prev.map((f) => [f.path, f]));
+        for (const f of incoming) merged.set(f.path, f);
+        return Array.from(merged.values());
+      });
 
       // Auto-detect kind and parse frontmatter
-      const skillMd = newFiles.find((f) => f.name === "SKILL.md");
-      const roleMd = newFiles.find((f) => f.name === "ROLE.md");
+      const skillMd = newFiles.find((f) => f.path === "SKILL.md");
+      const roleMd = newFiles.find((f) => f.path === "ROLE.md");
 
       const mdFile = roleMd ?? skillMd;
       if (mdFile) {
         setKind(roleMd ? "role" : "skill");
-        mdFile.text().then((text) => {
+        mdFile.file.text().then((text) => {
           const { frontmatter } = parseFrontmatter(text);
           if (frontmatter.name && typeof frontmatter.name === "string") {
             setSlug(frontmatter.name);
             setDisplayName(
-              typeof frontmatter.description === "string"
-                ? frontmatter.description
-                : frontmatter.name,
+              frontmatter.name
+                .split("-")
+                .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+                .join(" "),
             );
           }
           const meta = frontmatter.metadata as Record<string, unknown> | undefined;
@@ -106,10 +173,41 @@ function UploadPage() {
   );
 
   const handleDrop = useCallback(
-    (e: React.DragEvent) => {
+    async (e: React.DragEvent) => {
       e.preventDefault();
-      const droppedFiles = Array.from(e.dataTransfer.files);
-      if (droppedFiles.length > 0) processFiles(droppedFiles);
+
+      // Collect all entries synchronously — DataTransfer is cleared after the first await
+      const entries: FileSystemEntry[] = [];
+      for (const item of Array.from(e.dataTransfer.items)) {
+        const entry = item.webkitGetAsEntry?.();
+        if (entry) entries.push(entry);
+      }
+
+      const filesWithPaths: Array<{ file: File; path: string }> = [];
+
+      for (const entry of entries) {
+        if (entry.isDirectory) {
+          const dirFiles = await readDirectoryRecursively(
+            entry as FileSystemDirectoryEntry,
+          );
+          filesWithPaths.push(...dirFiles);
+        } else if (entry.isFile) {
+          const file = await new Promise<File>((resolve, reject) => {
+            (entry as FileSystemFileEntry).file(resolve, reject);
+          });
+          filesWithPaths.push({ file, path: file.name });
+        }
+      }
+
+      // Fallback if webkitGetAsEntry is not supported
+      if (entries.length === 0) {
+        const droppedFiles = Array.from(e.dataTransfer.files);
+        filesWithPaths.push(
+          ...droppedFiles.map((f) => ({ file: f, path: f.name })),
+        );
+      }
+
+      if (filesWithPaths.length > 0) processFiles(filesWithPaths);
     },
     [processFiles],
   );
@@ -117,7 +215,26 @@ function UploadPage() {
   const handleFileSelect = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const selected = Array.from(e.target.files || []);
-      if (selected.length > 0) processFiles(selected);
+      if (selected.length > 0) {
+        processFiles(selected.map((f) => ({ file: f, path: f.name })));
+      }
+    },
+    [processFiles],
+  );
+
+  const handleFolderSelect = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const selected = Array.from(e.target.files || []);
+      if (selected.length === 0) return;
+      // webkitRelativePath is "folder/subdir/file.txt" — strip the top-level folder name
+      const filesWithPaths = selected
+        .map((f) => {
+          const parts = f.webkitRelativePath.split("/");
+          const relativePath = parts.slice(1).join("/");
+          return { file: f, path: relativePath || f.name };
+        })
+        .filter((f) => !f.path.split("/").some((seg) => seg.startsWith(".")));
+      if (filesWithPaths.length > 0) processFiles(filesWithPaths);
     },
     [processFiles],
   );
@@ -136,9 +253,10 @@ function UploadPage() {
         setError("No files found at that URL.");
         return;
       }
-      const fileObjects = ghFiles.map(
-        (f) => new File([f.content], f.path, { type: "text/plain" }),
-      );
+      const fileObjects = ghFiles.map((f) => ({
+        file: new File([f.content], f.path, { type: "text/plain" }),
+        path: f.path,
+      }));
       processFiles(fileObjects);
       setShowImport(false);
       setGithubUrl("");
@@ -214,11 +332,20 @@ function UploadPage() {
         );
       }
 
+      // Resolve version for zip folder name
+      const resolvedVersion = version.trim() || (() => {
+        const latestVer = existing?.latestVersion?.version;
+        if (!latestVer) return "1.0.0";
+        const parts = latestVer.split(".");
+        return `${parts[0]}.${parts[1]}.${parseInt(parts[2] || "0") + 1}`;
+      })();
+      const zipPrefix = `${slug.trim()}-${resolvedVersion}`;
+
       // Create and upload zip archive
       setUploadProgress("Creating archive...");
       const zip = new JSZip();
       for (const f of files) {
-        zip.file(f.path, f.file);
+        zip.file(`${zipPrefix}/${f.path}`, f.file);
       }
       const zipBlob = await zip.generateAsync({ type: "blob" });
 
@@ -234,12 +361,16 @@ function UploadPage() {
 
       setUploadProgress("Publishing...");
 
+      const resolvedDisplayName = isUpdate
+        ? (existing?.displayName ?? displayName.trim())
+        : displayName.trim();
+
       if (kind === "skill") {
         const skillMdFile = files.find((f) => f.path === "SKILL.md");
         const skillMdText = skillMdFile ? await skillMdFile.file.text() : undefined;
         await publishSkill({
           slug: slug.trim(),
-          displayName: displayName.trim(),
+          displayName: resolvedDisplayName,
           version: version.trim() || undefined,
           changelog: changelog.trim(),
           files: uploadedFiles as any,
@@ -251,7 +382,7 @@ function UploadPage() {
         const roleMdText = roleMdFile ? await roleMdFile.file.text() : undefined;
         await publishRole({
           slug: slug.trim(),
-          displayName: displayName.trim(),
+          displayName: resolvedDisplayName,
           version: version.trim() || undefined,
           changelog: changelog.trim(),
           files: uploadedFiles as any,
@@ -262,7 +393,13 @@ function UploadPage() {
 
       navigate({ to: kind === "skill" ? "/skills" : "/roles" });
     } catch (e: any) {
-      setError(e.message || "Publish failed");
+      const raw = e.message || "Publish failed";
+      // Strip Convex internal prefix and stack trace to show only the meaningful error
+      const cleaned = raw
+        .replace(/^\[CONVEX [^\]]*\]\s*(\[Request ID: [^\]]*\]\s*)?Server Error\s*Uncaught Error:\s*/i, "")
+        .replace(/[\s\n]+at\s+\S+\s*\(.*$/s, "")
+        .trim();
+      setError(cleaned);
       setFiles((prev) =>
         prev.map((f) => (f.status === "uploading" ? { ...f, status: "error" } : f)),
       );
@@ -363,14 +500,38 @@ function UploadPage() {
         <div
           onDrop={handleDrop}
           onDragOver={(e) => e.preventDefault()}
-          onClick={() => fileInputRef.current?.click()}
-          className="cursor-pointer rounded border border-dashed border-gray-700 p-8 text-center hover:border-gray-500 transition-colors"
+          onClick={kind === "role" ? () => fileInputRef.current?.click() : undefined}
+          className={`rounded border border-dashed border-gray-700 p-8 text-center hover:border-gray-500 transition-colors ${kind === "role" ? "cursor-pointer" : ""}`}
         >
           {files.length === 0 ? (
             <p className="text-gray-400 text-sm">
               {kind === "role"
                 ? "Drop your ROLE.md file here, or click to browse."
-                : "Drop your SKILL.md and supporting files here, or click to browse."}
+                : <>
+                    Drop your SKILL.md and supporting files or folder here, or browse{" "}
+                    <span
+                      role="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        fileInputRef.current?.click();
+                      }}
+                      className="text-orange-400 hover:text-orange-300 underline cursor-pointer"
+                    >
+                      files
+                    </span>
+                    {" or "}
+                    <span
+                      role="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        folderInputRef.current?.click();
+                      }}
+                      className="text-orange-400 hover:text-orange-300 underline cursor-pointer"
+                    >
+                      folder
+                    </span>.
+                  </>
+              }
             </p>
           ) : (
             <div className="space-y-2">
@@ -410,7 +571,33 @@ function UploadPage() {
                 </div>
               ))}
               <p className="text-gray-500 text-xs mt-2">
-                Click or drop more files to replace.
+                {kind === "role"
+                  ? "Click or drop to replace."
+                  : <>
+                      Drop to replace, or browse{" "}
+                      <span
+                        role="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          fileInputRef.current?.click();
+                        }}
+                        className="text-orange-400 hover:text-orange-300 underline cursor-pointer"
+                      >
+                        files
+                      </span>
+                      {" or "}
+                      <span
+                        role="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          folderInputRef.current?.click();
+                        }}
+                        className="text-orange-400 hover:text-orange-300 underline cursor-pointer"
+                      >
+                        folder
+                      </span>.
+                    </>
+                }
               </p>
             </div>
           )}
@@ -422,6 +609,15 @@ function UploadPage() {
             onChange={handleFileSelect}
             className="hidden"
           />
+          {kind !== "role" && (
+            <input
+              ref={folderInputRef}
+              type="file"
+              onChange={handleFolderSelect}
+              className="hidden"
+              {...({ webkitdirectory: "" } as React.InputHTMLAttributes<HTMLInputElement>)}
+            />
+          )}
         </div>
 
         {/* Form Fields */}
@@ -459,11 +655,21 @@ function UploadPage() {
             <span className="text-sm text-gray-400">Display Name</span>
             <input
               type="text"
-              value={displayName}
+              value={isUpdate ? (existing?.displayName ?? displayName) : displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               placeholder="My Skill"
-              className="mt-1 block w-full rounded border border-gray-700 bg-gray-900 px-3 py-2 text-white placeholder-gray-500 focus:border-orange-400 focus:outline-none"
+              disabled={isUpdate}
+              className={`mt-1 block w-full rounded border border-gray-700 bg-gray-900 px-3 py-2 text-white placeholder-gray-500 focus:outline-none ${
+                isUpdate
+                  ? "opacity-60 cursor-not-allowed"
+                  : "focus:border-orange-400"
+              }`}
             />
+            {isUpdate && (
+              <p className="mt-1 text-xs text-gray-500">
+                Display name cannot be changed for existing {kind}s.
+              </p>
+            )}
           </label>
 
           <label className="block">
@@ -473,8 +679,15 @@ function UploadPage() {
               value={version}
               onChange={(e) => setVersion(e.target.value)}
               placeholder="Auto-incremented if empty"
-              className="mt-1 block w-full rounded border border-gray-700 bg-gray-900 px-3 py-2 text-white placeholder-gray-500 focus:border-orange-400 focus:outline-none"
+              className={`mt-1 block w-full rounded border bg-gray-900 px-3 py-2 text-white placeholder-gray-500 focus:outline-none ${
+                versionError
+                  ? "border-red-600 focus:border-red-500"
+                  : "border-gray-700 focus:border-orange-400"
+              }`}
             />
+            {versionError && (
+              <p className="mt-1 text-xs text-red-400">{versionError}</p>
+            )}
           </label>
 
           <label className="block">
@@ -505,7 +718,7 @@ function UploadPage() {
         {/* Publish Button */}
         <button
           onClick={handlePublish}
-          disabled={isPublishing || files.length === 0 || isOwnedByOther}
+          disabled={isPublishing || files.length === 0 || isOwnedByOther || !!versionError}
           className="w-full rounded bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isPublishing

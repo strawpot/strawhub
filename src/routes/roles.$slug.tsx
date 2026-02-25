@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import { extractSlug } from "../lib/versionSpec";
 
 export const Route = createFileRoute("/roles/$slug")({
   component: RoleDetailPage,
@@ -10,6 +11,10 @@ export const Route = createFileRoute("/roles/$slug")({
 function RoleDetailPage() {
   const { slug } = Route.useParams();
   const role = useQuery(api.roles.getBySlug, { slug });
+  const versions = useQuery(
+    api.roles.getVersions,
+    role ? { roleId: role._id } : "skip",
+  );
   const trackDownload = useMutation(api.downloads.trackDownload);
 
   if (role === undefined) {
@@ -114,23 +119,15 @@ function RoleDetailPage() {
         <span>{role.stats.versions} versions</span>
       </div>
 
-      {/* Changelog */}
-      {role.latestVersion?.changelog && (
-        <div className="rounded-lg border border-gray-800 p-4 space-y-2">
-          <h3 className="text-sm font-medium text-gray-400">Changelog</h3>
-          <p className="text-sm text-gray-300">
-            {role.latestVersion.changelog}
-          </p>
-          <span className="text-xs text-gray-500">
-            {new Date(role.latestVersion.createdAt).toLocaleDateString()}
-          </span>
-        </div>
-      )}
-
-      {/* File viewer */}
-      {role.filesWithUrls.length > 0 && (
-        <FileViewer files={role.filesWithUrls} />
-      )}
+      {/* Tabbed: Files / Versions */}
+      <DetailTabs
+        files={role.filesWithUrls}
+        versions={versions ?? []}
+        latestVersionId={role.latestVersionId}
+        slug={role.slug}
+        targetKind="role"
+        trackDownload={trackDownload}
+      />
 
       {/* Skill Dependencies */}
       {role.dependencies.skills.length > 0 && (
@@ -140,12 +137,14 @@ function RoleDetailPage() {
           </h3>
           <div className="flex flex-wrap gap-2">
             {role.dependencies.skills.map((dep: string) => (
-              <span
+              <Link
                 key={dep}
-                className="rounded bg-gray-800 px-2 py-1 text-xs text-gray-300"
+                to="/skills/$slug"
+                params={{ slug: extractSlug(dep) }}
+                className="rounded bg-gray-800 px-2 py-1 text-xs text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
               >
                 {dep}
-              </span>
+              </Link>
             ))}
           </div>
         </div>
@@ -159,12 +158,14 @@ function RoleDetailPage() {
           </h3>
           <div className="flex flex-wrap gap-2">
             {role.dependencies.roles.map((dep: string) => (
-              <span
+              <Link
                 key={dep}
-                className="rounded bg-gray-800 px-2 py-1 text-xs text-gray-300"
+                to="/roles/$slug"
+                params={{ slug: extractSlug(dep) }}
+                className="rounded bg-gray-800 px-2 py-1 text-xs text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
               >
                 {dep}
-              </span>
+              </Link>
             ))}
           </div>
         </div>
@@ -173,11 +174,28 @@ function RoleDetailPage() {
   );
 }
 
-function FileViewer({
+function DetailTabs({
   files,
+  versions,
+  latestVersionId,
+  slug,
+  targetKind,
+  trackDownload,
 }: {
   files: Array<{ path: string; size: number; url: string | null }>;
+  versions: Array<{
+    _id: string;
+    version: string;
+    changelog: string;
+    createdAt: number;
+    zipUrl: string | null;
+  }>;
+  latestVersionId: string | undefined;
+  slug: string;
+  targetKind: "skill" | "role";
+  trackDownload: (args: { targetKind: "skill" | "role"; slug: string }) => void;
 }) {
+  const [tab, setTab] = useState<"files" | "versions">("files");
   const [selectedFile, setSelectedFile] = useState<string | null>(
     files[0]?.path ?? null,
   );
@@ -214,44 +232,148 @@ function FileViewer({
   }, [selected?.url]);
 
   return (
-    <div className="space-y-2">
-      <h3 className="text-sm font-medium text-gray-400">Files</h3>
-      <div className="rounded-lg border border-gray-800 overflow-hidden">
-        {/* File tabs */}
-        <div className="flex border-b border-gray-800 bg-gray-900/50 overflow-x-auto">
-          {files.map((file) => (
-            <button
-              key={file.path}
-              onClick={() => setSelectedFile(file.path)}
-              className={`px-4 py-2 text-xs font-mono whitespace-nowrap transition-colors ${
-                selectedFile === file.path
-                  ? "text-white bg-gray-800 border-b-2 border-orange-500"
-                  : "text-gray-400 hover:text-gray-200 hover:bg-gray-800/50"
-              }`}
-            >
-              {file.path}
-              <span className="ml-2 text-gray-600">
-                {formatFileSize(file.size)}
-              </span>
-            </button>
+    <div className="rounded-lg border border-gray-800 overflow-hidden">
+      {/* Tab bar */}
+      <div className="flex gap-4 border-b border-gray-800 px-4 pt-2">
+        <button
+          onClick={() => setTab("files")}
+          className={`pb-2 text-sm font-medium transition-colors ${
+            tab === "files"
+              ? "text-white border-b-2 border-orange-500"
+              : "text-gray-400 hover:text-gray-200"
+          }`}
+        >
+          Files
+        </button>
+        <button
+          onClick={() => setTab("versions")}
+          className={`pb-2 text-sm font-medium transition-colors ${
+            tab === "versions"
+              ? "text-white border-b-2 border-orange-500"
+              : "text-gray-400 hover:text-gray-200"
+          }`}
+        >
+          Versions
+        </button>
+      </div>
+
+      {/* Files tab */}
+      {tab === "files" && files.length > 0 && (
+        <div className="p-4">
+          <div className="flex border-b border-gray-800 bg-gray-900/50 overflow-x-auto rounded-t-lg">
+            {files.map((file) => (
+              <button
+                key={file.path}
+                onClick={() => setSelectedFile(file.path)}
+                className={`px-4 py-2 text-xs font-mono whitespace-nowrap transition-colors ${
+                  selectedFile === file.path
+                    ? "text-white bg-gray-800 border-b-2 border-orange-500"
+                    : "text-gray-400 hover:text-gray-200 hover:bg-gray-800/50"
+                }`}
+              >
+                {file.path}
+                <span className="ml-2 text-gray-600">
+                  {formatFileSize(file.size)}
+                </span>
+              </button>
+            ))}
+          </div>
+          <div className="p-4 max-h-96 overflow-auto bg-gray-950 rounded-b-lg">
+            {loading ? (
+              <p className="text-gray-500 text-sm">Loading...</p>
+            ) : displayContent !== null ? (
+              selected && isLikelyBinary(selected.path, displayContent) ? (
+                <p className="text-gray-500 text-sm">
+                  Binary file not shown.
+                </p>
+              ) : (
+                <pre className="text-sm text-gray-300 font-mono whitespace-pre-wrap break-words">
+                  {displayContent}
+                </pre>
+              )
+            ) : (
+              <p className="text-gray-500 text-sm">Unable to load file.</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Versions tab */}
+      {tab === "versions" && versions.length > 0 && (
+        <div className="p-4 divide-y divide-gray-800">
+          {versions.map((ver) => (
+            <div key={ver._id} className="px-4 py-3 space-y-1">
+              <div className="flex items-center gap-2">
+                <span
+                  className={`rounded px-2 py-0.5 text-xs font-semibold font-mono ${
+                    ver._id === latestVersionId
+                      ? "bg-orange-500/10 border border-orange-500/30 text-orange-400"
+                      : "bg-gray-800 text-gray-400"
+                  }`}
+                >
+                  v{ver.version}
+                </span>
+                {ver._id === latestVersionId && (
+                  <span className="text-xs text-gray-500">latest</span>
+                )}
+                <span className="text-xs text-gray-500 ml-auto">
+                  {new Date(ver.createdAt).toLocaleDateString()}
+                </span>
+                {ver.zipUrl && (
+                  <button
+                    onClick={async () => {
+                      trackDownload({ targetKind, slug });
+                      const res = await fetch(ver.zipUrl!);
+                      const blob = await res.blob();
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = `${slug}-v${ver.version}.zip`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                    className="inline-flex items-center gap-1 rounded bg-gray-800 px-2 py-1 text-xs text-gray-300 hover:bg-gray-700 transition-colors"
+                  >
+                    <svg
+                      className="h-3 w-3"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                      />
+                    </svg>
+                    .zip
+                  </button>
+                )}
+              </div>
+              {ver.changelog && (
+                <p className="text-sm text-gray-300">{ver.changelog}</p>
+              )}
+            </div>
           ))}
         </div>
-
-        {/* File content */}
-        <div className="p-4 max-h-96 overflow-auto bg-gray-950">
-          {loading ? (
-            <p className="text-gray-500 text-sm">Loading...</p>
-          ) : displayContent !== null ? (
-            <pre className="text-sm text-gray-300 font-mono whitespace-pre-wrap break-words">
-              {displayContent}
-            </pre>
-          ) : (
-            <p className="text-gray-500 text-sm">Unable to load file.</p>
-          )}
-        </div>
-      </div>
+      )}
     </div>
   );
+}
+
+const TEXT_EXTENSIONS = new Set([
+  ".md", ".txt", ".json", ".yaml", ".yml", ".toml", ".xml", ".html", ".css",
+  ".js", ".ts", ".jsx", ".tsx", ".py", ".rb", ".sh", ".bash", ".zsh",
+  ".env", ".gitignore", ".editorconfig", ".prettierrc", ".eslintrc",
+  ".cfg", ".ini", ".conf", ".csv", ".svg", ".lock", ".log",
+]);
+
+function isLikelyBinary(path: string, content: string): boolean {
+  const ext = path.slice(path.lastIndexOf(".")).toLowerCase();
+  if (TEXT_EXTENSIONS.has(ext)) return false;
+  // Check for null bytes or Unicode replacement characters typical of binary-as-text
+  return /\0/.test(content) || (content.length > 0 && (content.match(/\uFFFD/g)?.length ?? 0) / content.length > 0.01);
 }
 
 function formatFileSize(bytes: number): string {

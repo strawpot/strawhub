@@ -11,7 +11,6 @@ export const MAX_CHANGELOG_LENGTH = 10_000;
 export const MAX_FILE_SIZE = 512 * 1024; // 512 KB per file
 export const MAX_TOTAL_SIZE = 2 * 1024 * 1024; // 2 MB total
 export const MAX_FILE_COUNT = 20;
-export const ALLOWED_EXTENSIONS = [".md", ".txt", ".json", ".yaml", ".yml", ".toml"];
 
 export function validateSlug(slug: string): void {
   if (!slug || slug.length > MAX_SLUG_LENGTH) {
@@ -58,15 +57,6 @@ export function validateFiles(
       );
     }
     totalSize += file.size;
-
-    const ext = file.path.includes(".")
-      ? "." + file.path.split(".").pop()!.toLowerCase()
-      : "";
-    if (!ALLOWED_EXTENSIONS.includes(ext)) {
-      throw new Error(
-        `File extension '${ext}' not allowed. Allowed: ${ALLOWED_EXTENSIONS.join(", ")}`,
-      );
-    }
   }
 
   if (totalSize > MAX_TOTAL_SIZE) {

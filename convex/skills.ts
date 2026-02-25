@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import { mutation, query, internalMutation } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { parseFrontmatter } from "./lib/frontmatter";
-import { parseDependencySpec, parseVersion, satisfiesVersion } from "./lib/versionSpec";
+import { parseDependencySpec, parseVersion, compareVersions, satisfiesVersion } from "./lib/versionSpec";
 import { validateSlug, validateVersion, validateDisplayName, validateChangelog, validateFiles } from "./lib/publishValidation";
 
 /** Resolve version: validate if provided, otherwise auto-increment from latest. */
@@ -111,12 +111,20 @@ export const getBySlug = query({
 export const getVersions = query({
   args: { skillId: v.id("skills") },
   handler: async (ctx, args) => {
-    return await ctx.db
+    const versions = await ctx.db
       .query("skillVersions")
       .withIndex("by_skill", (q) => q.eq("skillId", args.skillId))
       .filter((q) => q.eq(q.field("softDeletedAt"), undefined))
       .order("desc")
       .collect();
+    return Promise.all(
+      versions.map(async (ver) => ({
+        ...ver,
+        zipUrl: ver.zipStorageId
+          ? await ctx.storage.getUrl(ver.zipStorageId)
+          : null,
+      })),
+    );
   },
 });
 
@@ -215,17 +223,22 @@ export const publishInternal = internalMutation({
 
     // Validate skill dependencies
     if (dependencies?.skills?.length) {
+      const notFound: string[] = [];
+      const versionMismatch: string[] = [];
+      let selfDep = false;
       for (const depSpec of dependencies.skills) {
         const spec = parseDependencySpec(depSpec);
         if (spec.slug === args.slug) {
-          throw new Error(`Skill cannot depend on itself`);
+          selfDep = true;
+          continue;
         }
         const depSkill = await ctx.db
           .query("skills")
           .withIndex("by_slug", (q) => q.eq("slug", spec.slug))
           .first();
         if (!depSkill) {
-          throw new Error(`Dependency skill '${spec.slug}' not found in registry`);
+          notFound.push(spec.slug);
+          continue;
         }
 
         if (spec.operator !== "latest" && spec.version) {
@@ -235,12 +248,15 @@ export const publishInternal = internalMutation({
             .filter((q) => q.eq(q.field("softDeletedAt"), undefined))
             .collect();
           if (!versions.some((v) => satisfiesVersion(v.version, spec))) {
-            throw new Error(
-              `No version of skill '${spec.slug}' satisfies '${spec.operator}${spec.version}'`,
-            );
+            versionMismatch.push(`${spec.slug} (${spec.operator}${spec.version})`);
           }
         }
       }
+      const errors: string[] = [];
+      if (selfDep) errors.push("Skill cannot depend on itself");
+      if (notFound.length > 0) errors.push(`Dependency skill(s) not found in registry: ${JSON.stringify(notFound)}`);
+      if (versionMismatch.length > 0) errors.push(`No matching version for skill(s): ${JSON.stringify(versionMismatch)}`);
+      if (errors.length > 0) throw new Error(errors.join(". "));
     }
 
     // Find or create skill
@@ -286,6 +302,15 @@ export const publishInternal = internalMutation({
       )
       .first();
     if (existing) throw new Error(`Version ${version} already exists`);
+
+    // Check version is greater than latest
+    if (latestVer) {
+      if (compareVersions(parseVersion(version), parseVersion(latestVer)) <= 0) {
+        throw new Error(
+          `Version ${version} must be greater than the latest version ${latestVer}`,
+        );
+      }
+    }
 
     // Create version
     const versionId = await ctx.db.insert("skillVersions", {
@@ -363,17 +388,22 @@ export const publish = mutation({
 
     // Validate skill dependencies
     if (dependencies?.skills?.length) {
+      const notFound: string[] = [];
+      const versionMismatch: string[] = [];
+      let selfDep = false;
       for (const depSpec of dependencies.skills) {
         const spec = parseDependencySpec(depSpec);
         if (spec.slug === args.slug) {
-          throw new Error(`Skill cannot depend on itself`);
+          selfDep = true;
+          continue;
         }
         const depSkill = await ctx.db
           .query("skills")
           .withIndex("by_slug", (q) => q.eq("slug", spec.slug))
           .first();
         if (!depSkill) {
-          throw new Error(`Dependency skill '${spec.slug}' not found in registry`);
+          notFound.push(spec.slug);
+          continue;
         }
 
         if (spec.operator !== "latest" && spec.version) {
@@ -383,12 +413,15 @@ export const publish = mutation({
             .filter((q) => q.eq(q.field("softDeletedAt"), undefined))
             .collect();
           if (!versions.some((v) => satisfiesVersion(v.version, spec))) {
-            throw new Error(
-              `No version of skill '${spec.slug}' satisfies '${spec.operator}${spec.version}'`,
-            );
+            versionMismatch.push(`${spec.slug} (${spec.operator}${spec.version})`);
           }
         }
       }
+      const errors: string[] = [];
+      if (selfDep) errors.push("Skill cannot depend on itself");
+      if (notFound.length > 0) errors.push(`Dependency skill(s) not found in registry: ${JSON.stringify(notFound)}`);
+      if (versionMismatch.length > 0) errors.push(`No matching version for skill(s): ${JSON.stringify(versionMismatch)}`);
+      if (errors.length > 0) throw new Error(errors.join(". "));
     }
 
     let skill = await ctx.db

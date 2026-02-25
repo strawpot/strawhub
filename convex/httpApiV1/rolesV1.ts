@@ -308,8 +308,9 @@ export const publishRole = httpAction(async (ctx, request) => {
   }
 
   // Create and store zip archive
+  const zipPrefix = `${slug}-${version}`;
   const zipBlob = await createZipBlob(
-    zipEntries.map((e) => ({ path: e.path, content: e.buffer })),
+    zipEntries.map((e) => ({ path: `${zipPrefix}/${e.path}`, content: e.buffer })),
   );
   const zipStorageId = await ctx.storage.store(
     new Blob([zipBlob], { type: "application/zip" }),

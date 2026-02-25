@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import { mutation, query, internalMutation } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { parseFrontmatter } from "./lib/frontmatter";
-import { parseDependencySpec, parseVersion, satisfiesVersion, splitDependencies } from "./lib/versionSpec";
+import { parseDependencySpec, parseVersion, compareVersions, satisfiesVersion, splitDependencies } from "./lib/versionSpec";
 import { validateSlug, validateVersion, validateDisplayName, validateChangelog, validateFiles, validateRoleFiles } from "./lib/publishValidation";
 
 /** Resolve version: validate if provided, otherwise auto-increment from latest. */
@@ -111,12 +111,20 @@ export const getBySlug = query({
 export const getVersions = query({
   args: { roleId: v.id("roles") },
   handler: async (ctx, args) => {
-    return await ctx.db
+    const versions = await ctx.db
       .query("roleVersions")
       .withIndex("by_role", (q) => q.eq("roleId", args.roleId))
       .filter((q) => q.eq(q.field("softDeletedAt"), undefined))
       .order("desc")
       .collect();
+    return Promise.all(
+      versions.map(async (ver) => ({
+        ...ver,
+        zipUrl: ver.zipStorageId
+          ? await ctx.storage.getUrl(ver.zipStorageId)
+          : null,
+      })),
+    );
   },
 });
 
@@ -190,7 +198,13 @@ export const publishInternal = internalMutation({
       dependencies = splitDependencies(parsed.frontmatter.dependencies as string[]);
     }
 
-    // Validate skill dependencies
+    // Validate all dependencies (collect errors by category)
+    const skillsNotFound: string[] = [];
+    const skillVersionMismatch: string[] = [];
+    const rolesNotFound: string[] = [];
+    const roleVersionMismatch: string[] = [];
+    let selfDep = false;
+
     if (dependencies?.skills?.length) {
       for (const depSpec of dependencies.skills) {
         const spec = parseDependencySpec(depSpec);
@@ -198,7 +212,10 @@ export const publishInternal = internalMutation({
           .query("skills")
           .withIndex("by_slug", (q) => q.eq("slug", spec.slug))
           .first();
-        if (!skill) throw new Error(`Dependency skill '${spec.slug}' not found in registry`);
+        if (!skill) {
+          skillsNotFound.push(spec.slug);
+          continue;
+        }
 
         if (spec.operator !== "latest" && spec.version) {
           const versions = await ctx.db
@@ -207,26 +224,27 @@ export const publishInternal = internalMutation({
             .filter((q) => q.eq(q.field("softDeletedAt"), undefined))
             .collect();
           if (!versions.some((v) => satisfiesVersion(v.version, spec))) {
-            throw new Error(
-              `No version of skill '${spec.slug}' satisfies '${spec.operator}${spec.version}'`,
-            );
+            skillVersionMismatch.push(`${spec.slug} (${spec.operator}${spec.version})`);
           }
         }
       }
     }
 
-    // Validate role dependencies
     if (dependencies?.roles?.length) {
       for (const depSpec of dependencies.roles) {
         const spec = parseDependencySpec(depSpec);
         if (spec.slug === args.slug) {
-          throw new Error(`Role cannot depend on itself`);
+          selfDep = true;
+          continue;
         }
         const depRole = await ctx.db
           .query("roles")
           .withIndex("by_slug", (q) => q.eq("slug", spec.slug))
           .first();
-        if (!depRole) throw new Error(`Dependency role '${spec.slug}' not found in registry`);
+        if (!depRole) {
+          rolesNotFound.push(spec.slug);
+          continue;
+        }
 
         if (spec.operator !== "latest" && spec.version) {
           const versions = await ctx.db
@@ -235,13 +253,19 @@ export const publishInternal = internalMutation({
             .filter((q) => q.eq(q.field("softDeletedAt"), undefined))
             .collect();
           if (!versions.some((v) => satisfiesVersion(v.version, spec))) {
-            throw new Error(
-              `No version of role '${spec.slug}' satisfies '${spec.operator}${spec.version}'`,
-            );
+            roleVersionMismatch.push(`${spec.slug} (${spec.operator}${spec.version})`);
           }
         }
       }
     }
+
+    const depErrors: string[] = [];
+    if (selfDep) depErrors.push("Role cannot depend on itself");
+    if (skillsNotFound.length > 0) depErrors.push(`Dependency skill(s) not found in registry: ${JSON.stringify(skillsNotFound)}`);
+    if (rolesNotFound.length > 0) depErrors.push(`Dependency role(s) not found in registry: ${JSON.stringify(rolesNotFound)}`);
+    if (skillVersionMismatch.length > 0) depErrors.push(`No matching version for skill(s): ${JSON.stringify(skillVersionMismatch)}`);
+    if (roleVersionMismatch.length > 0) depErrors.push(`No matching version for role(s): ${JSON.stringify(roleVersionMismatch)}`);
+    if (depErrors.length > 0) throw new Error(depErrors.join(". "));
 
     let role = await ctx.db
       .query("roles")
@@ -276,6 +300,15 @@ export const publishInternal = internalMutation({
       .withIndex("by_role_version", (q) => q.eq("roleId", role!._id).eq("version", version))
       .first();
     if (existing) throw new Error(`Version ${version} already exists`);
+
+    // Check version is greater than latest
+    if (latestVer) {
+      if (compareVersions(parseVersion(version), parseVersion(latestVer)) <= 0) {
+        throw new Error(
+          `Version ${version} must be greater than the latest version ${latestVer}`,
+        );
+      }
+    }
 
     const versionId = await ctx.db.insert("roleVersions", {
       roleId: role._id,
@@ -342,7 +375,13 @@ export const publish = mutation({
       dependencies = splitDependencies(parsed.frontmatter.dependencies as string[]);
     }
 
-    // Validate skill dependencies
+    // Validate all dependencies (collect errors by category)
+    const skillsNotFound: string[] = [];
+    const skillVersionMismatch: string[] = [];
+    const rolesNotFound: string[] = [];
+    const roleVersionMismatch: string[] = [];
+    let selfDep = false;
+
     if (dependencies?.skills?.length) {
       for (const depSpec of dependencies.skills) {
         const spec = parseDependencySpec(depSpec);
@@ -351,7 +390,8 @@ export const publish = mutation({
           .withIndex("by_slug", (q) => q.eq("slug", spec.slug))
           .first();
         if (!skill) {
-          throw new Error(`Dependency skill '${spec.slug}' not found in registry`);
+          skillsNotFound.push(spec.slug);
+          continue;
         }
 
         if (spec.operator !== "latest" && spec.version) {
@@ -361,27 +401,26 @@ export const publish = mutation({
             .filter((q) => q.eq(q.field("softDeletedAt"), undefined))
             .collect();
           if (!versions.some((v) => satisfiesVersion(v.version, spec))) {
-            throw new Error(
-              `No version of skill '${spec.slug}' satisfies '${spec.operator}${spec.version}'`,
-            );
+            skillVersionMismatch.push(`${spec.slug} (${spec.operator}${spec.version})`);
           }
         }
       }
     }
 
-    // Validate role dependencies
     if (dependencies?.roles?.length) {
       for (const depSpec of dependencies.roles) {
         const spec = parseDependencySpec(depSpec);
         if (spec.slug === args.slug) {
-          throw new Error(`Role cannot depend on itself`);
+          selfDep = true;
+          continue;
         }
         const depRole = await ctx.db
           .query("roles")
           .withIndex("by_slug", (q) => q.eq("slug", spec.slug))
           .first();
         if (!depRole) {
-          throw new Error(`Dependency role '${spec.slug}' not found in registry`);
+          rolesNotFound.push(spec.slug);
+          continue;
         }
 
         if (spec.operator !== "latest" && spec.version) {
@@ -391,13 +430,19 @@ export const publish = mutation({
             .filter((q) => q.eq(q.field("softDeletedAt"), undefined))
             .collect();
           if (!versions.some((v) => satisfiesVersion(v.version, spec))) {
-            throw new Error(
-              `No version of role '${spec.slug}' satisfies '${spec.operator}${spec.version}'`,
-            );
+            roleVersionMismatch.push(`${spec.slug} (${spec.operator}${spec.version})`);
           }
         }
       }
     }
+
+    const depErrors: string[] = [];
+    if (selfDep) depErrors.push("Role cannot depend on itself");
+    if (skillsNotFound.length > 0) depErrors.push(`Dependency skill(s) not found in registry: ${JSON.stringify(skillsNotFound)}`);
+    if (rolesNotFound.length > 0) depErrors.push(`Dependency role(s) not found in registry: ${JSON.stringify(rolesNotFound)}`);
+    if (skillVersionMismatch.length > 0) depErrors.push(`No matching version for skill(s): ${JSON.stringify(skillVersionMismatch)}`);
+    if (roleVersionMismatch.length > 0) depErrors.push(`No matching version for role(s): ${JSON.stringify(roleVersionMismatch)}`);
+    if (depErrors.length > 0) throw new Error(depErrors.join(". "));
 
     // Find or create role
     let role = await ctx.db
@@ -442,6 +487,15 @@ export const publish = mutation({
       )
       .first();
     if (existing) throw new Error(`Version ${version} already exists`);
+
+    // Check version is greater than latest
+    if (latestVer) {
+      if (compareVersions(parseVersion(version), parseVersion(latestVer)) <= 0) {
+        throw new Error(
+          `Version ${version} must be greater than the latest version ${latestVer}`,
+        );
+      }
+    }
 
     // Create version
     const versionId = await ctx.db.insert("roleVersions", {
