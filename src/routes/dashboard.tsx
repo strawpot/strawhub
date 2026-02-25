@@ -172,7 +172,7 @@ function UserContent({ userId, handle }: { userId: string; handle?: string }) {
                 <div className="flex items-center gap-2 shrink-0">
                   <Link
                     to="/upload"
-                    search={{ updateSlug: r.slug }}
+                    search={{ updateSlug: r.slug, kind: "role" }}
                     className="rounded border border-gray-700 px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-800"
                   >
                     New Version
