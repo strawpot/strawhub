@@ -56,6 +56,16 @@ function UploadPage() {
 
   const processFiles = useCallback(
     (newFiles: File[]) => {
+      // Roles only accept a single ROLE.md file
+      if (kind === "role") {
+        const roleMd = newFiles.find((f) => f.name === "ROLE.md");
+        if (!roleMd) {
+          setError("Role uploads must contain exactly one file: ROLE.md");
+          return;
+        }
+        newFiles = [roleMd];
+      }
+
       const uploadFiles: UploadFile[] = newFiles.map((f) => ({
         file: f,
         path: f.name,
@@ -109,7 +119,7 @@ function UploadPage() {
         });
       }
     },
-    [],
+    [kind],
   );
 
   const handleDrop = useCallback(
@@ -165,6 +175,11 @@ function UploadPage() {
     const primaryFile = kind === "skill" ? "SKILL.md" : "ROLE.md";
     if (!files.some((f) => f.path === primaryFile)) {
       setError(`A ${primaryFile} file is required.`);
+      return;
+    }
+
+    if (kind === "role" && (files.length !== 1 || files[0].path !== "ROLE.md")) {
+      setError("Role uploads must contain exactly one file: ROLE.md");
       return;
     }
 
@@ -356,8 +371,9 @@ function UploadPage() {
         >
           {files.length === 0 ? (
             <p className="text-gray-400 text-sm">
-              Drop your {kind === "skill" ? "SKILL.md" : "ROLE.md"} and
-              supporting files here, or click to browse.
+              {kind === "role"
+                ? "Drop your ROLE.md file here, or click to browse."
+                : "Drop your SKILL.md and supporting files here, or click to browse."}
             </p>
           ) : (
             <div className="space-y-2">
@@ -404,7 +420,8 @@ function UploadPage() {
           <input
             ref={fileInputRef}
             type="file"
-            multiple
+            multiple={kind !== "role"}
+            accept={kind === "role" ? ".md" : undefined}
             onChange={handleFileSelect}
             className="hidden"
           />

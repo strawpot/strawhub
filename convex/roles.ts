@@ -4,7 +4,7 @@ import { mutation, query, internalMutation } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { parseFrontmatter } from "./lib/frontmatter";
 import { parseDependencySpec, satisfiesVersion, splitDependencies } from "./lib/versionSpec";
-import { validateSlug, validateVersion, validateDisplayName, validateChangelog, validateFiles } from "./lib/publishValidation";
+import { validateSlug, validateVersion, validateDisplayName, validateChangelog, validateFiles, validateRoleFiles } from "./lib/publishValidation";
 
 // ctx.storage.get() works in mutations at runtime but is only typed on StorageActionWriter.
 const storageGet = (storage: unknown, id: GenericId<"_storage">) =>
@@ -136,6 +136,7 @@ export const publishInternal = internalMutation({
     validateDisplayName(args.displayName);
     validateChangelog(args.changelog);
     validateFiles(args.files);
+    validateRoleFiles(args.files);
 
     const user = await ctx.db.get(args.userId);
     if (!user) throw new Error("User not found");
@@ -281,6 +282,7 @@ export const publish = mutation({
     validateDisplayName(args.displayName);
     validateChangelog(args.changelog);
     validateFiles(args.files);
+    validateRoleFiles(args.files);
 
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");

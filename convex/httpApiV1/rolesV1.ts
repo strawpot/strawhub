@@ -2,7 +2,7 @@ import { httpAction } from "../_generated/server";
 import { api, internal } from "../_generated/api";
 import { jsonResponse, errorResponse, getSearchParams, resolveTokenToUser, checkHttpRateLimit } from "./shared";
 import { parseDependencySpec, satisfiesVersion } from "../lib/versionSpec";
-import { validateSlug, validateVersion, validateDisplayName, validateChangelog, MAX_FILE_SIZE } from "../lib/publishValidation";
+import { validateSlug, validateVersion, validateDisplayName, validateChangelog, validateRoleFiles, MAX_FILE_SIZE } from "../lib/publishValidation";
 
 /**
  * GET /api/v1/roles — list roles
@@ -291,6 +291,12 @@ export const publishRole = httpAction(async (ctx, request) => {
 
   if (fileEntries.length === 0) {
     return errorResponse("At least one file is required", 400);
+  }
+
+  try {
+    validateRoleFiles(fileEntries);
+  } catch (e: any) {
+    return errorResponse(e.message, 400);
   }
 
   try {
