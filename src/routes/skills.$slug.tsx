@@ -44,10 +44,10 @@ function SkillDetailPage() {
       </Link>
 
       {/* Header: title + version on left, download on right */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold text-white">
+          <div className="flex flex-wrap items-center gap-2 md:gap-3">
+            <h1 className="text-2xl md:text-3xl font-bold text-white">
               {skill.displayName}
             </h1>
             {skill.latestVersion && (
@@ -59,7 +59,7 @@ function SkillDetailPage() {
           <p className="text-sm text-gray-500 font-mono mt-1">/{skill.slug}</p>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
           {isOwner && (
             <button
               onClick={() => navigate({ to: "/upload", search: { updateSlug: skill.slug } })}
@@ -216,7 +216,7 @@ function SkillMdViewer({
       ) : (
         <div className="space-y-3">
           {Object.keys(frontmatter).length > 0 && (
-            <div className="rounded-lg bg-gray-900/50 overflow-hidden">
+            <div className="rounded-lg bg-gray-900/50 overflow-x-auto">
               <table className="w-full text-sm">
                 <tbody>
                   {Object.entries(frontmatter).map(([key, value]) => (
