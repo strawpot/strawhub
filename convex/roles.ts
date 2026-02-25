@@ -443,7 +443,7 @@ export const publish = mutation({
 });
 
 /**
- * Soft-delete a role.
+ * Soft-delete a role (admin only).
  */
 export const softDelete = mutation({
   args: { slug: v.string() },
@@ -453,6 +453,7 @@ export const softDelete = mutation({
 
     const user = await ctx.db.get(userId);
     if (!user) throw new Error("User not found");
+    if (user.role !== "admin") throw new Error("Unauthorized");
 
     const role = await ctx.db
       .query("roles")
@@ -460,16 +461,12 @@ export const softDelete = mutation({
       .first();
     if (!role) throw new Error("Role not found");
 
-    const isOwner = role.ownerUserId === user._id;
-    const isMod = user.role === "moderator" || user.role === "admin";
-    if (!isOwner && !isMod) throw new Error("Unauthorized");
-
     await ctx.db.patch(role._id, { softDeletedAt: Date.now() });
   },
 });
 
 /**
- * Restore a soft-deleted role.
+ * Restore a soft-deleted role (admin only).
  */
 export const restore = mutation({
   args: { slug: v.string() },
@@ -479,16 +476,13 @@ export const restore = mutation({
 
     const user = await ctx.db.get(userId);
     if (!user) throw new Error("User not found");
+    if (user.role !== "admin") throw new Error("Unauthorized");
 
     const role = await ctx.db
       .query("roles")
       .withIndex("by_slug", (q) => q.eq("slug", args.slug))
       .first();
     if (!role) throw new Error("Role not found");
-
-    const isOwner = role.ownerUserId === user._id;
-    const isMod = user.role === "moderator" || user.role === "admin";
-    if (!isOwner && !isMod) throw new Error("Unauthorized");
 
     await ctx.db.patch(role._id, { softDeletedAt: undefined });
   },

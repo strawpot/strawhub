@@ -1,6 +1,13 @@
 import GitHub from "@auth/core/providers/github";
 import { convexAuth } from "@convex-dev/auth/server";
 
+function getAdminLogins(): Set<string> {
+  const raw = process.env.ADMIN_GITHUB_LOGINS ?? "";
+  return new Set(
+    raw.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean),
+  );
+}
+
 export const { auth, signIn, signOut, store } = convexAuth({
   providers: [
     GitHub({
@@ -18,6 +25,8 @@ export const { auth, signIn, signOut, store } = convexAuth({
   callbacks: {
     async createOrUpdateUser(ctx, { existingUserId, profile }) {
       const githubLogin = (profile as any).githubLogin;
+      const adminLogins = getAdminLogins();
+      const isAdmin = githubLogin && adminLogins.has(githubLogin.toLowerCase());
 
       if (existingUserId) {
         // Update existing user
@@ -28,6 +37,7 @@ export const { auth, signIn, signOut, store } = convexAuth({
         if (profile.emailVerified) updates.emailVerificationTime = Date.now();
         if (githubLogin) updates.handle = githubLogin;
         updates.deactivatedAt = undefined;
+        updates.role = isAdmin ? "admin" : "user";
 
         await ctx.db.patch(existingUserId, updates);
         return existingUserId;
@@ -39,6 +49,7 @@ export const { auth, signIn, signOut, store } = convexAuth({
         email: profile.email ?? undefined,
         image: (profile as any).image ?? undefined,
         handle: githubLogin ?? undefined,
+        role: isAdmin ? "admin" : "user",
         emailVerificationTime: profile.emailVerified ? Date.now() : undefined,
       });
     },
