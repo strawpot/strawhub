@@ -11,6 +11,7 @@ app.config.*
 coverage/
 .claude/
 .tanstack/
+.DS_Store
 
 # Playwright
 test-results/

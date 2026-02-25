@@ -1,9 +1,6 @@
 ---
 name: code-review
-version: 1.0.0
 description: "Code review checklist and structured review output"
-tags: [review, quality]
-author: strawpot
 dependencies:
   - security-baseline
 ---

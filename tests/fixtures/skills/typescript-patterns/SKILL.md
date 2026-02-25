@@ -1,9 +1,6 @@
 ---
 name: typescript-patterns
-version: 1.0.0
 description: "TypeScript coding patterns and conventions"
-tags: [typescript, patterns]
-author: strawpot
 ---
 
 # TypeScript Patterns

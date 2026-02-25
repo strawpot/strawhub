@@ -95,6 +95,7 @@ export const publishSkill = httpAction(async (ctx, request) => {
   let changelog: string;
   let customTags: string[] | undefined;
   let dependencies: { skills?: string[] } | undefined;
+  let skillMdText: string | undefined;
   const fileEntries: Array<{
     path: string;
     size: number;
@@ -149,8 +150,12 @@ export const publishSkill = httpAction(async (ctx, request) => {
         const sha256 = Array.from(new Uint8Array(hashBuffer))
           .map((b) => b.toString(16).padStart(2, "0"))
           .join("");
+        const filePath = file.name || "SKILL.md";
+        if (filePath === "SKILL.md") {
+          skillMdText = await file.text();
+        }
         fileEntries.push({
-          path: file.name || "SKILL.md",
+          path: filePath,
           size: file.size,
           storageId: storageId as unknown as string,
           sha256,
@@ -176,6 +181,7 @@ export const publishSkill = httpAction(async (ctx, request) => {
       files: fileEntries as any,
       dependencies,
       customTags,
+      skillMdText,
     });
     return jsonResponse(result, 201);
   } catch (e: any) {

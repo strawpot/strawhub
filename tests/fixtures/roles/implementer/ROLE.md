@@ -1,18 +1,15 @@
 ---
 name: implementer
-version: 1.0.0
 description: "Writes code to implement features and fix bugs"
-tags: [coding, implementation]
-author: strawpot
 dependencies:
   - git-workflow
   - code-review
   - python-testing
-default_tools:
-  allowed: [Bash, Read, Write, Edit, Glob, Grep]
-default_model:
-  provider: claude_session
-  id: claude-opus-4-6
+metadata:
+  strawpot:
+    default_model:
+      provider: claude_session
+      id: claude-opus-4-6
 ---
 
 # Implementer

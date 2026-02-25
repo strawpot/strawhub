@@ -1,9 +1,6 @@
 ---
 name: security-baseline
-version: 1.0.0
 description: "OWASP security checklist for code changes"
-tags: [security, owasp]
-author: strawpot
 ---
 
 # Security Baseline

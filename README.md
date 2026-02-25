@@ -117,10 +117,7 @@ Authenticated endpoints require an `Authorization: Bearer <token>` header. Creat
 ```yaml
 ---
 name: git-workflow
-version: 1.0.0
 description: "Git branching and commit conventions"
-tags: [git, workflow]
-author: strawpot
 ---
 
 # Git Workflow
@@ -135,19 +132,16 @@ Dependencies are declared directly in the frontmatter. Version specifiers are op
 ```yaml
 ---
 name: implementer
-version: 1.0.0
 description: "Writes code to implement features and fix bugs"
-tags: [coding, implementation]
-author: strawpot
 dependencies:
   - git-workflow>=1.0.0
   - code-review
   - python-testing^2.0.0
-default_tools:
-  allowed: [Bash, Read, Write, Edit, Glob, Grep]
-default_model:
-  provider: claude_session
-  id: claude-opus-4-6
+metadata:
+  strawpot:
+    default_model:
+      provider: claude_session
+      id: claude-opus-4-6
 ---
 
 # Implementer

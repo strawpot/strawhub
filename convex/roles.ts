@@ -1,14 +1,20 @@
 import { v } from "convex/values";
-import type { GenericId } from "convex/values";
 import { mutation, query, internalMutation } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { parseFrontmatter } from "./lib/frontmatter";
-import { parseDependencySpec, satisfiesVersion, splitDependencies } from "./lib/versionSpec";
+import { parseDependencySpec, parseVersion, satisfiesVersion, splitDependencies } from "./lib/versionSpec";
 import { validateSlug, validateVersion, validateDisplayName, validateChangelog, validateFiles, validateRoleFiles } from "./lib/publishValidation";
 
-// ctx.storage.get() works in mutations at runtime but is only typed on StorageActionWriter.
-const storageGet = (storage: unknown, id: GenericId<"_storage">) =>
-  (storage as { get(id: GenericId<"_storage">): Promise<Blob | null> }).get(id);
+/** Resolve version: validate if provided, otherwise auto-increment from latest. */
+function resolveVersion(explicit: string | undefined, latestVersion: string | undefined): string {
+  if (explicit) {
+    validateVersion(explicit);
+    return explicit;
+  }
+  if (!latestVersion) return "1.0.0";
+  const { major, minor, patch } = parseVersion(latestVersion);
+  return `${major}.${minor}.${patch + 1}`;
+}
 
 // ─── Queries ─────────────────────────────────────────────────────────────────
 
@@ -105,7 +111,7 @@ export const listByOwner = query({
 const publishArgs = {
   slug: v.string(),
   displayName: v.string(),
-  version: v.string(),
+  version: v.optional(v.string()),
   changelog: v.string(),
   files: v.array(
     v.object({
@@ -123,6 +129,7 @@ const publishArgs = {
     }),
   ),
   customTags: v.optional(v.array(v.string())),
+  roleMdText: v.optional(v.string()),
 };
 
 /**
@@ -132,7 +139,6 @@ export const publishInternal = internalMutation({
   args: { ...publishArgs, userId: v.id("users") },
   handler: async (ctx, args) => {
     validateSlug(args.slug);
-    validateVersion(args.version);
     validateDisplayName(args.displayName);
     validateChangelog(args.changelog);
     validateFiles(args.files);
@@ -145,14 +151,9 @@ export const publishInternal = internalMutation({
     const now = Date.now();
 
     let parsed = { frontmatter: {} as Record<string, unknown>, metadata: undefined as unknown };
-    const roleMd = args.files.find((f) => f.path === "ROLE.md");
-    if (roleMd) {
-      const content = await storageGet(ctx.storage, roleMd.storageId);
-      if (content) {
-        const text = await content.text();
-        const { frontmatter } = parseFrontmatter(text);
-        parsed = { frontmatter, metadata: frontmatter.metadata };
-      }
+    if (args.roleMdText) {
+      const { frontmatter } = parseFrontmatter(args.roleMdText);
+      parsed = { frontmatter, metadata: frontmatter.metadata };
     }
 
     let dependencies = args.dependencies;
@@ -235,15 +236,21 @@ export const publishInternal = internalMutation({
       role = (await ctx.db.get(roleId))!;
     }
 
+    // Resolve version: use provided, or auto-increment from latest
+    const latestVer = role.latestVersionId
+      ? (await ctx.db.get(role.latestVersionId))?.version
+      : undefined;
+    const version = resolveVersion(args.version, latestVer);
+
     const existing = await ctx.db
       .query("roleVersions")
-      .withIndex("by_role_version", (q) => q.eq("roleId", role!._id).eq("version", args.version))
+      .withIndex("by_role_version", (q) => q.eq("roleId", role!._id).eq("version", version))
       .first();
-    if (existing) throw new Error(`Version ${args.version} already exists`);
+    if (existing) throw new Error(`Version ${version} already exists`);
 
     const versionId = await ctx.db.insert("roleVersions", {
       roleId: role._id,
-      version: args.version,
+      version,
       changelog: args.changelog,
       files: args.files,
       parsed,
@@ -278,7 +285,6 @@ export const publish = mutation({
   args: publishArgs,
   handler: async (ctx, args) => {
     validateSlug(args.slug);
-    validateVersion(args.version);
     validateDisplayName(args.displayName);
     validateChangelog(args.changelog);
     validateFiles(args.files);
@@ -295,14 +301,9 @@ export const publish = mutation({
 
     // Parse ROLE.md frontmatter
     let parsed = { frontmatter: {} as Record<string, unknown>, metadata: undefined as unknown };
-    const roleMd = args.files.find((f) => f.path === "ROLE.md");
-    if (roleMd) {
-      const content = await storageGet(ctx.storage, roleMd.storageId);
-      if (content) {
-        const text = await content.text();
-        const { frontmatter } = parseFrontmatter(text);
-        parsed = { frontmatter, metadata: frontmatter.metadata };
-      }
+    if (args.roleMdText) {
+      const { frontmatter } = parseFrontmatter(args.roleMdText);
+      parsed = { frontmatter, metadata: frontmatter.metadata };
     }
 
     // Read dependencies from frontmatter if not provided in args
@@ -397,19 +398,25 @@ export const publish = mutation({
       role = (await ctx.db.get(roleId))!;
     }
 
+    // Resolve version: use provided, or auto-increment from latest
+    const latestVer = role.latestVersionId
+      ? (await ctx.db.get(role.latestVersionId))?.version
+      : undefined;
+    const version = resolveVersion(args.version, latestVer);
+
     // Check version uniqueness
     const existing = await ctx.db
       .query("roleVersions")
       .withIndex("by_role_version", (q) =>
-        q.eq("roleId", role!._id).eq("version", args.version),
+        q.eq("roleId", role!._id).eq("version", version),
       )
       .first();
-    if (existing) throw new Error(`Version ${args.version} already exists`);
+    if (existing) throw new Error(`Version ${version} already exists`);
 
     // Create version
     const versionId = await ctx.db.insert("roleVersions", {
       roleId: role._id,
-      version: args.version,
+      version,
       changelog: args.changelog,
       files: args.files,
       parsed,

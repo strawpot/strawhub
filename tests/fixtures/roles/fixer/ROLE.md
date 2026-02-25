@@ -1,16 +1,13 @@
 ---
 name: fixer
-version: 1.0.0
 description: "Fixes failing checks or review blockers"
-tags: [fixing, debugging]
-author: strawpot
 dependencies:
   - git-workflow
-default_tools:
-  allowed: [Bash, Read, Write, Edit, Glob, Grep]
-default_model:
-  provider: claude_session
-  id: claude-opus-4-6
+metadata:
+  strawpot:
+    default_model:
+      provider: claude_session
+      id: claude-opus-4-6
 ---
 
 # Fixer

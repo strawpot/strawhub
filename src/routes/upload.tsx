@@ -1,10 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useConvexAuth, useMutation } from "convex/react";
+import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useState, useRef, useCallback } from "react";
 import { api } from "../../convex/_generated/api";
 import { parseFrontmatter } from "../lib/parseFrontmatter";
-import { splitDependencies } from "../lib/versionSpec";
 import { sha256Hex } from "../lib/hash";
 import { fetchFromGitHub } from "../lib/githubImport";
 
@@ -35,10 +34,8 @@ function UploadPage() {
   const [kind, setKind] = useState<"skill" | "role">("skill");
   const [slug, setSlug] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [version, setVersion] = useState("1.0.0");
+  const [version, setVersion] = useState("");
   const [changelog, setChangelog] = useState("");
-  const [skillDeps, setSkillDeps] = useState("");
-  const [roleDeps, setRoleDeps] = useState("");
   const [files, setFiles] = useState<UploadFile[]>([]);
   const [isPublishing, setIsPublishing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,6 +50,13 @@ function UploadPage() {
   const generateUploadUrl = useMutation(api.files.generateUploadUrl);
   const publishSkill = useMutation(api.skills.publish);
   const publishRole = useMutation(api.roles.publish);
+
+  const currentUser = useQuery(api.users.me);
+  const existingSkill = useQuery(api.skills.getBySlug, slug.trim() ? { slug: slug.trim() } : "skip");
+  const existingRole = useQuery(api.roles.getBySlug, slug.trim() ? { slug: slug.trim() } : "skip");
+  const existing = kind === "skill" ? existingSkill : existingRole;
+  const isOwnedByOther = !!(existing && currentUser && existing.ownerUserId !== currentUser._id);
+  const isUpdate = !!existing && !isOwnedByOther;
 
   const processFiles = useCallback(
     (newFiles: File[]) => {
@@ -77,9 +81,10 @@ function UploadPage() {
       const skillMd = newFiles.find((f) => f.name === "SKILL.md");
       const roleMd = newFiles.find((f) => f.name === "ROLE.md");
 
-      if (roleMd) {
-        setKind("role");
-        roleMd.text().then((text) => {
+      const mdFile = roleMd ?? skillMd;
+      if (mdFile) {
+        setKind(roleMd ? "role" : "skill");
+        mdFile.text().then((text) => {
           const { frontmatter } = parseFrontmatter(text);
           if (frontmatter.name && typeof frontmatter.name === "string") {
             setSlug(frontmatter.name);
@@ -89,32 +94,9 @@ function UploadPage() {
                 : frontmatter.name,
             );
           }
-          if (frontmatter.version) setVersion(String(frontmatter.version));
-          if (Array.isArray(frontmatter.dependencies)) {
-            const split = splitDependencies(frontmatter.dependencies as string[]);
-            setSkillDeps((split.skills ?? []).join(", "));
-            setRoleDeps((split.roles ?? []).join(", "));
-          }
-        });
-      } else if (skillMd) {
-        setKind("skill");
-        skillMd.text().then((text) => {
-          const { frontmatter } = parseFrontmatter(text);
-          if (frontmatter.name && typeof frontmatter.name === "string") {
-            setSlug(frontmatter.name);
-            setDisplayName(
-              typeof frontmatter.description === "string"
-                ? frontmatter.description
-                : frontmatter.name,
-            );
-          }
-          if (frontmatter.version) setVersion(String(frontmatter.version));
-          if (Array.isArray(frontmatter.dependencies)) {
-            const deps = (frontmatter.dependencies as string[])
-              .map((d) => d.trim())
-              .filter((d) => d && !d.startsWith("role:"));
-            setSkillDeps(deps.join(", "));
-            setRoleDeps("");
+          const meta = frontmatter.metadata as Record<string, unknown> | undefined;
+          if (meta?.version) {
+            setVersion(String(meta.version));
           }
         });
       }
@@ -233,33 +215,27 @@ function UploadPage() {
 
       setUploadProgress("Publishing...");
 
-      const skills = skillDeps.split(",").map((s) => s.trim()).filter(Boolean);
-
       if (kind === "skill") {
-        const deps = skills.length ? { skills } : undefined;
+        const skillMdFile = files.find((f) => f.path === "SKILL.md");
+        const skillMdText = skillMdFile ? await skillMdFile.file.text() : undefined;
         await publishSkill({
           slug: slug.trim(),
           displayName: displayName.trim(),
-          version: version.trim(),
+          version: version.trim() || undefined,
           changelog: changelog.trim(),
           files: uploadedFiles as any,
-          dependencies: deps,
+          skillMdText,
         });
       } else {
-        const roles = roleDeps.split(",").map((s) => s.trim()).filter(Boolean);
-        const deps = (skills.length || roles.length)
-          ? {
-              ...(skills.length ? { skills } : {}),
-              ...(roles.length ? { roles } : {}),
-            }
-          : undefined;
+        const roleMdFile = files.find((f) => f.path === "ROLE.md");
+        const roleMdText = roleMdFile ? await roleMdFile.file.text() : undefined;
         await publishRole({
           slug: slug.trim(),
           displayName: displayName.trim(),
-          version: version.trim(),
+          version: version.trim() || undefined,
           changelog: changelog.trim(),
           files: uploadedFiles as any,
-          dependencies: deps,
+          roleMdText,
         });
       }
 
@@ -436,8 +412,26 @@ function UploadPage() {
               value={slug}
               onChange={(e) => setSlug(e.target.value)}
               placeholder="my-skill"
-              className="mt-1 block w-full rounded border border-gray-700 bg-gray-900 px-3 py-2 text-white placeholder-gray-500 focus:border-orange-400 focus:outline-none"
+              className={`mt-1 block w-full rounded border bg-gray-900 px-3 py-2 text-white placeholder-gray-500 focus:outline-none ${
+                slug.trim() && existing !== undefined
+                  ? isOwnedByOther
+                    ? "border-red-600 focus:border-red-500"
+                    : isUpdate
+                      ? "border-yellow-600 focus:border-yellow-500"
+                      : "border-gray-700 focus:border-orange-400"
+                  : "border-gray-700 focus:border-orange-400"
+              }`}
             />
+            {slug.trim() && existing !== undefined && isOwnedByOther && (
+              <p className="mt-1 text-xs text-red-400">
+                This slug is owned by another user.
+              </p>
+            )}
+            {slug.trim() && existing !== undefined && isUpdate && (
+              <p className="mt-1 text-xs text-yellow-500">
+                This {kind} already exists — publishing will create a new version.
+              </p>
+            )}
           </label>
 
           <label className="block">
@@ -452,11 +446,12 @@ function UploadPage() {
           </label>
 
           <label className="block">
-            <span className="text-sm text-gray-400">Version</span>
+            <span className="text-sm text-gray-400">Version (optional)</span>
             <input
               type="text"
               value={version}
               onChange={(e) => setVersion(e.target.value)}
+              placeholder="Auto-incremented if empty"
               className="mt-1 block w-full rounded border border-gray-700 bg-gray-900 px-3 py-2 text-white placeholder-gray-500 focus:border-orange-400 focus:outline-none"
             />
           </label>
@@ -472,33 +467,6 @@ function UploadPage() {
             />
           </label>
 
-          <label className="block">
-            <span className="text-sm text-gray-400">
-              Skill Dependencies (comma-separated, e.g. slug&gt;=1.0.0)
-            </span>
-            <input
-              type="text"
-              value={skillDeps}
-              onChange={(e) => setSkillDeps(e.target.value)}
-              placeholder="git-workflow>=1.0.0, code-review, python-testing^2.0.0"
-              className="mt-1 block w-full rounded border border-gray-700 bg-gray-900 px-3 py-2 text-white placeholder-gray-500 focus:border-orange-400 focus:outline-none"
-            />
-          </label>
-
-          {kind === "role" && (
-            <label className="block">
-              <span className="text-sm text-gray-400">
-                Role Dependencies (comma-separated, e.g. slug&gt;=1.0.0)
-              </span>
-              <input
-                type="text"
-                value={roleDeps}
-                onChange={(e) => setRoleDeps(e.target.value)}
-                placeholder="implementer>=1.0.0, reviewer"
-                className="mt-1 block w-full rounded border border-gray-700 bg-gray-900 px-3 py-2 text-white placeholder-gray-500 focus:border-orange-400 focus:outline-none"
-              />
-            </label>
-          )}
         </div>
 
         {/* Error */}
@@ -516,12 +484,14 @@ function UploadPage() {
         {/* Publish Button */}
         <button
           onClick={handlePublish}
-          disabled={isPublishing || files.length === 0}
+          disabled={isPublishing || files.length === 0 || isOwnedByOther}
           className="w-full rounded bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isPublishing
             ? "Publishing..."
-            : `Publish ${kind === "skill" ? "Skill" : "Role"}`}
+            : isUpdate
+              ? `Update ${kind === "skill" ? "Skill" : "Role"}`
+              : `Publish ${kind === "skill" ? "Skill" : "Role"}`}
         </button>
       </div>
     </div>
