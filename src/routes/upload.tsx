@@ -6,6 +6,7 @@ import { api } from "../../convex/_generated/api";
 import { parseFrontmatter } from "../lib/parseFrontmatter";
 import { sha256Hex } from "../lib/hash";
 import { fetchFromGitHub } from "../lib/githubImport";
+import JSZip from "jszip";
 
 type UploadSearch = { mode?: "import"; updateSlug?: string };
 
@@ -213,6 +214,24 @@ function UploadPage() {
         );
       }
 
+      // Create and upload zip archive
+      setUploadProgress("Creating archive...");
+      const zip = new JSZip();
+      for (const f of files) {
+        zip.file(f.path, f.file);
+      }
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+
+      setUploadProgress("Uploading archive...");
+      const zipUploadUrl = await generateUploadUrl();
+      const zipResp = await fetch(zipUploadUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/zip" },
+        body: zipBlob,
+      });
+      if (!zipResp.ok) throw new Error("Failed to upload zip archive");
+      const { storageId: zipStorageId } = await zipResp.json();
+
       setUploadProgress("Publishing...");
 
       if (kind === "skill") {
@@ -225,6 +244,7 @@ function UploadPage() {
           changelog: changelog.trim(),
           files: uploadedFiles as any,
           skillMdText,
+          zipStorageId,
         });
       } else {
         const roleMdFile = files.find((f) => f.path === "ROLE.md");
@@ -236,6 +256,7 @@ function UploadPage() {
           changelog: changelog.trim(),
           files: uploadedFiles as any,
           roleMdText,
+          zipStorageId,
         });
       }
 

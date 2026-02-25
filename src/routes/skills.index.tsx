@@ -1,3 +1,4 @@
+import { useState, useMemo } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
@@ -8,6 +9,19 @@ export const Route = createFileRoute("/skills/")({
 
 function SkillsPage() {
   const skills = useQuery(api.skills.list, { limit: 50 });
+  const [filter, setFilter] = useState("");
+
+  const filtered = useMemo(() => {
+    if (!skills) return undefined;
+    if (!filter.trim()) return skills;
+    const q = filter.toLowerCase();
+    return skills.filter(
+      (s) =>
+        s.displayName.toLowerCase().includes(q) ||
+        s.slug.toLowerCase().includes(q) ||
+        (s.summary ?? "").toLowerCase().includes(q),
+    );
+  }, [skills, filter]);
 
   return (
     <div className="space-y-6">
@@ -25,13 +39,23 @@ function SkillsPage() {
         Markdown instruction modules that agents load into context.
       </p>
 
-      {skills === undefined ? (
+      <input
+        type="text"
+        value={filter}
+        onChange={(e) => setFilter(e.target.value)}
+        placeholder="Filter by name, slug, or summary..."
+        className="w-full rounded-lg border border-gray-800 bg-gray-900 px-4 py-2 text-sm text-gray-200 placeholder-gray-500 focus:border-gray-600 focus:outline-none"
+      />
+
+      {filtered === undefined ? (
         <div className="text-gray-500">Loading...</div>
-      ) : skills.length === 0 ? (
-        <div className="text-gray-500">No skills published yet.</div>
+      ) : filtered.length === 0 ? (
+        <div className="text-gray-500">
+          {filter ? "No skills match your filter." : "No skills published yet."}
+        </div>
       ) : (
         <div className="grid gap-4">
-          {skills.map((skill) => (
+          {filtered.map((skill) => (
             <SkillCard key={skill._id} skill={skill} />
           ))}
         </div>
@@ -49,7 +73,10 @@ function SkillCard({ skill }: { skill: any }) {
     >
       <div className="flex items-start justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-white">{skill.displayName}</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-lg font-semibold text-white">{skill.displayName}</h3>
+            <span className="text-sm text-gray-500 font-mono">/{skill.slug}</span>
+          </div>
           <p className="text-sm text-gray-400 mt-1">{skill.summary}</p>
         </div>
         <div className="flex gap-4 text-xs text-gray-500">
@@ -57,6 +84,19 @@ function SkillCard({ skill }: { skill: any }) {
           <span>{skill.stats.stars} stars</span>
         </div>
       </div>
+      {skill.owner && (
+        <div className="flex items-center gap-2 mt-3">
+          <span className="text-xs text-gray-500">by</span>
+          {skill.owner.image ? (
+            <img src={skill.owner.image} alt="" className="h-5 w-5 rounded-full" />
+          ) : (
+            <div className="h-5 w-5 rounded-full bg-gray-700" />
+          )}
+          {skill.owner.handle && (
+            <span className="text-xs text-gray-500">@{skill.owner.handle}</span>
+          )}
+        </div>
+      )}
     </Link>
   );
 }

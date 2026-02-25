@@ -3,6 +3,7 @@ import { api, internal } from "../_generated/api";
 import { jsonResponse, errorResponse, getSearchParams, resolveTokenToUser, checkHttpRateLimit } from "./shared";
 import { parseDependencySpec, satisfiesVersion } from "../lib/versionSpec";
 import { validateSlug, validateVersion, validateDisplayName, validateChangelog, validateRoleFiles, MAX_FILE_SIZE } from "../lib/publishValidation";
+import { createZipBlob } from "../lib/zip";
 
 /**
  * GET /api/v1/roles — list roles
@@ -232,6 +233,7 @@ export const publishRole = httpAction(async (ctx, request) => {
     sha256: string;
     contentType?: string;
   }> = [];
+  const zipEntries: Array<{ path: string; buffer: ArrayBuffer }> = [];
 
   if (contentType.includes("multipart/form-data")) {
     const formData = await request.formData();
@@ -279,8 +281,9 @@ export const publishRole = httpAction(async (ctx, request) => {
           .join("");
         const filePath = file.name || "ROLE.md";
         if (filePath === "ROLE.md") {
-          roleMdText = await file.text();
+          roleMdText = new TextDecoder().decode(buffer);
         }
+        zipEntries.push({ path: filePath, buffer });
         fileEntries.push({
           path: filePath,
           size: file.size,
@@ -304,6 +307,14 @@ export const publishRole = httpAction(async (ctx, request) => {
     return errorResponse(e.message, 400);
   }
 
+  // Create and store zip archive
+  const zipBlob = await createZipBlob(
+    zipEntries.map((e) => ({ path: e.path, content: e.buffer })),
+  );
+  const zipStorageId = await ctx.storage.store(
+    new Blob([zipBlob], { type: "application/zip" }),
+  );
+
   try {
     const result = await ctx.runMutation(internal.roles.publishInternal, {
       userId,
@@ -315,6 +326,7 @@ export const publishRole = httpAction(async (ctx, request) => {
       dependencies,
       customTags,
       roleMdText,
+      zipStorageId,
     });
     return jsonResponse(result, 201);
   } catch (e: any) {
@@ -344,6 +356,7 @@ function formatRoleDetail(role: any) {
     stats: role.stats,
     badges: role.badges,
     dependencies: role.dependencies,
+    zipUrl: role.zipUrl ?? null,
     latestVersion: role.latestVersion
       ? {
           version: role.latestVersion.version,
