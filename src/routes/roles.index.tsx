@@ -1,6 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState, useRef, useEffect } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "convex/react";
+import { usePaginatedQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 
 export const Route = createFileRoute("/roles/")({
@@ -8,20 +8,31 @@ export const Route = createFileRoute("/roles/")({
 });
 
 function RolesPage() {
-  const roles = useQuery(api.roles.list, { limit: 50 });
   const [filter, setFilter] = useState("");
+  const trimmed = filter.trim();
 
-  const filtered = useMemo(() => {
-    if (!roles) return undefined;
-    if (!filter.trim()) return roles;
-    const q = filter.toLowerCase();
-    return roles.filter(
-      (r) =>
-        r.displayName.toLowerCase().includes(q) ||
-        r.slug.toLowerCase().includes(q) ||
-        (r.summary ?? "").toLowerCase().includes(q),
+  const { results, status, loadMore } = usePaginatedQuery(
+    api.roles.list,
+    { query: trimmed || undefined },
+    { initialNumItems: 20 },
+  );
+
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && status === "CanLoadMore") {
+          loadMore(20);
+        }
+      },
+      { threshold: 0 },
     );
-  }, [roles, filter]);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [status, loadMore]);
 
   return (
     <div className="space-y-6">
@@ -49,17 +60,21 @@ function RolesPage() {
         className="w-full rounded-lg border border-gray-800 bg-gray-900 px-4 py-2 text-sm text-gray-200 placeholder-gray-500 focus:border-gray-600 focus:outline-none"
       />
 
-      {filtered === undefined ? (
+      {status === "LoadingFirstPage" ? (
         <div className="text-gray-500">Loading...</div>
-      ) : filtered.length === 0 ? (
+      ) : results.length === 0 ? (
         <div className="text-gray-500">
-          {filter ? "No roles match your filter." : "No roles published yet."}
+          {trimmed ? "No roles match your filter." : "No roles published yet."}
         </div>
       ) : (
         <div className="grid gap-4">
-          {filtered.map((role) => (
+          {results.map((role) => (
             <RoleCard key={role._id} role={role} />
           ))}
+          <div ref={sentinelRef} />
+          {status === "LoadingMore" && (
+            <div className="text-center text-gray-500 text-sm py-2">Loading more...</div>
+          )}
         </div>
       )}
     </div>
