@@ -31,6 +31,7 @@ export const search = query({
         const skill = await ctx.db.get(emb.skillId);
         if (!skill || skill.softDeletedAt) continue;
 
+        const owner = await ctx.db.get(skill.ownerUserId);
         const lexicalBoost = computeLexicalBoost(queryTokens, skill.slug, skill.displayName);
         const popularityBoost = Math.log(Math.max(skill.stats.downloads, 1)) * 0.08;
 
@@ -40,6 +41,7 @@ export const search = query({
           displayName: skill.displayName,
           summary: skill.summary,
           stats: skill.stats,
+          owner: owner ? { handle: owner.handle, image: owner.image } : null,
           score: lexicalBoost + popularityBoost,
         });
       }
@@ -56,6 +58,7 @@ export const search = query({
         const role = await ctx.db.get(emb.roleId);
         if (!role || role.softDeletedAt) continue;
 
+        const owner = await ctx.db.get(role.ownerUserId);
         const lexicalBoost = computeLexicalBoost(queryTokens, role.slug, role.displayName);
         const popularityBoost = Math.log(Math.max(role.stats.downloads, 1)) * 0.08;
 
@@ -65,6 +68,7 @@ export const search = query({
           displayName: role.displayName,
           summary: role.summary,
           stats: role.stats,
+          owner: owner ? { handle: owner.handle, image: owner.image } : null,
           score: lexicalBoost + popularityBoost,
         });
       }
@@ -82,12 +86,14 @@ export const search = query({
         for (const skill of allSkills) {
           const boost = computeLexicalBoost(queryTokens, skill.slug, skill.displayName);
           if (boost > 0) {
+            const owner = await ctx.db.get(skill.ownerUserId);
             results.push({
               kind: "skill",
               slug: skill.slug,
               displayName: skill.displayName,
               summary: skill.summary,
               stats: skill.stats,
+              owner: owner ? { handle: owner.handle, image: owner.image } : null,
               score: boost,
             });
           }
@@ -104,12 +110,14 @@ export const search = query({
         for (const role of allRoles) {
           const boost = computeLexicalBoost(queryTokens, role.slug, role.displayName);
           if (boost > 0) {
+            const owner = await ctx.db.get(role.ownerUserId);
             results.push({
               kind: "role",
               slug: role.slug,
               displayName: role.displayName,
               summary: role.summary,
               stats: role.stats,
+              owner: owner ? { handle: owner.handle, image: owner.image } : null,
               score: boost,
             });
           }
@@ -131,6 +139,7 @@ interface SearchResult {
   displayName: string;
   summary?: string;
   stats: { downloads: number; stars: number; versions: number; comments: number };
+  owner: { handle: string | undefined; image: string | undefined } | null;
   score: number;
 }
 

@@ -12,17 +12,17 @@ export const listSkills = httpAction(async (ctx, request) => {
   if (rateLimited) return rateLimited;
 
   const params = getSearchParams(request);
-  const numItems = Math.min(parseInt(params.get("limit") ?? "50", 10), 200);
   const sort = params.get("sort") ?? "updated";
+  const query = params.get("query") ?? undefined;
 
-  const result = await ctx.runQuery(api.skills.list, {
-    paginationOpts: { numItems, cursor: null },
+  const skills = await ctx.runQuery(api.skills.list, {
     sort: sort as "updated" | "downloads" | "stars",
+    query,
   });
 
   return jsonResponse({
-    items: result.page.map(formatSkill),
-    count: result.page.length,
+    items: skills.map(formatSkill),
+    count: skills.length,
   });
 });
 
