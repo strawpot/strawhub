@@ -19,7 +19,8 @@ function RootLayout() {
     <div className="min-h-screen bg-gray-950 text-gray-100">
       <header className="border-b border-gray-800">
         <nav className="mx-auto flex max-w-6xl items-center gap-6 px-4 py-3">
-          <Link to="/" className="text-lg font-bold text-white hover:text-orange-400">
+          <Link to="/" className="flex items-center gap-2 text-2xl font-bold text-white hover:text-orange-400">
+            <img src="/favicon.png" alt="" className="h-9 w-9" />
             StrawHub
           </Link>
           <Link to="/skills" className="text-sm text-gray-400 hover:text-white">
