@@ -54,7 +54,12 @@ function RolesPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl md:text-3xl font-bold text-white">Roles</h1>
+        <h1 className="text-2xl md:text-3xl font-bold text-white">
+          Roles
+          {results !== undefined && (
+            <span className="ml-2 font-normal text-gray-500">({results.length})</span>
+          )}
+        </h1>
         <Link
           to="/upload"
           search={{ kind: "role" }}
