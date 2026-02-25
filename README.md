@@ -1,13 +1,17 @@
 # StrawHub
 
-Role and skill registry for [StrawPot](https://github.com/user/strawpot).
+[![CI](https://img.shields.io/github/actions/workflow/status/strawpot/strawhub/ci.yml?branch=main&style=for-the-badge)](https://github.com/strawpot/strawhub/actions/workflows/ci.yml?branch=main)
+[![Discord](https://img.shields.io/discord/1476285531464929505?label=Discord&logo=discord&logoColor=white&color=5865F2&style=for-the-badge)](https://discord.gg/buEbvEMC)
+[![MIT License](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
+
+Role and skill registry for [StrawPot](https://strawpot.com).
 
 ## Overview
 
 StrawHub is a web service that lets users discover, publish, and install reusable roles and skills for StrawPot agents. Following the same architecture as [ClawHub](https://clawhub.ai/), it extends the pattern to manage both **roles** and **skills** with recursive dependency resolution.
 
-- **Roles** define agent behavior, default tools, model config, and dependent skills
-- **Skills** are markdown instruction modules that agents load into context
+- **Skills** are markdown instruction modules that agents load into context — based on the [Agent Skills](https://agentskills.io/) open spec, extended with a `dependencies` frontmatter key
+- **Roles** define agent behavior, default tools, model config, and dependent skills — follow the same markdown-with-frontmatter pattern, extended for agent configuration
 - Skills can depend on other skills; roles depend on both skills and other roles
 - Dependencies are resolved recursively on install
 - Only administrators can delete published content
