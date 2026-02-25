@@ -102,8 +102,18 @@ function UploadPage() {
   const existingSkill = useQuery(api.skills.getBySlug, slug.trim() ? { slug: slug.trim() } : "skip");
   const existingRole = useQuery(api.roles.getBySlug, slug.trim() ? { slug: slug.trim() } : "skip");
   const existing = kind === "skill" ? existingSkill : existingRole;
+  const isCrossKindConflict = !!(kind === "skill" ? existingRole : existingSkill);
   const isOwnedByOther = !!(existing && currentUser && existing.ownerUserId !== currentUser._id);
   const isUpdate = !!existing && !isOwnedByOther;
+
+  const slugError = (() => {
+    const s = slug.trim();
+    if (!s) return null;
+    if (s.length > 64) return "Slug must be at most 64 characters.";
+    if (!/^[a-z0-9][a-z0-9-]*$/.test(s))
+      return "Slug must be lowercase alphanumeric with hyphens, starting with a letter or digit.";
+    return null;
+  })();
 
   const versionError = (() => {
     const v = version.trim();
@@ -628,23 +638,29 @@ function UploadPage() {
               type="text"
               value={slug}
               onChange={(e) => setSlug(e.target.value)}
-              placeholder="my-skill"
+              placeholder={kind === "role" ? "my-role" : "my-skill"}
               className={`mt-1 block w-full rounded border bg-gray-900 px-3 py-2 text-white placeholder-gray-500 focus:outline-none ${
-                slug.trim() && existing !== undefined
-                  ? isOwnedByOther
-                    ? "border-red-600 focus:border-red-500"
-                    : isUpdate
-                      ? "border-yellow-600 focus:border-yellow-500"
-                      : "border-gray-700 focus:border-orange-400"
-                  : "border-gray-700 focus:border-orange-400"
+                slugError || (slug.trim() && isCrossKindConflict) || (slug.trim() && existing !== undefined && isOwnedByOther)
+                  ? "border-red-600 focus:border-red-500"
+                  : slug.trim() && existing !== undefined && isUpdate
+                    ? "border-yellow-600 focus:border-yellow-500"
+                    : "border-gray-700 focus:border-orange-400"
               }`}
             />
-            {slug.trim() && existing !== undefined && isOwnedByOther && (
+            {slugError && (
+              <p className="mt-1 text-xs text-red-400">{slugError}</p>
+            )}
+            {!slugError && slug.trim() && isCrossKindConflict && (
+              <p className="mt-1 text-xs text-red-400">
+                This slug is already used by a {kind === "skill" ? "role" : "skill"}.
+              </p>
+            )}
+            {!slugError && slug.trim() && !isCrossKindConflict && existing !== undefined && isOwnedByOther && (
               <p className="mt-1 text-xs text-red-400">
                 This slug is owned by another user.
               </p>
             )}
-            {slug.trim() && existing !== undefined && isUpdate && (
+            {!slugError && slug.trim() && !isCrossKindConflict && existing !== undefined && isUpdate && (
               <p className="mt-1 text-xs text-yellow-500">
                 This {kind} already exists — publishing will create a new version.
               </p>
@@ -657,7 +673,7 @@ function UploadPage() {
               type="text"
               value={isUpdate ? (existing?.displayName ?? displayName) : displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              placeholder="My Skill"
+              placeholder={kind === "role" ? "My Role" : "My Skill"}
               disabled={isUpdate}
               className={`mt-1 block w-full rounded border border-gray-700 bg-gray-900 px-3 py-2 text-white placeholder-gray-500 focus:outline-none ${
                 isUpdate
@@ -718,7 +734,7 @@ function UploadPage() {
         {/* Publish Button */}
         <button
           onClick={handlePublish}
-          disabled={isPublishing || files.length === 0 || isOwnedByOther || !!versionError}
+          disabled={isPublishing || files.length === 0 || !!slugError || isOwnedByOther || isCrossKindConflict || !!versionError}
           className="w-full rounded bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isPublishing

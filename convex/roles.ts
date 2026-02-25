@@ -276,6 +276,15 @@ export const publishInternal = internalMutation({
       if (role.ownerUserId !== user._id) throw new Error("You do not own this role");
       if (role.softDeletedAt) throw new Error("Role has been deleted");
     } else {
+      // Slug must be unique across both skills and roles
+      const conflictingSkill = await ctx.db
+        .query("skills")
+        .withIndex("by_slug", (q) => q.eq("slug", args.slug))
+        .first();
+      if (conflictingSkill && !conflictingSkill.softDeletedAt) {
+        throw new Error("This slug is already used by a skill");
+      }
+
       const roleId = await ctx.db.insert("roles", {
         slug: args.slug,
         displayName: args.displayName,
@@ -458,6 +467,15 @@ export const publish = mutation({
         throw new Error("Role has been deleted");
       }
     } else {
+      // Slug must be unique across both skills and roles
+      const conflictingSkill = await ctx.db
+        .query("skills")
+        .withIndex("by_slug", (q) => q.eq("slug", args.slug))
+        .first();
+      if (conflictingSkill && !conflictingSkill.softDeletedAt) {
+        throw new Error("This slug is already used by a skill");
+      }
+
       const roleId = await ctx.db.insert("roles", {
         slug: args.slug,
         displayName: args.displayName,
