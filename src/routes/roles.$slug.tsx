@@ -4,6 +4,7 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { extractSlug } from "../lib/versionSpec";
 import { parseFrontmatter } from "../lib/parseFrontmatter";
+import { useSEO } from "../lib/useSEO";
 import Markdown from "react-markdown";
 
 export const Route = createFileRoute("/roles/$slug")({
@@ -13,6 +14,12 @@ export const Route = createFileRoute("/roles/$slug")({
 function RoleDetailPage() {
   const { slug } = Route.useParams();
   const role = useQuery(api.roles.getBySlug, { slug });
+
+  useSEO({
+    title: role ? `${role.displayName} - StrawHub` : "StrawHub",
+    description: role?.summary || undefined,
+    url: `/roles/${slug}`,
+  });
   const versions = useQuery(
     api.roles.getVersions,
     role ? { roleId: role._id } : "skip",
@@ -25,6 +32,23 @@ function RoleDetailPage() {
   if (role === undefined) {
     return <p className="text-gray-400">Loading...</p>;
   }
+
+  const jsonLd = role
+    ? {
+        "@context": "https://schema.org",
+        "@type": "SoftwareSourceCode",
+        name: role.displayName,
+        description: role.summary || undefined,
+        url: `https://strawhub.dev/roles/${role.slug}`,
+        codeRepository: `https://strawhub.dev/roles/${role.slug}`,
+        ...(role.owner && {
+          author: {
+            "@type": "Person",
+            name: role.owner.displayName ?? role.owner.handle ?? "unknown",
+          },
+        }),
+      }
+    : null;
 
   if (role === null) {
     return (
@@ -39,6 +63,12 @@ function RoleDetailPage() {
 
   return (
     <div className="space-y-6">
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      )}
       <Link to="/roles" className="text-sm text-gray-400 hover:text-white">
         &larr; Back to Roles
       </Link>

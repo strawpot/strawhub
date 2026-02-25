@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useState, useRef, useEffect } from "react";
+import { useSEO } from "../lib/useSEO";
 
 export const Route = createFileRoute("/search")({
   component: SearchPage,
@@ -10,6 +11,12 @@ export const Route = createFileRoute("/search")({
 const PAGE_SIZE = 20;
 
 function SearchPage() {
+  useSEO({
+    title: "Search - StrawHub",
+    description: "Search for skills and roles on StrawHub.",
+    url: "/search",
+  });
+
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState<"all" | "skill" | "role">("all");
   const results = useQuery(

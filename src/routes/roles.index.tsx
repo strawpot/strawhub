@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import { useSEO } from "../lib/useSEO";
 
 export const Route = createFileRoute("/roles/")({
   component: RolesPage,
@@ -10,6 +11,12 @@ export const Route = createFileRoute("/roles/")({
 const PAGE_SIZE = 20;
 
 function RolesPage() {
+  useSEO({
+    title: "Roles - StrawHub",
+    description: "Browse agent role definitions for StrawPot with recursive skill dependencies.",
+    url: "/roles",
+  });
+
   const [filter, setFilter] = useState("");
   const trimmed = filter.trim();
 

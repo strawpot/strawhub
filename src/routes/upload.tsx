@@ -3,6 +3,7 @@ import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useState, useRef, useCallback, useMemo } from "react";
 import { api } from "../../convex/_generated/api";
+import { useSEO } from "../lib/useSEO";
 import { parseFrontmatter } from "../lib/parseFrontmatter";
 import { sha256Hex } from "../lib/hash";
 import { fetchFromGitHub } from "../lib/githubImport";
@@ -69,6 +70,12 @@ interface UploadFile {
 }
 
 function UploadPage() {
+  useSEO({
+    title: "Publish - StrawHub",
+    description: "Publish or update a skill or role on StrawHub.",
+    url: "/upload",
+  });
+
   const { isAuthenticated, isLoading } = useConvexAuth();
   const { signIn } = useAuthActions();
   const navigate = useNavigate();
