@@ -29,7 +29,7 @@ export const listSkills = httpAction(async (ctx, request) => {
 /**
  * GET /api/v1/skills/:slug — get skill by slug
  */
-export const getSkill = httpAction(async (ctx, request) => {
+export async function handleGetSkill(ctx: any, request: Request): Promise<Response> {
   const rateLimited = await checkHttpRateLimit(ctx, request, "read");
   if (rateLimited) return rateLimited;
 
@@ -41,12 +41,13 @@ export const getSkill = httpAction(async (ctx, request) => {
   if (!skill) return errorResponse("Skill not found", 404);
 
   return jsonResponse(formatSkillDetail(skill));
-});
+}
+export const getSkill = httpAction(handleGetSkill);
 
 /**
  * GET /api/v1/skills/:slug/file — get raw file content
  */
-export const getSkillFile = httpAction(async (ctx, request) => {
+export async function handleGetSkillFile(ctx: any, request: Request): Promise<Response> {
   const rateLimited = await checkHttpRateLimit(ctx, request, "read");
   if (rateLimited) return rateLimited;
 
@@ -75,7 +76,8 @@ export const getSkillFile = httpAction(async (ctx, request) => {
       "Access-Control-Allow-Origin": "*",
     },
   });
-});
+}
+export const getSkillFile = httpAction(handleGetSkillFile);
 
 /**
  * POST /api/v1/skills — publish a skill via API (Bearer token auth, multipart form data)

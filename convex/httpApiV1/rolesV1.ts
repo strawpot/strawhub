@@ -30,7 +30,7 @@ export const listRoles = httpAction(async (ctx, request) => {
 /**
  * GET /api/v1/roles/:slug — get role by slug
  */
-export const getRole = httpAction(async (ctx, request) => {
+export async function handleGetRole(ctx: any, request: Request): Promise<Response> {
   const rateLimited = await checkHttpRateLimit(ctx, request, "read");
   if (rateLimited) return rateLimited;
 
@@ -42,12 +42,13 @@ export const getRole = httpAction(async (ctx, request) => {
   if (!role) return errorResponse("Role not found", 404);
 
   return jsonResponse(formatRoleDetail(role));
-});
+}
+export const getRole = httpAction(handleGetRole);
 
 /**
  * GET /api/v1/roles/:slug/file — get raw file content
  */
-export const getRoleFile = httpAction(async (ctx, request) => {
+export async function handleGetRoleFile(ctx: any, request: Request): Promise<Response> {
   const rateLimited = await checkHttpRateLimit(ctx, request, "read");
   if (rateLimited) return rateLimited;
 
@@ -75,12 +76,13 @@ export const getRoleFile = httpAction(async (ctx, request) => {
       "Access-Control-Allow-Origin": "*",
     },
   });
-});
+}
+export const getRoleFile = httpAction(handleGetRoleFile);
 
 /**
  * GET /api/v1/roles/:slug/resolve — resolve dependencies recursively
  */
-export const resolveRoleDeps = httpAction(async (ctx, request) => {
+export async function handleResolveRoleDeps(ctx: any, request: Request): Promise<Response> {
   const rateLimited = await checkHttpRateLimit(ctx, request, "read");
   if (rateLimited) return rateLimited;
 
@@ -204,7 +206,8 @@ export const resolveRoleDeps = httpAction(async (ctx, request) => {
     role: slug,
     dependencies: resolved,
   });
-});
+}
+export const resolveRoleDeps = httpAction(handleResolveRoleDeps);
 
 /**
  * POST /api/v1/roles — publish a role via API (Bearer token auth, multipart form data)
