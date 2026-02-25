@@ -1,10 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useSEO } from "../lib/useSEO";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
 });
 
 function HomePage() {
+  useSEO({
+    title: "StrawHub - Role & Skill Registry for StrawPot",
+    url: "/",
+  });
+
   return (
     <div className="space-y-12">
       <section className="text-center py-8 md:py-16">

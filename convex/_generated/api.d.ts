@@ -16,6 +16,7 @@ import type * as http from "../http.js";
 import type * as httpApiV1_rolesV1 from "../httpApiV1/rolesV1.js";
 import type * as httpApiV1_searchV1 from "../httpApiV1/searchV1.js";
 import type * as httpApiV1_shared from "../httpApiV1/shared.js";
+import type * as httpApiV1_sitemapV1 from "../httpApiV1/sitemapV1.js";
 import type * as httpApiV1_skillsV1 from "../httpApiV1/skillsV1.js";
 import type * as httpApiV1_whoamiV1 from "../httpApiV1/whoamiV1.js";
 import type * as lib_access from "../lib/access.js";
@@ -27,6 +28,7 @@ import type * as lib_versionSpec from "../lib/versionSpec.js";
 import type * as lib_zip from "../lib/zip.js";
 import type * as roles from "../roles.js";
 import type * as search from "../search.js";
+import type * as sitemap from "../sitemap.js";
 import type * as skills from "../skills.js";
 import type * as users from "../users.js";
 
@@ -45,6 +47,7 @@ declare const fullApi: ApiFromModules<{
   "httpApiV1/rolesV1": typeof httpApiV1_rolesV1;
   "httpApiV1/searchV1": typeof httpApiV1_searchV1;
   "httpApiV1/shared": typeof httpApiV1_shared;
+  "httpApiV1/sitemapV1": typeof httpApiV1_sitemapV1;
   "httpApiV1/skillsV1": typeof httpApiV1_skillsV1;
   "httpApiV1/whoamiV1": typeof httpApiV1_whoamiV1;
   "lib/access": typeof lib_access;
@@ -56,6 +59,7 @@ declare const fullApi: ApiFromModules<{
   "lib/zip": typeof lib_zip;
   roles: typeof roles;
   search: typeof search;
+  sitemap: typeof sitemap;
   skills: typeof skills;
   users: typeof users;
 }>;

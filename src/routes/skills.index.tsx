@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import { useSEO } from "../lib/useSEO";
 
 export const Route = createFileRoute("/skills/")({
   component: SkillsPage,
@@ -10,6 +11,12 @@ export const Route = createFileRoute("/skills/")({
 const PAGE_SIZE = 20;
 
 function SkillsPage() {
+  useSEO({
+    title: "Skills - StrawHub",
+    description: "Browse reusable skill modules for StrawPot agents.",
+    url: "/skills",
+  });
+
   const [filter, setFilter] = useState("");
   const trimmed = filter.trim();
 

@@ -4,6 +4,7 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { extractSlug } from "../lib/versionSpec";
 import { parseFrontmatter } from "../lib/parseFrontmatter";
+import { useSEO } from "../lib/useSEO";
 import Markdown from "react-markdown";
 
 export const Route = createFileRoute("/skills/$slug")({
@@ -13,6 +14,12 @@ export const Route = createFileRoute("/skills/$slug")({
 function SkillDetailPage() {
   const { slug } = Route.useParams();
   const skill = useQuery(api.skills.getBySlug, { slug });
+
+  useSEO({
+    title: skill ? `${skill.displayName} - StrawHub` : "StrawHub",
+    description: skill?.summary || undefined,
+    url: `/skills/${slug}`,
+  });
   const versions = useQuery(
     api.skills.getVersions,
     skill ? { skillId: skill._id } : "skip",
@@ -25,6 +32,23 @@ function SkillDetailPage() {
   if (skill === undefined) {
     return <p className="text-gray-400">Loading...</p>;
   }
+
+  const jsonLd = skill
+    ? {
+        "@context": "https://schema.org",
+        "@type": "SoftwareSourceCode",
+        name: skill.displayName,
+        description: skill.summary || undefined,
+        url: `https://strawhub.dev/skills/${skill.slug}`,
+        codeRepository: `https://strawhub.dev/skills/${skill.slug}`,
+        ...(skill.owner && {
+          author: {
+            "@type": "Person",
+            name: skill.owner.displayName ?? skill.owner.handle ?? "unknown",
+          },
+        }),
+      }
+    : null;
 
   if (skill === null) {
     return (
@@ -39,6 +63,12 @@ function SkillDetailPage() {
 
   return (
     <div className="space-y-6">
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      )}
       <Link to="/skills" className="text-sm text-gray-400 hover:text-white">
         &larr; Back to Skills
       </Link>

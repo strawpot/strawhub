@@ -3,12 +3,19 @@ import { useConvexAuth, useQuery, useMutation } from "convex/react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { api } from "../../convex/_generated/api";
 import { useState } from "react";
+import { useSEO } from "../lib/useSEO";
 
 export const Route = createFileRoute("/settings")({
   component: SettingsPage,
 });
 
 function SettingsPage() {
+  useSEO({
+    title: "Settings - StrawHub",
+    url: "/settings",
+    noindex: true,
+  });
+
   const { isAuthenticated, isLoading } = useConvexAuth();
   const { signIn } = useAuthActions();
   const user = useQuery(api.users.me);

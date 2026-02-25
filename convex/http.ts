@@ -5,6 +5,7 @@ import { listSkills, handleGetSkill, handleGetSkillFile, publishSkill } from "./
 import { listRoles, handleGetRole, handleGetRoleFile, handleResolveRoleDeps, publishRole } from "./httpApiV1/rolesV1";
 import { searchAll } from "./httpApiV1/searchV1";
 import { whoami } from "./httpApiV1/whoamiV1";
+import { serveSitemap } from "./httpApiV1/sitemapV1";
 import { corsResponse } from "./httpApiV1/shared";
 
 const http = httpRouter();
@@ -49,5 +50,8 @@ http.route({ path: "/api/v1/search", method: "GET", handler: searchAll });
 
 // ── Auth ────────────────────────────────────────────────────────────────────
 http.route({ path: "/api/v1/whoami", method: "GET", handler: whoami });
+
+// ── Sitemap ─────────────────────────────────────────────────────────────
+http.route({ path: "/api/v1/sitemap", method: "GET", handler: serveSitemap });
 
 export default http;
