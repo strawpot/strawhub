@@ -1,38 +1,48 @@
 import { useState, useRef, useEffect } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { usePaginatedQuery } from "convex/react";
+import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 
 export const Route = createFileRoute("/skills/")({
   component: SkillsPage,
 });
 
+const PAGE_SIZE = 20;
+
 function SkillsPage() {
   const [filter, setFilter] = useState("");
   const trimmed = filter.trim();
 
-  const { results, status, loadMore } = usePaginatedQuery(
-    api.skills.list,
-    { query: trimmed || undefined },
-    { initialNumItems: 20 },
-  );
+  const results = useQuery(api.skills.list, {
+    query: trimmed || undefined,
+  });
+
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [prevFilter, setPrevFilter] = useState(trimmed);
+  if (prevFilter !== trimmed) {
+    setPrevFilter(trimmed);
+    setVisibleCount(PAGE_SIZE);
+  }
+
+  const visibleResults = results?.slice(0, visibleCount);
+  const canLoadMore = results !== undefined && visibleCount < results.length;
 
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const el = sentinelRef.current;
-    if (!el) return;
+    if (!el || !canLoadMore) return;
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && status === "CanLoadMore") {
-          loadMore(20);
+        if (entries[0].isIntersecting && canLoadMore) {
+          setVisibleCount((c) => c + PAGE_SIZE);
         }
       },
       { threshold: 0 },
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [status, loadMore]);
+  }, [canLoadMore]);
 
   return (
     <div className="space-y-6">
@@ -58,7 +68,7 @@ function SkillsPage() {
         className="w-full rounded-lg border border-gray-800 bg-gray-900 px-4 py-2 text-sm text-gray-200 placeholder-gray-500 focus:border-gray-600 focus:outline-none"
       />
 
-      {status === "LoadingFirstPage" ? (
+      {results === undefined ? (
         <div className="text-gray-500">Loading...</div>
       ) : results.length === 0 ? (
         <div className="text-gray-500">
@@ -66,11 +76,11 @@ function SkillsPage() {
         </div>
       ) : (
         <div className="grid gap-4">
-          {results.map((skill) => (
+          {visibleResults?.map((skill) => (
             <SkillCard key={skill._id} skill={skill} />
           ))}
           <div ref={sentinelRef} />
-          {status === "LoadingMore" && (
+          {canLoadMore && (
             <div className="text-center text-gray-500 text-sm py-2">Loading more...</div>
           )}
         </div>
