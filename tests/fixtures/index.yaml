@@ -3,7 +3,7 @@ generated_at: "2026-02-23T00:00:00Z"
 skills:
   git-workflow:
     version: "1.0.0"
-    description: "Git branching and commit conventions for Strawpot agents"
+    description: "Git branching and commit conventions for StrawPot agents"
     tags: [git, workflow, conventions]
     dependencies: []
   code-review:

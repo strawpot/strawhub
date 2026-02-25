@@ -1,6 +1,6 @@
 ---
 name: git-workflow
-description: "Git branching and commit conventions for Strawpot agents"
+description: "Git branching and commit conventions for StrawPot agents"
 ---
 
 # Git Workflow

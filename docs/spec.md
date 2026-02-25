@@ -2,7 +2,7 @@
 
 ## Overview
 
-StrawHub is a web registry for Strawpot roles and skills. Users discover, publish, and install reusable agent components through a web UI or REST API.
+StrawHub is a web registry for StrawPot roles and skills. Users discover, publish, and install reusable agent components through a web UI or REST API.
 
 ## Content Types
 
@@ -62,7 +62,7 @@ Versions follow semver (`major.minor.patch`). Constraints are validated at publi
 
 ## Dependency Resolution
 
-When a consumer (Strawpot CLI) installs a role:
+When a consumer (StrawPot CLI) installs a role:
 
 1. Fetch role → get dependencies (skills + roles) with version constraints from frontmatter
 2. For each dependency, check its own dependencies for transitive deps
