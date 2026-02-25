@@ -70,6 +70,28 @@ jobs:
           path: playwright-report/
           retention-days: 14
 
+  deploy-preview:
+    needs: build
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Deploy to Convex dev
+        run: npx convex deploy
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY_DEV }}
+
   deploy:
     needs: build
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
