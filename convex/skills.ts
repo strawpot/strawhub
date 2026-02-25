@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { paginationOptsValidator } from "convex/server";
 import { mutation, query, internalMutation } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { parseFrontmatter } from "./lib/frontmatter";
@@ -23,8 +24,8 @@ function resolveVersion(explicit: string | undefined, latestVersion: string | un
  */
 export const list = query({
   args: {
-    limit: v.optional(v.number()),
-    cursor: v.optional(v.string()),
+    paginationOpts: paginationOptsValidator,
+    query: v.optional(v.string()),
     sort: v.optional(v.union(
       v.literal("updated"),
       v.literal("downloads"),
@@ -32,15 +33,23 @@ export const list = query({
     )),
   },
   handler: async (ctx, args) => {
-    const limit = Math.min(args.limit ?? 50, 200);
-    const skills = await ctx.db
+    const result = await ctx.db
       .query("skills")
       .withIndex("by_updated")
       .filter((q) => q.eq(q.field("softDeletedAt"), undefined))
       .order("desc")
-      .take(limit);
-    return Promise.all(
-      skills.map(async (skill) => {
+      .paginate(args.paginationOpts);
+    const q = args.query?.toLowerCase();
+    const matched = q
+      ? result.page.filter(
+          (s) =>
+            s.displayName.toLowerCase().includes(q) ||
+            s.slug.toLowerCase().includes(q) ||
+            (s.summary ?? "").toLowerCase().includes(q),
+        )
+      : result.page;
+    const page = await Promise.all(
+      matched.map(async (skill) => {
         const owner = await ctx.db.get(skill.ownerUserId);
         return {
           ...skill,
@@ -48,6 +57,7 @@ export const list = query({
         };
       }),
     );
+    return { ...result, page };
   },
 });
 

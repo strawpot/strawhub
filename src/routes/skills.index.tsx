@@ -1,6 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState, useRef, useEffect } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "convex/react";
+import { usePaginatedQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 
 export const Route = createFileRoute("/skills/")({
@@ -8,20 +8,31 @@ export const Route = createFileRoute("/skills/")({
 });
 
 function SkillsPage() {
-  const skills = useQuery(api.skills.list, { limit: 50 });
   const [filter, setFilter] = useState("");
+  const trimmed = filter.trim();
 
-  const filtered = useMemo(() => {
-    if (!skills) return undefined;
-    if (!filter.trim()) return skills;
-    const q = filter.toLowerCase();
-    return skills.filter(
-      (s) =>
-        s.displayName.toLowerCase().includes(q) ||
-        s.slug.toLowerCase().includes(q) ||
-        (s.summary ?? "").toLowerCase().includes(q),
+  const { results, status, loadMore } = usePaginatedQuery(
+    api.skills.list,
+    { query: trimmed || undefined },
+    { initialNumItems: 20 },
+  );
+
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && status === "CanLoadMore") {
+          loadMore(20);
+        }
+      },
+      { threshold: 0 },
     );
-  }, [skills, filter]);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [status, loadMore]);
 
   return (
     <div className="space-y-6">
@@ -47,17 +58,21 @@ function SkillsPage() {
         className="w-full rounded-lg border border-gray-800 bg-gray-900 px-4 py-2 text-sm text-gray-200 placeholder-gray-500 focus:border-gray-600 focus:outline-none"
       />
 
-      {filtered === undefined ? (
+      {status === "LoadingFirstPage" ? (
         <div className="text-gray-500">Loading...</div>
-      ) : filtered.length === 0 ? (
+      ) : results.length === 0 ? (
         <div className="text-gray-500">
-          {filter ? "No skills match your filter." : "No skills published yet."}
+          {trimmed ? "No skills match your filter." : "No skills published yet."}
         </div>
       ) : (
         <div className="grid gap-4">
-          {filtered.map((skill) => (
+          {results.map((skill) => (
             <SkillCard key={skill._id} skill={skill} />
           ))}
+          <div ref={sentinelRef} />
+          {status === "LoadingMore" && (
+            <div className="text-center text-gray-500 text-sm py-2">Loading more...</div>
+          )}
         </div>
       )}
     </div>

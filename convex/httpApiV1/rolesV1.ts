@@ -13,17 +13,17 @@ export const listRoles = httpAction(async (ctx, request) => {
   if (rateLimited) return rateLimited;
 
   const params = getSearchParams(request);
-  const limit = Math.min(parseInt(params.get("limit") ?? "50", 10), 200);
+  const numItems = Math.min(parseInt(params.get("limit") ?? "50", 10), 200);
   const sort = params.get("sort") ?? "updated";
 
-  const roles = await ctx.runQuery(api.roles.list, {
-    limit,
+  const result = await ctx.runQuery(api.roles.list, {
+    paginationOpts: { numItems, cursor: null },
     sort: sort as "updated" | "downloads" | "stars",
   });
 
   return jsonResponse({
-    items: roles.map(formatRole),
-    count: roles.length,
+    items: result.page.map(formatRole),
+    count: result.page.length,
   });
 });
 
