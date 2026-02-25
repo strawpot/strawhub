@@ -2,6 +2,7 @@ import { httpAction } from "../_generated/server";
 import { api, internal } from "../_generated/api";
 import { jsonResponse, errorResponse, getSearchParams, resolveTokenToUser, hashToken, checkHttpRateLimit } from "./shared";
 import { validateSlug, validateVersion, validateDisplayName, validateChangelog, MAX_FILE_SIZE } from "../lib/publishValidation";
+import { createZipBlob } from "../lib/zip";
 
 /**
  * GET /api/v1/skills — list skills
@@ -103,6 +104,7 @@ export const publishSkill = httpAction(async (ctx, request) => {
     sha256: string;
     contentType?: string;
   }> = [];
+  const zipEntries: Array<{ path: string; buffer: ArrayBuffer }> = [];
 
   if (contentType.includes("multipart/form-data")) {
     const formData = await request.formData();
@@ -136,7 +138,7 @@ export const publishSkill = httpAction(async (ctx, request) => {
       return errorResponse(e.message, 400);
     }
 
-    // Process file fields
+    // Process file fields and collect buffers for zip
     for (const [key, value] of formData.entries()) {
       if (key === "files" && value instanceof Blob) {
         const file = value as File;
@@ -152,8 +154,9 @@ export const publishSkill = httpAction(async (ctx, request) => {
           .join("");
         const filePath = file.name || "SKILL.md";
         if (filePath === "SKILL.md") {
-          skillMdText = await file.text();
+          skillMdText = new TextDecoder().decode(buffer);
         }
+        zipEntries.push({ path: filePath, buffer });
         fileEntries.push({
           path: filePath,
           size: file.size,
@@ -171,6 +174,14 @@ export const publishSkill = httpAction(async (ctx, request) => {
     return errorResponse("At least one file is required", 400);
   }
 
+  // Create and store zip archive
+  const zipBlob = await createZipBlob(
+    zipEntries.map((e) => ({ path: e.path, content: e.buffer })),
+  );
+  const zipStorageId = await ctx.storage.store(
+    new Blob([zipBlob], { type: "application/zip" }),
+  );
+
   try {
     const result = await ctx.runMutation(internal.skills.publishInternal, {
       userId,
@@ -182,6 +193,7 @@ export const publishSkill = httpAction(async (ctx, request) => {
       dependencies,
       customTags,
       skillMdText,
+      zipStorageId,
     });
     return jsonResponse(result, 201);
   } catch (e: any) {
@@ -211,6 +223,7 @@ function formatSkillDetail(skill: any) {
     stats: skill.stats,
     badges: skill.badges,
     dependencies: skill.dependencies,
+    zipUrl: skill.zipUrl ?? null,
     latestVersion: skill.latestVersion
       ? {
           version: skill.latestVersion.version,

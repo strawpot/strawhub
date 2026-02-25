@@ -88,6 +88,7 @@ export default defineSchema({
     version: v.string(),
     changelog: v.string(),
     files: v.array(fileEntry),
+    zipStorageId: v.optional(v.id("_storage")),
     parsed: v.object({
       frontmatter: v.any(),
       metadata: v.optional(v.any()),
@@ -150,6 +151,7 @@ export default defineSchema({
     version: v.string(),
     changelog: v.string(),
     files: v.array(fileEntry),
+    zipStorageId: v.optional(v.id("_storage")),
     parsed: v.object({
       frontmatter: v.any(),
       metadata: v.optional(v.any()),

@@ -39,7 +39,15 @@ export const list = query({
       .filter((q) => q.eq(q.field("softDeletedAt"), undefined))
       .order("desc")
       .take(limit);
-    return skills;
+    return Promise.all(
+      skills.map(async (skill) => {
+        const owner = await ctx.db.get(skill.ownerUserId);
+        return {
+          ...skill,
+          owner: owner ? { handle: owner.handle, image: owner.image } : null,
+        };
+      }),
+    );
   },
 });
 
@@ -69,10 +77,29 @@ export const getBySlug = query({
       };
     }
 
+    let zipUrl: string | null = null;
+    if (latestVersion?.zipStorageId) {
+      zipUrl = await ctx.storage.getUrl(latestVersion.zipStorageId);
+    }
+
+    // Resolve file storage URLs for the file viewer
+    let filesWithUrls: Array<{ path: string; size: number; url: string | null }> = [];
+    if (latestVersion?.files) {
+      filesWithUrls = await Promise.all(
+        latestVersion.files.map(async (f: { path: string; size: number; storageId: any }) => ({
+          path: f.path,
+          size: f.size,
+          url: await ctx.storage.getUrl(f.storageId),
+        })),
+      );
+    }
+
     return {
       ...skill,
       latestVersion,
       dependencies,
+      zipUrl,
+      filesWithUrls,
       owner: owner ? { handle: owner.handle, displayName: owner.displayName, image: owner.image } : null,
     };
   },
@@ -148,6 +175,7 @@ const publishArgs = {
   ),
   customTags: v.optional(v.array(v.string())),
   skillMdText: v.optional(v.string()),
+  zipStorageId: v.optional(v.id("_storage")),
 };
 
 /**
@@ -265,6 +293,7 @@ export const publishInternal = internalMutation({
       version,
       changelog: args.changelog,
       files: args.files,
+      zipStorageId: args.zipStorageId,
       parsed,
       dependencies,
       createdBy: user._id,
@@ -401,6 +430,7 @@ export const publish = mutation({
       version,
       changelog: args.changelog,
       files: args.files,
+      zipStorageId: args.zipStorageId,
       parsed,
       dependencies,
       createdBy: user._id,

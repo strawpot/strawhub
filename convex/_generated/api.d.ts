@@ -24,6 +24,7 @@ import type * as lib_frontmatter from "../lib/frontmatter.js";
 import type * as lib_publishValidation from "../lib/publishValidation.js";
 import type * as lib_rateLimit from "../lib/rateLimit.js";
 import type * as lib_versionSpec from "../lib/versionSpec.js";
+import type * as lib_zip from "../lib/zip.js";
 import type * as roles from "../roles.js";
 import type * as search from "../search.js";
 import type * as skills from "../skills.js";
@@ -52,6 +53,7 @@ declare const fullApi: ApiFromModules<{
   "lib/publishValidation": typeof lib_publishValidation;
   "lib/rateLimit": typeof lib_rateLimit;
   "lib/versionSpec": typeof lib_versionSpec;
+  "lib/zip": typeof lib_zip;
   roles: typeof roles;
   search: typeof search;
   skills: typeof skills;
