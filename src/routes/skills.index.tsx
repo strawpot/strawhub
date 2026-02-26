@@ -110,6 +110,12 @@ function SkillsPage() {
   );
 }
 
+function formatSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 function SkillCard({
   skill,
   starred,
@@ -136,6 +142,9 @@ function SkillCard({
           <p className="text-sm text-gray-400 mt-1">{skill.summary}</p>
         </div>
         <div className="flex items-center gap-3 text-xs text-gray-500 shrink-0">
+          {skill.totalSize > 0 && <span>{formatSize(skill.totalSize)}</span>}
+          {skill.latestVersionString && <span>v{skill.latestVersionString}</span>}
+          <span>{skill.stats.downloads} installs</span>
           <button
             onClick={(e) => {
               e.preventDefault();
@@ -165,7 +174,6 @@ function SkillCard({
             </svg>
             {skill.stats.stars}
           </button>
-          <span>{skill.stats.downloads} installs</span>
         </div>
       </div>
       {skill.owner && (

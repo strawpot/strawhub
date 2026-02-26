@@ -98,6 +98,12 @@ function SearchPage() {
   );
 }
 
+function formatSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 function SearchResultCard({ result }: { result: any }) {
   return (
     <Link
@@ -119,6 +125,8 @@ function SearchResultCard({ result }: { result: any }) {
           )}
         </div>
         <div className="flex gap-4 text-xs text-gray-500 shrink-0">
+          {result.totalSize > 0 && <span>{formatSize(result.totalSize)}</span>}
+          {result.latestVersionString && <span>v{result.latestVersionString}</span>}
           <span>{result.stats.downloads} downloads</span>
           <span>{result.stats.stars} stars</span>
         </div>

@@ -112,6 +112,12 @@ function RolesPage() {
   );
 }
 
+function formatSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 function RoleCard({
   role,
   starred,
@@ -138,6 +144,9 @@ function RoleCard({
           <p className="text-sm text-gray-400 mt-1">{role.summary}</p>
         </div>
         <div className="flex items-center gap-3 text-xs text-gray-500 shrink-0">
+          {role.totalSize > 0 && <span>{formatSize(role.totalSize)}</span>}
+          {role.latestVersionString && <span>v{role.latestVersionString}</span>}
+          <span>{role.stats.downloads} installs</span>
           <button
             onClick={(e) => {
               e.preventDefault();
@@ -167,7 +176,6 @@ function RoleCard({
             </svg>
             {role.stats.stars}
           </button>
-          <span>{role.stats.downloads} installs</span>
         </div>
       </div>
       {role.owner && (
