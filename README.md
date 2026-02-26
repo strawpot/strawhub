@@ -25,6 +25,7 @@ Following the same architecture as [ClawHub](https://clawhub.ai/), it extends th
 - **GitHub Import** — paste a GitHub repo URL to fetch and publish directly
 - **Dashboard** — manage your published skills and roles
 - **Settings** — edit profile (display name, bio), manage API tokens, delete account
+- **Admin** — user management (role assignment, block/unblock), content reports
 - **GitHub OAuth** — sign in with GitHub, avatar and @handle shown in nav
 - **API Tokens** — create bearer tokens for CLI / programmatic access
 - **Dependency Resolution** — roles declare skill dependencies resolved recursively on install
