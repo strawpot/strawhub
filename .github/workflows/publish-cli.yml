@@ -42,16 +42,23 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install hatch
-        run: pip install hatch
+      - name: Install build tools
+        run: pip install build
 
       - name: Bump patch version
         run: |
-          hatch version patch
-          echo "NEW_VERSION=$(hatch version)" >> "$GITHUB_ENV"
+          python -c "
+          import re, pathlib
+          f = pathlib.Path('src/strawhub/__init__.py')
+          text = f.read_text()
+          major, minor, patch = re.search(r'(\d+)\.(\d+)\.(\d+)', text).groups()
+          new_ver = f'{major}.{minor}.{int(patch)+1}'
+          f.write_text(re.sub(r'__version__ = .+', f'__version__ = \"{new_ver}\"', text))
+          print(new_ver)
+          " | tail -1 | xargs -I{} bash -c 'echo "NEW_VERSION={}" >> "$GITHUB_ENV"'
 
       - name: Build package
-        run: hatch build
+        run: python -m build
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
