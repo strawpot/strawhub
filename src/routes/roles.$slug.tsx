@@ -27,7 +27,12 @@ function RoleDetailPage() {
     role ? { roleId: role._id } : "skip",
   );
   const trackDownload = useMutation(api.downloads.trackDownload);
+  const toggleStar = useMutation(api.stars.toggle);
   const currentUser = useQuery(api.users.me);
+  const starred = useQuery(
+    api.stars.isStarred,
+    role ? { targetId: role._id } : "skip",
+  );
   const navigate = useNavigate();
   const isOwner = !!(currentUser && role && role.ownerUserId === currentUser._id);
 
@@ -109,7 +114,7 @@ function RoleDetailPage() {
           {role.latestVersion && role.zipUrl && (
             <button
               onClick={async () => {
-                trackDownload({ targetKind: "role", slug: role.slug });
+                trackDownload({ targetKind: "role", slug: role.slug, version: role.latestVersion!.version });
                 const res = await fetch(role.zipUrl!);
                 const blob = await res.blob();
                 const url = URL.createObjectURL(blob);
@@ -164,13 +169,44 @@ function RoleDetailPage() {
         </div>
       )}
 
-      {role.summary && <p className="text-gray-300">{role.summary}</p>}
-
-      <div className="flex gap-6 text-sm text-gray-400">
-        <span>{role.stats.downloads} downloads</span>
-        <span>{role.stats.stars} stars</span>
+      <div className="flex items-center gap-6 text-sm text-gray-400">
+        <button
+          onClick={() => {
+            if (currentUser) {
+              toggleStar({ targetId: role._id, targetKind: "role" });
+            }
+          }}
+          className={`inline-flex items-center gap-2 rounded-lg border px-3.5 py-1.5 text-base font-medium transition-colors ${
+            starred
+              ? "border-yellow-500/40 bg-yellow-500/10 text-yellow-400"
+              : currentUser
+                ? "border-gray-700 text-gray-400 hover:border-yellow-500/40 hover:text-yellow-400"
+                : "border-gray-700 text-gray-400 cursor-default"
+          }`}
+        >
+          <svg
+            className="h-6 w-6"
+            viewBox="0 0 24 24"
+            fill={starred ? "currentColor" : "none"}
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.562.562 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.562.562 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"
+            />
+          </svg>
+          {role.stats.stars}
+        </button>
+        {role.latestVersion && (
+          <span>{role.latestVersion.downloads ?? 0} current installs</span>
+        )}
+        <span>{role.stats.downloads} all-time installs</span>
         <span>{role.stats.versions} versions</span>
       </div>
+
+      {role.summary && <p className="text-gray-300">{role.summary}</p>}
 
       {/* Tabbed: Files / Versions */}
       <DetailTabs
@@ -346,7 +382,7 @@ function DetailTabs({
   latestVersionId: string | undefined;
   slug: string;
   targetKind: "skill" | "role";
-  trackDownload: (args: { targetKind: "skill" | "role"; slug: string }) => void;
+  trackDownload: (args: { targetKind: "skill" | "role"; slug: string; version?: string }) => void;
 }) {
   const [tab, setTab] = useState<"files" | "versions">("files");
 
@@ -490,7 +526,7 @@ function DetailTabs({
                 {ver.zipUrl && (
                   <button
                     onClick={async () => {
-                      trackDownload({ targetKind, slug });
+                      trackDownload({ targetKind, slug, version: ver.version });
                       const res = await fetch(ver.zipUrl!);
                       const blob = await res.blob();
                       const url = URL.createObjectURL(blob);

@@ -38,6 +38,9 @@ function RootLayout() {
           <Link to="/upload" className="hidden md:block text-sm text-gray-400 hover:text-white">
             Publish
           </Link>
+          <Link to="/stars" className="hidden md:block text-sm text-gray-400 hover:text-white">
+            Stars
+          </Link>
 
           <div className="flex-1" />
 
@@ -84,6 +87,9 @@ function RootLayout() {
             </Link>
             <Link to="/upload" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-sm text-gray-400 hover:text-white">
               Publish
+            </Link>
+            <Link to="/stars" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-sm text-gray-400 hover:text-white">
+              Stars
             </Link>
           </div>
         )}
@@ -145,6 +151,13 @@ function UserMenu({ onSignOut }: { onSignOut: () => void }) {
             className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white"
           >
             Dashboard
+          </Link>
+          <Link
+            to="/stars"
+            onClick={() => setOpen(false)}
+            className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white"
+          >
+            Stars
           </Link>
           <Link
             to="/settings"
