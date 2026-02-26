@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import { mutation, query, internalMutation } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { parseFrontmatter } from "./lib/frontmatter";
-import { parseDependencySpec, parseVersion, compareVersions, satisfiesVersion, splitDependencies } from "./lib/versionSpec";
+import { parseDependencySpec, parseVersion, compareVersions, satisfiesVersion } from "./lib/versionSpec";
 import { validateSlug, validateVersion, validateDisplayName, validateChangelog, validateFiles, validateRoleFiles } from "./lib/publishValidation";
 
 /** Resolve version: validate if provided, otherwise auto-increment from latest. */
@@ -207,8 +207,16 @@ export const publishInternal = internalMutation({
     }
 
     let dependencies = args.dependencies;
-    if (!dependencies && Array.isArray(parsed.frontmatter.dependencies)) {
-      dependencies = splitDependencies(parsed.frontmatter.dependencies as string[]);
+    if (!dependencies && parsed.frontmatter.dependencies != null) {
+      const fmDeps = parsed.frontmatter.dependencies as { skills?: string[]; roles?: string[] };
+      const skills = fmDeps.skills?.map((d) => d.trim()).filter(Boolean);
+      const roles = fmDeps.roles?.map((d) => d.trim()).filter(Boolean);
+      if (skills?.length || roles?.length) {
+        dependencies = {
+          ...(skills?.length ? { skills } : {}),
+          ...(roles?.length ? { roles } : {}),
+        };
+      }
     }
 
     // Validate all dependencies (collect errors by category)
@@ -393,8 +401,16 @@ export const publish = mutation({
 
     // Read dependencies from frontmatter if not provided in args
     let dependencies = args.dependencies;
-    if (!dependencies && Array.isArray(parsed.frontmatter.dependencies)) {
-      dependencies = splitDependencies(parsed.frontmatter.dependencies as string[]);
+    if (!dependencies && parsed.frontmatter.dependencies != null) {
+      const fmDeps = parsed.frontmatter.dependencies as { skills?: string[]; roles?: string[] };
+      const skills = fmDeps.skills?.map((d) => d.trim()).filter(Boolean);
+      const roles = fmDeps.roles?.map((d) => d.trim()).filter(Boolean);
+      if (skills?.length || roles?.length) {
+        dependencies = {
+          ...(skills?.length ? { skills } : {}),
+          ...(roles?.length ? { roles } : {}),
+        };
+      }
     }
 
     // Validate all dependencies (collect errors by category)

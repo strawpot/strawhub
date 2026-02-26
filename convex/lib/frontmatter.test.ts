@@ -134,7 +134,7 @@ name: implementer
 description: "One-line summary"
 dependencies:
   - git-workflow>=1.0.0
-  - role:reviewer
+  - code-review
 ---
 Instructions here.
 `;
@@ -143,9 +143,69 @@ Instructions here.
     expect(result.frontmatter.description).toBe("One-line summary");
     expect(result.frontmatter.dependencies).toEqual([
       "git-workflow>=1.0.0",
-      "role:reviewer",
+      "code-review",
     ]);
     expect(result.body).toBe("Instructions here.\n");
+  });
+
+  it("parses nested object with sub-key arrays", () => {
+    const text = `---
+name: implementer
+dependencies:
+  skills:
+    - git-workflow
+    - code-review>=1.0.0
+  roles:
+    - reviewer
+---
+Body.
+`;
+    const result = parseFrontmatter(text);
+    expect(result.frontmatter.name).toBe("implementer");
+    expect(result.frontmatter.dependencies).toEqual({
+      skills: ["git-workflow", "code-review>=1.0.0"],
+      roles: ["reviewer"],
+    });
+  });
+
+  it("parses nested object with only one sub-key", () => {
+    const text = `---
+dependencies:
+  skills:
+    - git-workflow
+---
+Body.
+`;
+    const result = parseFrontmatter(text);
+    expect(result.frontmatter.dependencies).toEqual({
+      skills: ["git-workflow"],
+    });
+  });
+
+  it("parses nested object followed by another top-level key", () => {
+    const text = `---
+name: implementer
+dependencies:
+  skills:
+    - git-workflow
+    - code-review
+  roles:
+    - reviewer
+metadata:
+  strawpot:
+    default_model:
+      provider: claude_session
+---
+Body.
+`;
+    const result = parseFrontmatter(text);
+    expect(result.frontmatter.name).toBe("implementer");
+    expect(result.frontmatter.dependencies).toEqual({
+      skills: ["git-workflow", "code-review"],
+      roles: ["reviewer"],
+    });
+    // metadata is parsed as a nested object too
+    expect(result.frontmatter.metadata).toBeDefined();
   });
 
   it("skips blank lines in frontmatter", () => {

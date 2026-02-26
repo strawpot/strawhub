@@ -32,24 +32,29 @@ roles:
     version: "1.0.0"
     description: "Writes code to implement features and fix bugs"
     tags: [coding, implementation]
-    dependencies: [git-workflow, code-review, python-testing]
+    dependencies:
+      skills: [git-workflow, code-review, python-testing]
   reviewer:
     version: "1.0.0"
     description: "Reviews diffs against acceptance criteria"
     tags: [review, quality]
-    dependencies: [code-review, security-baseline]
+    dependencies:
+      skills: [code-review, security-baseline]
   planner:
     version: "1.0.0"
     description: "Decomposes objectives into task DAGs"
     tags: [planning, architecture]
-    dependencies: []
+    dependencies:
+      skills: []
   fixer:
     version: "1.0.0"
     description: "Fixes failing checks or review blockers"
     tags: [fixing, debugging]
-    dependencies: [git-workflow]
+    dependencies:
+      skills: [git-workflow]
   documenter:
     version: "1.0.0"
     description: "Writes and updates documentation and changelogs"
     tags: [documentation, writing]
-    dependencies: []
+    dependencies:
+      skills: []

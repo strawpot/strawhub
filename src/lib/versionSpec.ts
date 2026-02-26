@@ -4,7 +4,6 @@
  */
 
 export interface DependencySpec {
-  kind: "skill" | "role";
   slug: string;
   operator: "latest" | "==" | ">=" | "^";
   version: string | null;
@@ -21,18 +20,11 @@ const SLUG_REGEX = /^[a-z0-9][a-z0-9-]*$/;
 const VERSION_REGEX = /^(\d+)\.(\d+)\.(\d+)$/;
 
 export function parseDependencySpec(spec: string): DependencySpec {
-  let input = spec.trim();
-  let kind: "skill" | "role" = "skill";
-
-  if (input.startsWith("role:")) {
-    kind = "role";
-    input = input.slice(5);
-  }
+  const input = spec.trim();
 
   const match = input.match(SPEC_REGEX);
   if (match) {
     return {
-      kind,
       slug: match[1],
       operator: match[2] as "==" | ">=" | "^",
       version: match[3],
@@ -40,7 +32,7 @@ export function parseDependencySpec(spec: string): DependencySpec {
   }
 
   if (SLUG_REGEX.test(input)) {
-    return { kind, slug: input, operator: "latest", version: null };
+    return { slug: input, operator: "latest", version: null };
   }
 
   throw new Error(`Invalid dependency specifier: '${spec}'`);
@@ -89,23 +81,4 @@ export function satisfiesVersion(
 
 export function extractSlug(spec: string): string {
   return parseDependencySpec(spec).slug;
-}
-
-export function splitDependencies(
-  deps: string[],
-): { skills?: string[]; roles?: string[] } {
-  const skills: string[] = [];
-  const roles: string[] = [];
-  for (const dep of deps) {
-    const trimmed = dep.trim();
-    if (trimmed.startsWith("role:")) {
-      roles.push(trimmed.slice(5));
-    } else {
-      skills.push(trimmed);
-    }
-  }
-  return {
-    ...(skills.length ? { skills } : {}),
-    ...(roles.length ? { roles } : {}),
-  };
 }

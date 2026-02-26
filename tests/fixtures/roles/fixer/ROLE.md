@@ -2,7 +2,8 @@
 name: fixer
 description: "Fixes failing checks or review blockers"
 dependencies:
-  - git-workflow
+  skills:
+    - git-workflow
 metadata:
   strawpot:
     default_model:
