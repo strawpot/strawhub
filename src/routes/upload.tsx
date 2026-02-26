@@ -520,83 +520,6 @@ function UploadPage() {
     <div className="space-y-6 max-w-2xl">
       <h1 className="text-3xl font-bold text-white">Publish</h1>
 
-      {/* GitHub Import */}
-      <div className="rounded-lg border border-gray-800">
-        <button
-          onClick={() => setShowImport(!showImport)}
-          className="w-full px-4 py-3 text-left text-sm font-medium text-gray-300 hover:text-white flex items-center justify-between"
-        >
-          <span>Import from GitHub</span>
-          <span className="text-gray-500">{showImport ? "−" : "+"}</span>
-        </button>
-        {showImport && (
-          <div className="px-4 pb-4 space-y-3">
-            <p className="text-xs text-gray-500">
-              Paste a GitHub URL to import files. Supports repo URLs, directory
-              paths, and raw file links.
-            </p>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={githubUrl}
-                onChange={(e) => setGithubUrl(e.target.value)}
-                placeholder="https://github.com/user/repo/tree/main/skills/my-skill"
-                className="flex-1 rounded border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-orange-400 focus:outline-none"
-              />
-              <button
-                onClick={handleGitHubImport}
-                disabled={isFetching || !githubUrl.trim()}
-                className="rounded bg-gray-800 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-50"
-              >
-                {isFetching ? "Fetching..." : "Fetch"}
-              </button>
-            </div>
-            {importError && (
-              <p className="text-sm text-red-400">{importError}</p>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* ClawHub Import — skills only */}
-      {kind === "skill" && (
-        <div className="rounded-lg border border-gray-800">
-          <button
-            onClick={() => setShowClawHubImport(!showClawHubImport)}
-            className="w-full px-4 py-3 text-left text-sm font-medium text-gray-300 hover:text-white flex items-center justify-between"
-          >
-            <span>Import from ClawHub</span>
-            <span className="text-gray-500">{showClawHubImport ? "−" : "+"}</span>
-          </button>
-          {showClawHubImport && (
-            <div className="px-4 pb-4 space-y-3">
-              <p className="text-xs text-gray-500">
-                Paste a ClawHub skill URL to import all files.
-              </p>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={clawhubUrl}
-                  onChange={(e) => setClawhubUrl(e.target.value)}
-                  placeholder="https://clawhub.ai/owner/my-skill"
-                  className="flex-1 rounded border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-orange-400 focus:outline-none"
-                />
-                <button
-                  onClick={handleClawHubImport}
-                  disabled={isFetchingClawHub || !clawhubUrl.trim()}
-                  className="rounded bg-gray-800 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-50"
-                >
-                  {isFetchingClawHub ? "Fetching..." : "Fetch"}
-                </button>
-              </div>
-              {clawhubImportError && (
-                <p className="text-sm text-red-400">{clawhubImportError}</p>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
       <div className="space-y-4">
         {/* Kind Toggle */}
         <div className="flex gap-4">
@@ -621,6 +544,83 @@ function UploadPage() {
             Role
           </button>
         </div>
+
+        {/* GitHub Import */}
+        <div className="rounded-lg border border-gray-800">
+          <button
+            onClick={() => setShowImport(!showImport)}
+            className="w-full px-4 py-3 text-left text-sm font-medium text-gray-300 hover:text-white flex items-center justify-between"
+          >
+            <span>Import from GitHub</span>
+            <span className="text-gray-500">{showImport ? "−" : "+"}</span>
+          </button>
+          {showImport && (
+            <div className="px-4 pb-4 space-y-3">
+              <p className="text-xs text-gray-500">
+                Paste a GitHub URL to import files. Supports repo URLs, directory
+                paths, and raw file links.
+              </p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={githubUrl}
+                  onChange={(e) => setGithubUrl(e.target.value)}
+                  placeholder="https://github.com/user/repo/tree/main/skills/my-skill"
+                  className="flex-1 rounded border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-orange-400 focus:outline-none"
+                />
+                <button
+                  onClick={handleGitHubImport}
+                  disabled={isFetching || !githubUrl.trim()}
+                  className="rounded bg-gray-800 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-50"
+                >
+                  {isFetching ? "Fetching..." : "Fetch"}
+                </button>
+              </div>
+              {importError && (
+                <p className="text-sm text-red-400">{importError}</p>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* ClawHub Import — skills only */}
+        {kind === "skill" && (
+          <div className="rounded-lg border border-gray-800">
+            <button
+              onClick={() => setShowClawHubImport(!showClawHubImport)}
+              className="w-full px-4 py-3 text-left text-sm font-medium text-gray-300 hover:text-white flex items-center justify-between"
+            >
+              <span>Import from ClawHub</span>
+              <span className="text-gray-500">{showClawHubImport ? "−" : "+"}</span>
+            </button>
+            {showClawHubImport && (
+              <div className="px-4 pb-4 space-y-3">
+                <p className="text-xs text-gray-500">
+                  Paste a ClawHub skill URL to import all files.
+                </p>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={clawhubUrl}
+                    onChange={(e) => setClawhubUrl(e.target.value)}
+                    placeholder="https://clawhub.ai/owner/my-skill"
+                    className="flex-1 rounded border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-orange-400 focus:outline-none"
+                  />
+                  <button
+                    onClick={handleClawHubImport}
+                    disabled={isFetchingClawHub || !clawhubUrl.trim()}
+                    className="rounded bg-gray-800 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-50"
+                  >
+                    {isFetchingClawHub ? "Fetching..." : "Fetch"}
+                  </button>
+                </div>
+                {clawhubImportError && (
+                  <p className="text-sm text-red-400">{clawhubImportError}</p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* File Drop Zone */}
         <div
