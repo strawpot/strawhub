@@ -36,6 +36,27 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+  cli:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    defaults:
+      run:
+        working-directory: cli
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: pip install -e ".[test]"
+
+      - name: Test
+        run: pytest tests/ -v --tb=short
+
   e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -71,7 +92,7 @@ jobs:
           retention-days: 14
 
   deploy-preview:
-    needs: build
+    needs: [build, cli]
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -93,7 +114,7 @@ jobs:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY_DEV }}
 
   deploy:
-    needs: build
+    needs: [build, cli]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 10
