@@ -32,6 +32,7 @@ export const search = query({
         if (!skill || skill.softDeletedAt) continue;
 
         const owner = await ctx.db.get(skill.ownerUserId);
+        const latestVersion = skill.latestVersionId ? await ctx.db.get(skill.latestVersionId) : null;
         const lexicalBoost = computeLexicalBoost(queryTokens, skill.slug, skill.displayName);
         const popularityBoost = Math.log(Math.max(skill.stats.downloads, 1)) * 0.08;
 
@@ -41,6 +42,8 @@ export const search = query({
           displayName: skill.displayName,
           summary: skill.summary,
           stats: skill.stats,
+          latestVersionString: latestVersion?.version ?? null,
+          totalSize: latestVersion?.files?.reduce((sum: number, f: { size: number }) => sum + f.size, 0) ?? 0,
           owner: owner ? { handle: owner.handle, image: owner.image } : null,
           score: lexicalBoost + popularityBoost,
         });
@@ -59,6 +62,7 @@ export const search = query({
         if (!role || role.softDeletedAt) continue;
 
         const owner = await ctx.db.get(role.ownerUserId);
+        const latestVersion = role.latestVersionId ? await ctx.db.get(role.latestVersionId) : null;
         const lexicalBoost = computeLexicalBoost(queryTokens, role.slug, role.displayName);
         const popularityBoost = Math.log(Math.max(role.stats.downloads, 1)) * 0.08;
 
@@ -68,6 +72,8 @@ export const search = query({
           displayName: role.displayName,
           summary: role.summary,
           stats: role.stats,
+          latestVersionString: latestVersion?.version ?? null,
+          totalSize: latestVersion?.files?.reduce((sum: number, f: { size: number }) => sum + f.size, 0) ?? 0,
           owner: owner ? { handle: owner.handle, image: owner.image } : null,
           score: lexicalBoost + popularityBoost,
         });
@@ -87,12 +93,15 @@ export const search = query({
           const boost = computeLexicalBoost(queryTokens, skill.slug, skill.displayName);
           if (boost > 0) {
             const owner = await ctx.db.get(skill.ownerUserId);
+            const latestVersion = skill.latestVersionId ? await ctx.db.get(skill.latestVersionId) : null;
             results.push({
               kind: "skill",
               slug: skill.slug,
               displayName: skill.displayName,
               summary: skill.summary,
               stats: skill.stats,
+              latestVersionString: latestVersion?.version ?? null,
+              totalSize: latestVersion?.files?.reduce((sum: number, f: { size: number }) => sum + f.size, 0) ?? 0,
               owner: owner ? { handle: owner.handle, image: owner.image } : null,
               score: boost,
             });
@@ -111,12 +120,15 @@ export const search = query({
           const boost = computeLexicalBoost(queryTokens, role.slug, role.displayName);
           if (boost > 0) {
             const owner = await ctx.db.get(role.ownerUserId);
+            const latestVersion = role.latestVersionId ? await ctx.db.get(role.latestVersionId) : null;
             results.push({
               kind: "role",
               slug: role.slug,
               displayName: role.displayName,
               summary: role.summary,
               stats: role.stats,
+              latestVersionString: latestVersion?.version ?? null,
+              totalSize: latestVersion?.files?.reduce((sum: number, f: { size: number }) => sum + f.size, 0) ?? 0,
               owner: owner ? { handle: owner.handle, image: owner.image } : null,
               score: boost,
             });
@@ -139,6 +151,8 @@ interface SearchResult {
   displayName: string;
   summary?: string;
   stats: { downloads: number; stars: number; versions: number; comments: number };
+  latestVersionString: string | null;
+  totalSize: number;
   owner: { handle: string | undefined; image: string | undefined } | null;
   score: number;
 }

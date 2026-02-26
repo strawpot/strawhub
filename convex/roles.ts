@@ -49,8 +49,13 @@ export const list = query({
     return Promise.all(
       matched.map(async (role) => {
         const owner = await ctx.db.get(role.ownerUserId);
+        const latestVersion = role.latestVersionId
+          ? await ctx.db.get(role.latestVersionId)
+          : null;
         return {
           ...role,
+          latestVersionString: latestVersion?.version ?? null,
+          totalSize: latestVersion?.files?.reduce((sum: number, f: { size: number }) => sum + f.size, 0) ?? 0,
           owner: owner ? { handle: owner.handle, image: owner.image } : null,
         };
       }),
