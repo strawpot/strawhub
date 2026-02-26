@@ -2,6 +2,8 @@
  * Shared validation for skill and role publish operations.
  */
 import { parseVersion } from "./versionSpec";
+import { isTextFile } from "./textExtensions";
+import { isBinaryByMagicBytes, containsNullBytes } from "./binaryDetection";
 
 const SLUG_REGEX = /^[a-z0-9][a-z0-9-]*$/;
 
@@ -78,5 +80,35 @@ export function validateRoleFiles(
   }
   if (files[0].path !== "ROLE.md") {
     throw new Error("Role uploads must contain exactly one file: ROLE.md");
+  }
+}
+
+/**
+ * Verify that a ROLE.md file is actually a text file, not a renamed binary.
+ * Uses three layers: extension check, magic bytes detection, null byte heuristic.
+ */
+export function assertRoleFileIsText(
+  filePath: string,
+  buffer: Uint8Array,
+): void {
+  // Layer 1: extension check
+  if (!isTextFile(filePath)) {
+    throw new Error(
+      `File '${filePath}' does not have a recognized text file extension`,
+    );
+  }
+
+  // Layer 2: magic bytes — reject known binary formats
+  if (isBinaryByMagicBytes(buffer)) {
+    throw new Error(
+      `File '${filePath}' appears to be a binary file (detected binary file signature)`,
+    );
+  }
+
+  // Layer 3: null byte heuristic
+  if (containsNullBytes(buffer, 8192)) {
+    throw new Error(
+      `File '${filePath}' appears to be a binary file (contains null bytes)`,
+    );
   }
 }

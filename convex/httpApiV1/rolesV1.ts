@@ -2,7 +2,7 @@ import { httpAction } from "../_generated/server";
 import { api, internal } from "../_generated/api";
 import { jsonResponse, errorResponse, getSearchParams, resolveTokenToUser, checkHttpRateLimit } from "./shared";
 import { parseDependencySpec, satisfiesVersion } from "../lib/versionSpec";
-import { validateSlug, validateVersion, validateDisplayName, validateChangelog, validateRoleFiles, MAX_FILE_SIZE } from "../lib/publishValidation";
+import { validateSlug, validateVersion, validateDisplayName, validateChangelog, validateRoleFiles, assertRoleFileIsText, MAX_FILE_SIZE } from "../lib/publishValidation";
 import { createZipBlob } from "../lib/zip";
 
 /**
@@ -276,13 +276,21 @@ export const publishRole = httpAction(async (ctx, request) => {
         if (file.size > MAX_FILE_SIZE) {
           return errorResponse(`File '${file.name}' exceeds ${MAX_FILE_SIZE / 1024}KB limit`, 400);
         }
-        const storageId = await ctx.storage.store(file);
         const buffer = await file.arrayBuffer();
+        const filePath = file.name || "ROLE.md";
+
+        // Reject binary files — roles only allow text
+        try {
+          assertRoleFileIsText(filePath, new Uint8Array(buffer));
+        } catch (e: any) {
+          return errorResponse(e.message, 400);
+        }
+
+        const storageId = await ctx.storage.store(file);
         const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
         const sha256 = Array.from(new Uint8Array(hashBuffer))
           .map((b) => b.toString(16).padStart(2, "0"))
           .join("");
-        const filePath = file.name || "ROLE.md";
         if (filePath === "ROLE.md") {
           roleMdText = new TextDecoder().decode(buffer);
         }
