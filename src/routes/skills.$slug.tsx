@@ -323,6 +323,14 @@ function SkillDetailPage() {
         trackDownload={trackDownload}
       />
 
+      {/* Comments */}
+      <CommentsSection
+        targetId={skill._id}
+        targetKind="skill"
+        commentCount={skill.stats.comments}
+        currentUser={currentUser}
+      />
+
       {/* Dependencies */}
       {skill.dependencies.skills.length > 0 && (
         <div className="space-y-2">
@@ -648,6 +656,148 @@ function DetailTabs({
   );
 }
 
+function CommentsSection({
+  targetId,
+  targetKind,
+  commentCount,
+  currentUser,
+}: {
+  targetId: string;
+  targetKind: "skill" | "role";
+  commentCount: number;
+  currentUser: { _id: string } | null | undefined;
+}) {
+  const comments = useQuery(api.comments.list, { targetId });
+  const createComment = useMutation(api.comments.create);
+  const removeComment = useMutation(api.comments.remove);
+
+  const [body, setBody] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async () => {
+    if (!body.trim()) return;
+    setSubmitting(true);
+    setError("");
+    try {
+      await createComment({ targetId, targetKind, body });
+      setBody("");
+    } catch (e: any) {
+      setError(e.message || "Failed to post comment.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <h3 className="text-sm font-medium text-gray-400">
+        Comments ({commentCount})
+      </h3>
+
+      {currentUser && (
+        <div className="space-y-2">
+          <textarea
+            rows={3}
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            placeholder="Leave a comment..."
+            maxLength={2000}
+            className="w-full rounded border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-orange-500 focus:outline-none resize-none"
+          />
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-gray-600">{body.length}/2000</p>
+            <button
+              onClick={handleSubmit}
+              disabled={submitting || !body.trim()}
+              className="rounded bg-orange-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-orange-500 disabled:opacity-50 transition-colors"
+            >
+              {submitting ? "Posting..." : "Post Comment"}
+            </button>
+          </div>
+          {error && <p className="text-sm text-red-400">{error}</p>}
+        </div>
+      )}
+
+      {comments === undefined ? (
+        <p className="text-gray-500 text-sm">Loading comments...</p>
+      ) : comments.length === 0 ? (
+        <p className="text-gray-500 text-sm">No comments yet.</p>
+      ) : (
+        <div className="space-y-3">
+          {comments.map((comment) => (
+            <div
+              key={comment._id}
+              className="rounded-lg border border-gray-800 p-4 space-y-2"
+            >
+              {comment.deleted ? (
+                <p className="text-sm text-gray-600 italic">
+                  This comment was deleted by its author or a moderator.
+                </p>
+              ) : (
+                <>
+                  <div className="flex items-center gap-3">
+                    {comment.author?.image ? (
+                      <img
+                        src={comment.author.image}
+                        alt={comment.author.handle ?? ""}
+                        className="h-6 w-6 rounded-full"
+                      />
+                    ) : (
+                      <div className="h-6 w-6 rounded-full bg-gray-700" />
+                    )}
+                    <div className="flex items-center gap-2 text-sm min-w-0">
+                      <span className="text-gray-200 truncate">
+                        @{comment.author?.handle ?? "unknown"}
+                      </span>
+                      <span className="text-gray-600 shrink-0">
+                        {formatRelativeTime(comment.createdAt)}
+                      </span>
+                    </div>
+                    {comment.canDelete && (
+                      <button
+                        onClick={async () => {
+                          try {
+                            await removeComment({ commentId: comment._id });
+                          } catch {
+                            // silently fail
+                          }
+                        }}
+                        className="ml-auto shrink-0 rounded p-1 text-gray-600 hover:text-red-400 hover:bg-gray-800 transition-colors"
+                        title="Delete comment"
+                      >
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-300 whitespace-pre-wrap">{comment.body}</p>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function formatRelativeTime(timestamp: number): string {
+  const seconds = Math.floor((Date.now() - timestamp) / 1000);
+  if (seconds < 60) return "just now";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days}d ago`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months}mo ago`;
+  const years = Math.floor(days / 365);
+  return `${years}y ago`;
+}
+
 const TEXT_EXTENSIONS = new Set([
   ".md", ".txt", ".json", ".yaml", ".yml", ".toml", ".xml", ".html", ".css",
   ".js", ".ts", ".jsx", ".tsx", ".py", ".rb", ".sh", ".bash", ".zsh",
@@ -658,7 +808,6 @@ const TEXT_EXTENSIONS = new Set([
 function isLikelyBinary(path: string, content: string): boolean {
   const ext = path.slice(path.lastIndexOf(".")).toLowerCase();
   if (TEXT_EXTENSIONS.has(ext)) return false;
-  // Check for null bytes or Unicode replacement characters typical of binary-as-text
   return /\0/.test(content) || (content.length > 0 && (content.match(/\uFFFD/g)?.length ?? 0) / content.length > 0.01);
 }
 
