@@ -7,6 +7,7 @@ import { useSEO } from "../lib/useSEO";
 import { parseFrontmatter } from "../lib/parseFrontmatter";
 import { sha256Hex } from "../lib/hash";
 import { fetchFromGitHub } from "../lib/githubImport";
+import { fetchFromClawHub } from "../lib/clawhubImport";
 import JSZip from "jszip";
 
 type UploadSearch = { mode?: "import"; updateSlug?: string; kind?: "skill" | "role" };
@@ -99,6 +100,11 @@ function UploadPage() {
   const [githubUrl, setGithubUrl] = useState("");
   const [isFetching, setIsFetching] = useState(false);
   const [showImport, setShowImport] = useState(mode === "import");
+
+  // ClawHub import state
+  const [clawhubUrl, setClawhubUrl] = useState("");
+  const [isFetchingClawHub, setIsFetchingClawHub] = useState(false);
+  const [showClawHubImport, setShowClawHubImport] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
@@ -305,6 +311,30 @@ function UploadPage() {
     }
   };
 
+  const handleClawHubImport = async () => {
+    if (!clawhubUrl.trim()) return;
+    setIsFetchingClawHub(true);
+    setError(null);
+    try {
+      const chFiles = await fetchFromClawHub(clawhubUrl.trim());
+      if (chFiles.length === 0) {
+        setError("No files found at that URL.");
+        return;
+      }
+      const fileObjects = chFiles.map((f) => ({
+        file: new File([f.content], f.path, { type: "text/plain" }),
+        path: f.path,
+      }));
+      processFiles(fileObjects);
+      setShowClawHubImport(false);
+      setClawhubUrl("");
+    } catch (e: any) {
+      setError(e.message || "Failed to fetch from ClawHub");
+    } finally {
+      setIsFetchingClawHub(false);
+    }
+  };
+
   const handlePublish = async () => {
     if (!slug.trim() || !displayName.trim() || files.length === 0) {
       setError("Slug, display name, and at least one file are required.");
@@ -508,6 +538,42 @@ function UploadPage() {
           </div>
         )}
       </div>
+
+      {/* ClawHub Import — skills only */}
+      {kind === "skill" && (
+        <div className="rounded-lg border border-gray-800">
+          <button
+            onClick={() => setShowClawHubImport(!showClawHubImport)}
+            className="w-full px-4 py-3 text-left text-sm font-medium text-gray-300 hover:text-white flex items-center justify-between"
+          >
+            <span>Import from ClawHub</span>
+            <span className="text-gray-500">{showClawHubImport ? "−" : "+"}</span>
+          </button>
+          {showClawHubImport && (
+            <div className="px-4 pb-4 space-y-3">
+              <p className="text-xs text-gray-500">
+                Paste a ClawHub skill URL to import all files.
+              </p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={clawhubUrl}
+                  onChange={(e) => setClawhubUrl(e.target.value)}
+                  placeholder="https://clawhub.ai/owner/my-skill"
+                  className="flex-1 rounded border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-orange-400 focus:outline-none"
+                />
+                <button
+                  onClick={handleClawHubImport}
+                  disabled={isFetchingClawHub || !clawhubUrl.trim()}
+                  className="rounded bg-gray-800 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-50"
+                >
+                  {isFetchingClawHub ? "Fetching..." : "Fetch"}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="space-y-4">
         {/* Kind Toggle */}
