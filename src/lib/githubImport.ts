@@ -13,7 +13,7 @@ interface ParsedGitHubUrl {
 /**
  * Parse a GitHub URL into its components.
  */
-function parseGitHubUrl(url: string): ParsedGitHubUrl {
+export function parseGitHubUrl(url: string): ParsedGitHubUrl {
   const u = new URL(url);
 
   // raw.githubusercontent.com/owner/repo/branch/path
