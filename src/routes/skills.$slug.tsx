@@ -210,6 +210,7 @@ function SkillMdViewer({
   file: { path: string; size: number; url: string | null } | undefined;
 }) {
   const [content, setContent] = useState<string | null>(null);
+  const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
     if (!file?.url) return;
@@ -235,8 +236,22 @@ function SkillMdViewer({
 
   return (
     <div className="space-y-3">
-      <h3 className="text-base font-bold text-white">SKILL.md</h3>
-      {content === null ? (
+      <button
+        onClick={() => setCollapsed(!collapsed)}
+        className="flex items-center gap-2 text-base font-bold text-white hover:text-gray-300 transition-colors"
+      >
+        <svg
+          className={`h-4 w-4 transition-transform ${collapsed ? "" : "rotate-90"}`}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+        </svg>
+        SKILL.md
+      </button>
+      {collapsed ? null : content === null ? (
         <p className="text-gray-500 text-sm">Loading...</p>
       ) : (
         <div className="space-y-3">
@@ -382,28 +397,31 @@ function DetailTabs({
           {/* SKILL.md always shown at top */}
           {skillMdFile && <SkillMdViewer file={skillMdFile} />}
 
-          {/* Other files */}
+          {/* Other files — side-by-side: file list left, viewer right */}
           {otherFiles.length > 0 && (
-            <div>
-              <div className="flex border-b border-gray-800 bg-gray-900/50 overflow-x-auto rounded-t-lg">
+            <div className="flex rounded-lg border border-gray-800 overflow-hidden min-h-[24rem]">
+              {/* Left: file list */}
+              <div className="w-56 shrink-0 border-r border-gray-800 bg-gray-900/50 overflow-y-auto">
                 {otherFiles.map((file) => (
                   <button
                     key={file.path}
                     onClick={() => setSelectedFile(file.path)}
-                    className={`px-4 py-2 text-xs font-mono whitespace-nowrap transition-colors ${
+                    title={file.path}
+                    className={`w-full text-left px-3 py-2 text-xs font-mono transition-colors border-l-2 ${
                       selectedFile === file.path
-                        ? "text-white bg-gray-800 border-b-2 border-orange-500"
-                        : "text-gray-400 hover:text-gray-200 hover:bg-gray-800/50"
+                        ? "text-white bg-gray-800 border-orange-500"
+                        : "text-gray-400 hover:text-gray-200 hover:bg-gray-800/50 border-transparent"
                     }`}
                   >
-                    {file.path}
-                    <span className="ml-2 text-gray-600">
+                    <div className="truncate">{file.path}</div>
+                    <div className="text-gray-600 text-[10px]">
                       {formatFileSize(file.size)}
-                    </span>
+                    </div>
                   </button>
                 ))}
               </div>
-              <div className="p-4 max-h-96 overflow-auto bg-gray-950 rounded-b-lg">
+              {/* Right: file content viewer */}
+              <div className="flex-1 min-w-0 p-4 overflow-auto bg-gray-950">
                 {loading ? (
                   <p className="text-gray-500 text-sm">Loading...</p>
                 ) : displayContent !== null ? (
