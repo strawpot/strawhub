@@ -25,7 +25,9 @@ import type * as lib_embeddings from "../lib/embeddings.js";
 import type * as lib_frontmatter from "../lib/frontmatter.js";
 import type * as lib_publishValidation from "../lib/publishValidation.js";
 import type * as lib_rateLimit from "../lib/rateLimit.js";
+import type * as lib_textExtensions from "../lib/textExtensions.js";
 import type * as lib_versionSpec from "../lib/versionSpec.js";
+import type * as lib_virusTotal from "../lib/virusTotal.js";
 import type * as lib_zip from "../lib/zip.js";
 import type * as reports from "../reports.js";
 import type * as roles from "../roles.js";
@@ -34,6 +36,7 @@ import type * as sitemap from "../sitemap.js";
 import type * as skills from "../skills.js";
 import type * as stars from "../stars.js";
 import type * as users from "../users.js";
+import type * as virusTotalScan from "../virusTotalScan.js";
 
 import type {
   ApiFromModules,
@@ -59,7 +62,9 @@ declare const fullApi: ApiFromModules<{
   "lib/frontmatter": typeof lib_frontmatter;
   "lib/publishValidation": typeof lib_publishValidation;
   "lib/rateLimit": typeof lib_rateLimit;
+  "lib/textExtensions": typeof lib_textExtensions;
   "lib/versionSpec": typeof lib_versionSpec;
+  "lib/virusTotal": typeof lib_virusTotal;
   "lib/zip": typeof lib_zip;
   reports: typeof reports;
   roles: typeof roles;
@@ -68,6 +73,7 @@ declare const fullApi: ApiFromModules<{
   skills: typeof skills;
   stars: typeof stars;
   users: typeof users;
+  virusTotalScan: typeof virusTotalScan;
 }>;
 
 /**

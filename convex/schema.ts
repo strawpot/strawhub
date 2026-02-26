@@ -99,6 +99,27 @@ export default defineSchema({
       }),
     ),
     downloads: v.optional(v.number()),
+    scanStatus: v.optional(
+      v.union(
+        v.literal("pending"),
+        v.literal("skipped"),
+        v.literal("scanning"),
+        v.literal("clean"),
+        v.literal("flagged"),
+        v.literal("error"),
+        v.literal("rate_limited"),
+      ),
+    ),
+    scanResult: v.optional(
+      v.object({
+        analysisId: v.optional(v.string()),
+        positives: v.optional(v.number()),
+        total: v.optional(v.number()),
+        scanDate: v.optional(v.number()),
+        permalink: v.optional(v.string()),
+        errorMessage: v.optional(v.string()),
+      }),
+    ),
     createdBy: v.id("users"),
     createdAt: v.number(),
     softDeletedAt: v.optional(v.number()),

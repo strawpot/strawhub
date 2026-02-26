@@ -8,6 +8,7 @@ import { useSEO } from "../lib/useSEO";
 import { buildJsonLd } from "../lib/buildJsonLd";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { ScanStatusBadge } from "../components/ScanStatusBadge";
 
 export const Route = createFileRoute("/skills/$slug")({
   component: SkillDetailPage,
@@ -94,6 +95,10 @@ function SkillDetailPage() {
                 v{skill.latestVersion.version}
               </span>
             )}
+            <ScanStatusBadge
+              scanStatus={skill.latestVersion?.scanStatus}
+              scanResult={skill.latestVersion?.scanResult}
+            />
           </div>
           <p className="text-sm text-gray-500 font-mono mt-1">/{skill.slug}</p>
         </div>

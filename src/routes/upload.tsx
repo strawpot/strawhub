@@ -100,11 +100,13 @@ function UploadPage() {
   const [githubUrl, setGithubUrl] = useState("");
   const [isFetching, setIsFetching] = useState(false);
   const [showImport, setShowImport] = useState(mode === "import");
+  const [importError, setImportError] = useState<string | null>(null);
 
   // ClawHub import state
   const [clawhubUrl, setClawhubUrl] = useState("");
   const [isFetchingClawHub, setIsFetchingClawHub] = useState(false);
   const [showClawHubImport, setShowClawHubImport] = useState(false);
+  const [clawhubImportError, setClawhubImportError] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
@@ -290,11 +292,11 @@ function UploadPage() {
   const handleGitHubImport = async () => {
     if (!githubUrl.trim()) return;
     setIsFetching(true);
-    setError(null);
+    setImportError(null);
     try {
       const ghFiles = await fetchFromGitHub(githubUrl.trim());
       if (ghFiles.length === 0) {
-        setError("No files found at that URL.");
+        setImportError("No files found at that URL.");
         return;
       }
       const fileObjects = ghFiles.map((f) => ({
@@ -305,7 +307,7 @@ function UploadPage() {
       setShowImport(false);
       setGithubUrl("");
     } catch (e: any) {
-      setError(e.message || "Failed to fetch from GitHub");
+      setImportError(e.message || "Failed to fetch from GitHub");
     } finally {
       setIsFetching(false);
     }
@@ -314,11 +316,11 @@ function UploadPage() {
   const handleClawHubImport = async () => {
     if (!clawhubUrl.trim()) return;
     setIsFetchingClawHub(true);
-    setError(null);
+    setClawhubImportError(null);
     try {
       const chFiles = await fetchFromClawHub(clawhubUrl.trim());
       if (chFiles.length === 0) {
-        setError("No files found at that URL.");
+        setClawhubImportError("No files found at that URL.");
         return;
       }
       const fileObjects = chFiles.map((f) => ({
@@ -329,7 +331,7 @@ function UploadPage() {
       setShowClawHubImport(false);
       setClawhubUrl("");
     } catch (e: any) {
-      setError(e.message || "Failed to fetch from ClawHub");
+      setClawhubImportError(e.message || "Failed to fetch from ClawHub");
     } finally {
       setIsFetchingClawHub(false);
     }
@@ -535,6 +537,9 @@ function UploadPage() {
                 {isFetching ? "Fetching..." : "Fetch"}
               </button>
             </div>
+            {importError && (
+              <p className="text-sm text-red-400">{importError}</p>
+            )}
           </div>
         )}
       </div>
@@ -570,6 +575,9 @@ function UploadPage() {
                   {isFetchingClawHub ? "Fetching..." : "Fetch"}
                 </button>
               </div>
+              {clawhubImportError && (
+                <p className="text-sm text-red-400">{clawhubImportError}</p>
+              )}
             </div>
           )}
         </div>

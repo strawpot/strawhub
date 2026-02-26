@@ -15,6 +15,7 @@ import { Route as StarsRouteImport } from './routes/stars'
 import { Route as SkillsRouteImport } from './routes/skills'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SearchRouteImport } from './routes/search'
+import { Route as ScanQueueRouteImport } from './routes/scan-queue'
 import { Route as RolesRouteImport } from './routes/roles'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as DashboardRouteImport } from './routes/dashboard'
@@ -52,6 +53,11 @@ const SettingsRoute = SettingsRouteImport.update({
 const SearchRoute = SearchRouteImport.update({
   id: '/search',
   path: '/search',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ScanQueueRoute = ScanQueueRouteImport.update({
+  id: '/scan-queue',
+  path: '/scan-queue',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RolesRoute = RolesRouteImport.update({
@@ -100,6 +106,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/reports': typeof ReportsRoute
   '/roles': typeof RolesRouteWithChildren
+  '/scan-queue': typeof ScanQueueRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/skills': typeof SkillsRouteWithChildren
@@ -115,6 +122,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
   '/reports': typeof ReportsRoute
+  '/scan-queue': typeof ScanQueueRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/stars': typeof StarsRoute
@@ -131,6 +139,7 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/reports': typeof ReportsRoute
   '/roles': typeof RolesRouteWithChildren
+  '/scan-queue': typeof ScanQueueRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/skills': typeof SkillsRouteWithChildren
@@ -149,6 +158,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/reports'
     | '/roles'
+    | '/scan-queue'
     | '/search'
     | '/settings'
     | '/skills'
@@ -164,6 +174,7 @@ export interface FileRouteTypes {
     | '/'
     | '/dashboard'
     | '/reports'
+    | '/scan-queue'
     | '/search'
     | '/settings'
     | '/stars'
@@ -179,6 +190,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/reports'
     | '/roles'
+    | '/scan-queue'
     | '/search'
     | '/settings'
     | '/skills'
@@ -196,6 +208,7 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   ReportsRoute: typeof ReportsRoute
   RolesRoute: typeof RolesRouteWithChildren
+  ScanQueueRoute: typeof ScanQueueRoute
   SearchRoute: typeof SearchRoute
   SettingsRoute: typeof SettingsRoute
   SkillsRoute: typeof SkillsRouteWithChildren
@@ -246,6 +259,13 @@ declare module '@tanstack/react-router' {
       path: '/search'
       fullPath: '/search'
       preLoaderRoute: typeof SearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/scan-queue': {
+      id: '/scan-queue'
+      path: '/scan-queue'
+      fullPath: '/scan-queue'
+      preLoaderRoute: typeof ScanQueueRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/roles': {
@@ -337,6 +357,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   ReportsRoute: ReportsRoute,
   RolesRoute: RolesRouteWithChildren,
+  ScanQueueRoute: ScanQueueRoute,
   SearchRoute: SearchRoute,
   SettingsRoute: SettingsRoute,
   SkillsRoute: SkillsRouteWithChildren,
