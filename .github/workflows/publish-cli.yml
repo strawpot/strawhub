@@ -37,6 +37,8 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
@@ -45,17 +47,20 @@ jobs:
       - name: Install build tools
         run: pip install build
 
-      - name: Bump patch version
+      - name: Determine next version
         run: |
-          python -c "
-          import re, pathlib
-          f = pathlib.Path('src/strawhub/__init__.py')
-          text = f.read_text()
-          major, minor, patch = re.search(r'(\d+)\.(\d+)\.(\d+)', text).groups()
-          new_ver = f'{major}.{minor}.{int(patch)+1}'
-          f.write_text(re.sub(r'__version__ = .+', f'__version__ = \"{new_ver}\"', text))
-          print(new_ver)
-          " | tail -1 | xargs -I{} bash -c 'echo "NEW_VERSION={}" >> "$GITHUB_ENV"'
+          LATEST=$(git tag -l 'cli-v*' --sort=-v:refname | head -1 | sed 's/^cli-v//')
+          if [ -z "$LATEST" ]; then
+            NEW_VERSION="0.1.1"
+          else
+            IFS='.' read -r major minor patch <<< "$LATEST"
+            NEW_VERSION="$major.$minor.$((patch+1))"
+          fi
+          echo "NEW_VERSION=$NEW_VERSION" >> "$GITHUB_ENV"
+
+      - name: Set version for build
+        run: |
+          sed -i "s/__version__ = .*/__version__ = \"$NEW_VERSION\"/" src/strawhub/__init__.py
 
       - name: Build package
         run: python -m build
@@ -65,11 +70,10 @@ jobs:
         with:
           packages-dir: cli/dist/
 
-      - name: Commit version bump
+      - name: Tag release
         run: |
           cd "$GITHUB_WORKSPACE"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add cli/src/strawhub/__init__.py
-          git commit -m "chore: bump CLI version to $NEW_VERSION [skip ci]"
-          git push
+          git tag "cli-v$NEW_VERSION"
+          git push origin "cli-v$NEW_VERSION"
