@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as UsersRouteImport } from './routes/users'
 import { Route as UploadRouteImport } from './routes/upload'
 import { Route as StarsRouteImport } from './routes/stars'
 import { Route as SkillsRouteImport } from './routes/skills'
@@ -23,6 +24,11 @@ import { Route as RolesIndexRouteImport } from './routes/roles.index'
 import { Route as SkillsSlugRouteImport } from './routes/skills.$slug'
 import { Route as RolesSlugRouteImport } from './routes/roles.$slug'
 
+const UsersRoute = UsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const UploadRoute = UploadRouteImport.update({
   id: '/upload',
   path: '/upload',
@@ -99,6 +105,7 @@ export interface FileRoutesByFullPath {
   '/skills': typeof SkillsRouteWithChildren
   '/stars': typeof StarsRoute
   '/upload': typeof UploadRoute
+  '/users': typeof UsersRoute
   '/roles/$slug': typeof RolesSlugRoute
   '/skills/$slug': typeof SkillsSlugRoute
   '/roles/': typeof RolesIndexRoute
@@ -112,6 +119,7 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/stars': typeof StarsRoute
   '/upload': typeof UploadRoute
+  '/users': typeof UsersRoute
   '/roles/$slug': typeof RolesSlugRoute
   '/skills/$slug': typeof SkillsSlugRoute
   '/roles': typeof RolesIndexRoute
@@ -128,6 +136,7 @@ export interface FileRoutesById {
   '/skills': typeof SkillsRouteWithChildren
   '/stars': typeof StarsRoute
   '/upload': typeof UploadRoute
+  '/users': typeof UsersRoute
   '/roles/$slug': typeof RolesSlugRoute
   '/skills/$slug': typeof SkillsSlugRoute
   '/roles/': typeof RolesIndexRoute
@@ -145,6 +154,7 @@ export interface FileRouteTypes {
     | '/skills'
     | '/stars'
     | '/upload'
+    | '/users'
     | '/roles/$slug'
     | '/skills/$slug'
     | '/roles/'
@@ -158,6 +168,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/stars'
     | '/upload'
+    | '/users'
     | '/roles/$slug'
     | '/skills/$slug'
     | '/roles'
@@ -173,6 +184,7 @@ export interface FileRouteTypes {
     | '/skills'
     | '/stars'
     | '/upload'
+    | '/users'
     | '/roles/$slug'
     | '/skills/$slug'
     | '/roles/'
@@ -189,10 +201,18 @@ export interface RootRouteChildren {
   SkillsRoute: typeof SkillsRouteWithChildren
   StarsRoute: typeof StarsRoute
   UploadRoute: typeof UploadRoute
+  UsersRoute: typeof UsersRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/users': {
+      id: '/users'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof UsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/upload': {
       id: '/upload'
       path: '/upload'
@@ -322,6 +342,7 @@ const rootRouteChildren: RootRouteChildren = {
   SkillsRoute: SkillsRouteWithChildren,
   StarsRoute: StarsRoute,
   UploadRoute: UploadRoute,
+  UsersRoute: UsersRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

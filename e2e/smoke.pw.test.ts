@@ -79,4 +79,9 @@ test.describe("Smoke tests", () => {
     await page.goto("/stars");
     await expect(page.locator("text=Sign in with GitHub to see skills and roles you've starred.")).toBeVisible();
   });
+
+  test("users page requires authentication", async ({ page }) => {
+    await page.goto("/users");
+    await expect(page.locator("text=Sign in to access this page.")).toBeVisible();
+  });
 });
