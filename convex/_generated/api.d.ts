@@ -10,6 +10,7 @@
 
 import type * as apiTokens from "../apiTokens.js";
 import type * as auth from "../auth.js";
+import type * as comments from "../comments.js";
 import type * as downloads from "../downloads.js";
 import type * as files from "../files.js";
 import type * as http from "../http.js";
@@ -43,6 +44,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   apiTokens: typeof apiTokens;
   auth: typeof auth;
+  comments: typeof comments;
   downloads: typeof downloads;
   files: typeof files;
   http: typeof http;
