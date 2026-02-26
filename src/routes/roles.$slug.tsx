@@ -33,8 +33,17 @@ function RoleDetailPage() {
     api.stars.isStarred,
     role ? { targetId: role._id } : "skip",
   );
+  const createReport = useMutation(api.reports.create);
+  const hasReported = useQuery(
+    api.reports.hasReported,
+    role ? { targetId: role._id } : "skip",
+  );
   const navigate = useNavigate();
   const isOwner = !!(currentUser && role && role.ownerUserId === currentUser._id);
+  const [showReportForm, setShowReportForm] = useState(false);
+  const [reportDescription, setReportDescription] = useState("");
+  const [reportSubmitting, setReportSubmitting] = useState(false);
+  const [reportError, setReportError] = useState("");
 
   if (role === undefined) {
     return <p className="text-gray-400">Loading...</p>;
@@ -199,12 +208,108 @@ function RoleDetailPage() {
           </svg>
           {role.stats.stars}
         </button>
+        {currentUser && !isOwner && (
+          <button
+            onClick={() => {
+              if (!hasReported) setShowReportForm(!showReportForm);
+            }}
+            className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
+              hasReported
+                ? "border-red-500/40 bg-red-500/10 text-red-400 cursor-default"
+                : "border-gray-700 text-gray-400 hover:border-red-500/40 hover:text-red-400"
+            }`}
+            title={hasReported ? "You have reported this item" : "Report this item"}
+          >
+            <svg
+              className="h-4 w-4"
+              fill={hasReported ? "currentColor" : "none"}
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M3 3v1.5M3 21v-6m0 0 2.77-.693a9 9 0 0 1 6.208.682l.108.054a9 9 0 0 0 6.086.71l3.114-.732a48.524 48.524 0 0 1-.005-10.499l-3.11.732a9 9 0 0 1-6.085-.711l-.108-.054a9 9 0 0 0-6.208-.682L3 4.5M3 15V4.5"
+              />
+            </svg>
+            {hasReported ? "Reported" : "Report"}
+          </button>
+        )}
         {role.latestVersion && (
           <span>{role.latestVersion.downloads ?? 0} current installs</span>
         )}
         <span>{role.stats.downloads} all-time installs</span>
         <span>{role.stats.versions} versions</span>
       </div>
+
+      {showReportForm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowReportForm(false);
+              setReportError("");
+            }
+          }}
+        >
+          <div className="w-full max-w-md rounded-lg border border-gray-700 bg-gray-900 p-5 shadow-xl space-y-4">
+            <h3 className="text-base font-semibold text-white">Report role</h3>
+            <p className="text-sm text-gray-400">
+              Help us keep StrawHub safe. Describe what's wrong and our moderators will review it.
+            </p>
+            <div className="space-y-2">
+              <textarea
+                rows={4}
+                value={reportDescription}
+                onChange={(e) => setReportDescription(e.target.value)}
+                placeholder="What should moderators know about this role?"
+                maxLength={1000}
+                autoFocus
+                className="w-full rounded border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-orange-500 focus:outline-none resize-none"
+              />
+              <p className="text-xs text-gray-600 text-right">{reportDescription.length}/1000</p>
+            </div>
+            {reportError && (
+              <p className="text-sm text-red-400">{reportError}</p>
+            )}
+            <div className="flex items-center justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowReportForm(false);
+                  setReportError("");
+                }}
+                className="rounded px-4 py-2 text-sm font-medium text-gray-400 hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  setReportSubmitting(true);
+                  setReportError("");
+                  try {
+                    await createReport({
+                      targetId: role._id,
+                      targetKind: "role",
+                      description: reportDescription,
+                    });
+                    setShowReportForm(false);
+                    setReportDescription("");
+                  } catch (e: any) {
+                    setReportError(e.message || "Failed to submit report.");
+                  } finally {
+                    setReportSubmitting(false);
+                  }
+                }}
+                disabled={reportSubmitting || !reportDescription.trim()}
+                className="rounded bg-red-700 px-4 py-2 text-sm font-medium text-white hover:bg-red-600 disabled:opacity-50 transition-colors"
+              >
+                {reportSubmitting ? "Submitting..." : "Submit Report"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {role.summary && <p className="text-gray-300">{role.summary}</p>}
 

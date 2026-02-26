@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMutation, useQuery } from "convex/react";
+import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useSEO } from "../lib/useSEO";
 
@@ -23,6 +23,7 @@ function RolesPage() {
   const results = useQuery(api.roles.list, {
     query: trimmed || undefined,
   });
+  const { isAuthenticated } = useConvexAuth();
   const starredIds = useQuery(api.stars.listStarredIds) ?? [];
   const toggleStar = useMutation(api.stars.toggle);
 
@@ -97,6 +98,7 @@ function RolesPage() {
               key={role._id}
               role={role}
               starred={starredIds.includes(role._id)}
+              isAuthenticated={isAuthenticated}
               onToggleStar={() => toggleStar({ targetId: role._id, targetKind: "role" })}
             />
           ))}
@@ -113,10 +115,12 @@ function RolesPage() {
 function RoleCard({
   role,
   starred,
+  isAuthenticated,
   onToggleStar,
 }: {
   role: any;
   starred: boolean;
+  isAuthenticated: boolean;
   onToggleStar: () => void;
 }) {
   return (
@@ -138,12 +142,14 @@ function RoleCard({
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              onToggleStar();
+              if (isAuthenticated) onToggleStar();
             }}
             className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-sm font-medium transition-colors ${
               starred
                 ? "border-yellow-500/40 bg-yellow-500/10 text-yellow-400"
-                : "border-gray-700 text-gray-500 hover:border-yellow-500/40 hover:text-yellow-400"
+                : isAuthenticated
+                  ? "border-gray-700 text-gray-500 hover:border-yellow-500/40 hover:text-yellow-400"
+                  : "border-gray-700 text-gray-500 cursor-default"
             }`}
           >
             <svg

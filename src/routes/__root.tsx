@@ -153,19 +153,24 @@ function UserMenu({ onSignOut }: { onSignOut: () => void }) {
             Dashboard
           </Link>
           <Link
-            to="/stars"
-            onClick={() => setOpen(false)}
-            className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white"
-          >
-            Stars
-          </Link>
-          <Link
             to="/settings"
             onClick={() => setOpen(false)}
             className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white"
           >
             Settings
           </Link>
+          {(user?.role === "admin" || user?.role === "moderator") && (
+            <>
+              <div className="my-1 border-t border-gray-800" />
+              <Link
+                to="/reports"
+                onClick={() => setOpen(false)}
+                className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white"
+              >
+                Reports
+              </Link>
+            </>
+          )}
           <div className="my-1 border-t border-gray-800" />
           <button
             onClick={() => {

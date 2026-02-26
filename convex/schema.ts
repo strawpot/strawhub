@@ -211,6 +211,25 @@ export default defineSchema({
     .index("by_target", ["targetId"])
     .index("by_user", ["userId"]),
 
+  reports: defineTable({
+    targetId: v.string(), // skill or role ID
+    targetKind: v.union(v.literal("skill"), v.literal("role")),
+    userId: v.id("users"),
+    description: v.string(),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("resolved"),
+      v.literal("dismissed"),
+    ),
+    resolvedBy: v.optional(v.id("users")),
+    resolvedAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index("by_target", ["targetId"])
+    .index("by_user", ["userId"])
+    .index("by_target_user", ["targetId", "userId"])
+    .index("by_status", ["status"]),
+
   // ── API Tokens ───────────────────────────────────────────────────────────
 
   apiTokens: defineTable({
