@@ -94,7 +94,7 @@ function RootLayout() {
           </div>
         )}
       </header>
-      <main className="mx-auto max-w-6xl flex-1 px-4 py-6 md:py-8">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 md:py-8">
         <Outlet />
       </main>
       <footer className="border-t border-gray-800 py-6 text-center text-sm text-gray-500">
