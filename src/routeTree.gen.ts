@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UploadRouteImport } from './routes/upload'
+import { Route as StarsRouteImport } from './routes/stars'
 import { Route as SkillsRouteImport } from './routes/skills'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SearchRouteImport } from './routes/search'
@@ -24,6 +25,11 @@ import { Route as RolesSlugRouteImport } from './routes/roles.$slug'
 const UploadRoute = UploadRouteImport.update({
   id: '/upload',
   path: '/upload',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StarsRoute = StarsRouteImport.update({
+  id: '/stars',
+  path: '/stars',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SkillsRoute = SkillsRouteImport.update({
@@ -84,6 +90,7 @@ export interface FileRoutesByFullPath {
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/skills': typeof SkillsRouteWithChildren
+  '/stars': typeof StarsRoute
   '/upload': typeof UploadRoute
   '/roles/$slug': typeof RolesSlugRoute
   '/skills/$slug': typeof SkillsSlugRoute
@@ -95,6 +102,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
+  '/stars': typeof StarsRoute
   '/upload': typeof UploadRoute
   '/roles/$slug': typeof RolesSlugRoute
   '/skills/$slug': typeof SkillsSlugRoute
@@ -109,6 +117,7 @@ export interface FileRoutesById {
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/skills': typeof SkillsRouteWithChildren
+  '/stars': typeof StarsRoute
   '/upload': typeof UploadRoute
   '/roles/$slug': typeof RolesSlugRoute
   '/skills/$slug': typeof SkillsSlugRoute
@@ -124,6 +133,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/settings'
     | '/skills'
+    | '/stars'
     | '/upload'
     | '/roles/$slug'
     | '/skills/$slug'
@@ -135,6 +145,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/search'
     | '/settings'
+    | '/stars'
     | '/upload'
     | '/roles/$slug'
     | '/skills/$slug'
@@ -148,6 +159,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/settings'
     | '/skills'
+    | '/stars'
     | '/upload'
     | '/roles/$slug'
     | '/skills/$slug'
@@ -162,6 +174,7 @@ export interface RootRouteChildren {
   SearchRoute: typeof SearchRoute
   SettingsRoute: typeof SettingsRoute
   SkillsRoute: typeof SkillsRouteWithChildren
+  StarsRoute: typeof StarsRoute
   UploadRoute: typeof UploadRoute
 }
 
@@ -172,6 +185,13 @@ declare module '@tanstack/react-router' {
       path: '/upload'
       fullPath: '/upload'
       preLoaderRoute: typeof UploadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/stars': {
+      id: '/stars'
+      path: '/stars'
+      fullPath: '/stars'
+      preLoaderRoute: typeof StarsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/skills': {
@@ -279,6 +299,7 @@ const rootRouteChildren: RootRouteChildren = {
   SearchRoute: SearchRoute,
   SettingsRoute: SettingsRoute,
   SkillsRoute: SkillsRouteWithChildren,
+  StarsRoute: StarsRoute,
   UploadRoute: UploadRoute,
 }
 export const routeTree = rootRouteImport

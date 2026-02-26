@@ -30,6 +30,7 @@ import type * as roles from "../roles.js";
 import type * as search from "../search.js";
 import type * as sitemap from "../sitemap.js";
 import type * as skills from "../skills.js";
+import type * as stars from "../stars.js";
 import type * as users from "../users.js";
 
 import type {
@@ -61,6 +62,7 @@ declare const fullApi: ApiFromModules<{
   search: typeof search;
   sitemap: typeof sitemap;
   skills: typeof skills;
+  stars: typeof stars;
   users: typeof users;
 }>;
 
