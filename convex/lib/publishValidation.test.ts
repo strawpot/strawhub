@@ -155,21 +155,10 @@ describe("validateFiles", () => {
     expect(() => validateFiles(files)).toThrow(/Total upload size/);
   });
 
-  it("rejects disallowed extensions", () => {
-    const files = [{ path: "script.js", size: 100 }];
-    expect(() => validateFiles(files)).toThrow(/extension '.js' not allowed/);
-  });
-
-  it("rejects files with no extension", () => {
-    const files = [{ path: "Makefile", size: 100 }];
-    expect(() => validateFiles(files)).toThrow(/extension '' not allowed/);
-  });
-
-  it("accepts all allowed extensions", () => {
-    const allowed = [".md", ".txt", ".json", ".yaml", ".yml", ".toml"];
-    for (const ext of allowed) {
-      expect(() => validateFiles([{ path: `test${ext}`, size: 100 }])).not.toThrow();
-    }
+  it("accepts any file extension", () => {
+    expect(() => validateFiles([{ path: "script.js", size: 100 }])).not.toThrow();
+    expect(() => validateFiles([{ path: "Makefile", size: 100 }])).not.toThrow();
+    expect(() => validateFiles([{ path: "handler.py", size: 100 }])).not.toThrow();
   });
 });
 

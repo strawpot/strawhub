@@ -4,7 +4,6 @@
 import { parseVersion } from "./versionSpec";
 
 const SLUG_REGEX = /^[a-z0-9][a-z0-9-]*$/;
-const ALLOWED_EXTENSIONS = new Set([".md", ".txt", ".json", ".yaml", ".yml", ".toml"]);
 
 export const MAX_SLUG_LENGTH = 64;
 export const MAX_DISPLAY_NAME_LENGTH = 128;
@@ -52,13 +51,6 @@ export function validateFiles(
 
   let totalSize = 0;
   for (const file of files) {
-    const dotIdx = file.path.lastIndexOf(".");
-    const ext = dotIdx >= 0 ? file.path.slice(dotIdx) : "";
-    if (!ALLOWED_EXTENSIONS.has(ext)) {
-      throw new Error(
-        `File '${file.path}': extension '${ext}' not allowed. Allowed: ${[...ALLOWED_EXTENSIONS].join(", ")}`,
-      );
-    }
     if (file.size > MAX_FILE_SIZE) {
       throw new Error(
         `File '${file.path}' exceeds ${MAX_FILE_SIZE / 1024}KB limit`,
