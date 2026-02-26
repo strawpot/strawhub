@@ -121,7 +121,7 @@ function ReportCard({
 }) {
   const [acting, setActing] = useState(false);
 
-  const handleAction = async (resolution: "resolved" | "dismissed") => {
+  const handleAction = async (resolution: "pending" | "resolved" | "dismissed") => {
     setActing(true);
     try {
       await onResolve(resolution);
