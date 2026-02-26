@@ -171,6 +171,15 @@ function UserMenu({ onSignOut }: { onSignOut: () => void }) {
               </Link>
             </>
           )}
+          {user?.role === "admin" && (
+            <Link
+              to="/users"
+              onClick={() => setOpen(false)}
+              className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white"
+            >
+              Users
+            </Link>
+          )}
           <div className="my-1 border-t border-gray-800" />
           <button
             onClick={() => {
