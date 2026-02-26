@@ -21,6 +21,7 @@ import type * as httpApiV1_sitemapV1 from "../httpApiV1/sitemapV1.js";
 import type * as httpApiV1_skillsV1 from "../httpApiV1/skillsV1.js";
 import type * as httpApiV1_whoamiV1 from "../httpApiV1/whoamiV1.js";
 import type * as lib_access from "../lib/access.js";
+import type * as lib_binaryDetection from "../lib/binaryDetection.js";
 import type * as lib_embeddings from "../lib/embeddings.js";
 import type * as lib_frontmatter from "../lib/frontmatter.js";
 import type * as lib_publishValidation from "../lib/publishValidation.js";
@@ -37,6 +38,7 @@ import type * as skills from "../skills.js";
 import type * as stars from "../stars.js";
 import type * as users from "../users.js";
 import type * as virusTotalScan from "../virusTotalScan.js";
+import type * as virusTotalScanActions from "../virusTotalScanActions.js";
 
 import type {
   ApiFromModules,
@@ -58,6 +60,7 @@ declare const fullApi: ApiFromModules<{
   "httpApiV1/skillsV1": typeof httpApiV1_skillsV1;
   "httpApiV1/whoamiV1": typeof httpApiV1_whoamiV1;
   "lib/access": typeof lib_access;
+  "lib/binaryDetection": typeof lib_binaryDetection;
   "lib/embeddings": typeof lib_embeddings;
   "lib/frontmatter": typeof lib_frontmatter;
   "lib/publishValidation": typeof lib_publishValidation;
@@ -74,6 +77,7 @@ declare const fullApi: ApiFromModules<{
   stars: typeof stars;
   users: typeof users;
   virusTotalScan: typeof virusTotalScan;
+  virusTotalScanActions: typeof virusTotalScanActions;
 }>;
 
 /**

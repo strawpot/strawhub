@@ -9,6 +9,7 @@ import { sha256Hex } from "../lib/hash";
 import { fetchFromGitHub } from "../lib/githubImport";
 import { fetchFromClawHub } from "../lib/clawhubImport";
 import JSZip from "jszip";
+import { isBinaryByMagicBytes, containsNullBytes } from "../../convex/lib/binaryDetection";
 
 type UploadSearch = { mode?: "import"; updateSlug?: string; kind?: "skill" | "role" };
 
@@ -352,6 +353,19 @@ function UploadPage() {
     if (kind === "role" && (files.length !== 1 || files[0].path !== "ROLE.md")) {
       setError("Role uploads must contain exactly one file: ROLE.md");
       return;
+    }
+
+    // Verify ROLE.md is actually a text file, not a renamed binary
+    if (kind === "role") {
+      const buf = new Uint8Array(await files[0].file.arrayBuffer());
+      if (isBinaryByMagicBytes(buf)) {
+        setError("ROLE.md appears to be a binary file (detected binary file signature). Only text files are allowed.");
+        return;
+      }
+      if (containsNullBytes(buf, 8192)) {
+        setError("ROLE.md appears to be a binary file (contains null bytes). Only text files are allowed.");
+        return;
+      }
     }
 
     setIsPublishing(true);

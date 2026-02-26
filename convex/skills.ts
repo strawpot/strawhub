@@ -368,10 +368,11 @@ export const publishInternal = internalMutation({
     });
 
     // Trigger VirusTotal scan
-    await ctx.scheduler.runAfter(0, internal.virusTotalScan.submitScan, {
+    await ctx.scheduler.runAfter(0, internal.virusTotalScanActions.submitScan, {
       versionId,
       skillId: skill._id,
       zipStorageId: args.zipStorageId,
+      zipFileName: `${args.slug}-v${version}.zip`,
     });
 
     return { skillId: skill._id, versionId };
@@ -524,7 +525,7 @@ export const publish = mutation({
     });
 
     // Trigger VirusTotal scan
-    await ctx.scheduler.runAfter(0, internal.virusTotalScan.submitScan, {
+    await ctx.scheduler.runAfter(0, internal.virusTotalScanActions.submitScan, {
       versionId,
       skillId: skill._id,
       zipStorageId: args.zipStorageId,

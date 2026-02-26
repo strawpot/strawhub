@@ -6,6 +6,7 @@ import {
   validateChangelog,
   validateFiles,
   validateRoleFiles,
+  assertRoleFileIsText,
   MAX_SLUG_LENGTH,
   MAX_DISPLAY_NAME_LENGTH,
   MAX_CHANGELOG_LENGTH,
@@ -189,6 +190,64 @@ describe("validateRoleFiles", () => {
   it("rejects lowercase role.md", () => {
     expect(() => validateRoleFiles([{ path: "role.md", size: 500 }])).toThrow(
       /exactly one file: ROLE.md/,
+    );
+  });
+});
+
+describe("assertRoleFileIsText", () => {
+  it("accepts valid markdown text", () => {
+    const buf = new TextEncoder().encode("# My Role\n\nThis is a role file.");
+    expect(() => assertRoleFileIsText("ROLE.md", buf)).not.toThrow();
+  });
+
+  it("accepts empty file", () => {
+    expect(() => assertRoleFileIsText("ROLE.md", new Uint8Array(0))).not.toThrow();
+  });
+
+  it("accepts file with YAML frontmatter", () => {
+    const buf = new TextEncoder().encode("---\ntitle: Test\n---\n# Hello");
+    expect(() => assertRoleFileIsText("ROLE.md", buf)).not.toThrow();
+  });
+
+  it("rejects file without recognized text extension", () => {
+    const buf = new TextEncoder().encode("just text");
+    expect(() => assertRoleFileIsText("binary.exe", buf)).toThrow(
+      /does not have a recognized text file extension/,
+    );
+  });
+
+  it("rejects PNG disguised as .md", () => {
+    const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00]);
+    expect(() => assertRoleFileIsText("ROLE.md", png)).toThrow(
+      /binary file signature/,
+    );
+  });
+
+  it("rejects ZIP disguised as .md", () => {
+    const zip = new Uint8Array([0x50, 0x4b, 0x03, 0x04, 0x00, 0x00]);
+    expect(() => assertRoleFileIsText("ROLE.md", zip)).toThrow(
+      /binary file signature/,
+    );
+  });
+
+  it("rejects PDF disguised as .md", () => {
+    const pdf = new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d]);
+    expect(() => assertRoleFileIsText("ROLE.md", pdf)).toThrow(
+      /binary file signature/,
+    );
+  });
+
+  it("rejects file with null bytes (unknown binary)", () => {
+    const buf = new Uint8Array([0x41, 0x42, 0x43, 0x00, 0x44, 0x45]);
+    expect(() => assertRoleFileIsText("ROLE.md", buf)).toThrow(
+      /contains null bytes/,
+    );
+  });
+
+  it("rejects ELF binary disguised as .md", () => {
+    const elf = new Uint8Array([0x7f, 0x45, 0x4c, 0x46, 0x02]);
+    expect(() => assertRoleFileIsText("ROLE.md", elf)).toThrow(
+      /binary file signature/,
     );
   });
 });
