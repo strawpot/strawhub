@@ -10,7 +10,7 @@ const CLAWHUB_DOWNLOAD_BASE =
  *   https://clawhub.ai/<owner>/<slug>
  *   https://clawhub.ai/skills/<slug>
  */
-function parseClawHubUrl(url: string): string {
+export function parseClawHubUrl(url: string): string {
   const u = new URL(url);
   if (!u.hostname.endsWith("clawhub.ai")) {
     throw new Error("Not a ClawHub URL");
