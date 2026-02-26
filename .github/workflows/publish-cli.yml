@@ -1,0 +1,69 @@
+name: Publish CLI to PyPI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "cli/**"
+
+concurrency:
+  group: publish-cli
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cli
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[test]"
+      - run: pytest tests/ -v --tb=short
+
+  publish:
+    needs: test
+    runs-on: ubuntu-latest
+    environment: pypi
+    defaults:
+      run:
+        working-directory: cli
+    permissions:
+      id-token: write
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install hatch
+        run: pip install hatch
+
+      - name: Bump patch version
+        run: |
+          hatch version patch
+          NEW_VERSION=$(hatch version)
+          echo "NEW_VERSION=$NEW_VERSION" >> "$GITHUB_ENV"
+          sed -i "s/__version__ = .*/__version__ = \"$NEW_VERSION\"/" src/strawhub/__init__.py
+
+      - name: Build package
+        run: hatch build
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: cli/dist/
+
+      - name: Commit version bump
+        run: |
+          cd "$GITHUB_WORKSPACE"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add cli/pyproject.toml cli/src/strawhub/__init__.py
+          git commit -m "chore: bump CLI version to $NEW_VERSION [skip ci]"
+          git push
