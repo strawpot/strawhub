@@ -17,7 +17,7 @@ function RootLayout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100">
+    <div className="flex min-h-screen flex-col bg-gray-950 text-gray-100">
       <header className="border-b border-gray-800">
         <nav className="mx-auto flex max-w-6xl items-center gap-2 md:gap-6 px-4 py-3">
           <Link to="/" className="flex items-center gap-2 text-2xl font-bold text-white hover:text-orange-400">
@@ -94,9 +94,32 @@ function RootLayout() {
           </div>
         )}
       </header>
-      <main className="mx-auto max-w-6xl px-4 py-6 md:py-8">
+      <main className="mx-auto max-w-6xl flex-1 px-4 py-6 md:py-8">
         <Outlet />
       </main>
+      <footer className="border-t border-gray-800 py-6 text-center text-sm text-gray-500">
+        <p>
+          StrawHub &middot; A{" "}
+          <a
+            href="https://strawpot.com"
+            className="underline decoration-gray-700 hover:decoration-gray-400 transition-colors"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            StrawPot
+          </a>{" "}
+          project &middot;{" "}
+          <a
+            href="https://github.com/strawpot/strawhub"
+            className="underline decoration-gray-700 hover:decoration-gray-400 transition-colors"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Open source (MIT)
+          </a>{" "}
+          &middot; Chris La
+        </p>
+      </footer>
       <Analytics />
       <SpeedInsights />
     </div>
