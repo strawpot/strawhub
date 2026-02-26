@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, internalMutation } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
 /**
@@ -46,6 +46,58 @@ export const toggle = mutation({
     });
 
     // Increment stats.stars
+    const target = await ctx.db.get(args.targetId as any);
+    if (target) {
+      await ctx.db.patch(target._id, {
+        stats: {
+          ...(target as any).stats,
+          stars: (target as any).stats.stars + 1,
+        },
+      });
+    }
+
+    return { starred: true };
+  },
+});
+
+/**
+ * Toggle a star via API token auth (accepts explicit userId).
+ */
+export const toggleInternal = internalMutation({
+  args: {
+    userId: v.id("users"),
+    targetId: v.string(),
+    targetKind: v.union(v.literal("skill"), v.literal("role")),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("stars")
+      .withIndex("by_target_user", (q) =>
+        q.eq("targetId", args.targetId).eq("userId", args.userId),
+      )
+      .first();
+
+    if (existing) {
+      await ctx.db.delete(existing._id);
+      const target = await ctx.db.get(existing.targetId as any);
+      if (target) {
+        await ctx.db.patch(target._id, {
+          stats: {
+            ...(target as any).stats,
+            stars: Math.max(0, (target as any).stats.stars - 1),
+          },
+        });
+      }
+      return { starred: false };
+    }
+
+    await ctx.db.insert("stars", {
+      targetId: args.targetId,
+      targetKind: args.targetKind,
+      userId: args.userId,
+      createdAt: Date.now(),
+    });
+
     const target = await ctx.db.get(args.targetId as any);
     if (target) {
       await ctx.db.patch(target._id, {

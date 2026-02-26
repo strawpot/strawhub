@@ -141,5 +141,53 @@ class StrawHubClient:
         except NotFoundError:
             return ("role", self.get_role(slug))
 
+    # ── Publish ────────────────────────────────────────────────────────────────
+
+    def publish_skill(self, form_data: dict, files: list) -> dict:
+        resp = self._request("POST", "/api/v1/skills", data=form_data, files=files)
+        return self._handle_response(resp)
+
+    def publish_role(self, form_data: dict, files: list) -> dict:
+        resp = self._request("POST", "/api/v1/roles", data=form_data, files=files)
+        return self._handle_response(resp)
+
+    # ── Stars ─────────────────────────────────────────────────────────────────
+
+    def toggle_star(self, slug: str, kind: str) -> dict:
+        resp = self._request(
+            "POST", "/api/v1/stars/toggle", json={"slug": slug, "kind": kind}
+        )
+        return self._handle_response(resp)
+
+    # ── Delete ────────────────────────────────────────────────────────────────
+
+    def delete_skill(self, slug: str) -> dict:
+        resp = self._request("DELETE", f"/api/v1/skills/{slug}")
+        return self._handle_response(resp)
+
+    def delete_role(self, slug: str) -> dict:
+        resp = self._request("DELETE", f"/api/v1/roles/{slug}")
+        return self._handle_response(resp)
+
+    def delete_package(self, slug: str, kind: str) -> dict:
+        if kind == "skill":
+            return self.delete_skill(slug)
+        return self.delete_role(slug)
+
+    # ── Admin ─────────────────────────────────────────────────────────────────
+
+    def ban_user(self, handle: str, blocked: bool, reason: str | None = None) -> dict:
+        body: dict = {"handle": handle, "blocked": blocked}
+        if reason:
+            body["reason"] = reason
+        resp = self._request("POST", "/api/v1/admin/ban-user", json=body)
+        return self._handle_response(resp)
+
+    def set_user_role(self, handle: str, role: str) -> dict:
+        resp = self._request(
+            "POST", "/api/v1/admin/set-role", json={"handle": handle, "role": role}
+        )
+        return self._handle_response(resp)
+
     def close(self):
         self._client.close()

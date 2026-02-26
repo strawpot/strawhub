@@ -138,7 +138,7 @@ describe("corsResponse", () => {
     const resp = corsResponse();
     expect(resp.headers.get("Access-Control-Allow-Origin")).toBe("*");
     expect(resp.headers.get("Access-Control-Allow-Methods")).toBe(
-      "GET, POST, OPTIONS",
+      "GET, POST, DELETE, OPTIONS",
     );
     expect(resp.headers.get("Access-Control-Allow-Headers")).toBe(
       "Content-Type, Authorization",

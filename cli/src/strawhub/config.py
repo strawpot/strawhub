@@ -2,7 +2,9 @@ import json
 import os
 from pathlib import Path
 
-CONFIG_DIR = Path.home() / ".config" / "strawhub"
+from platformdirs import user_config_dir
+
+CONFIG_DIR = Path(user_config_dir("strawhub"))
 CONFIG_FILE = CONFIG_DIR / "config.json"
 DEFAULT_API_URL = "https://strawhub.dev"
 

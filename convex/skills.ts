@@ -537,6 +537,33 @@ export const publish = mutation({
 });
 
 /**
+ * Soft-delete a skill via API token auth (moderator or admin only).
+ */
+export const softDeleteInternal = internalMutation({
+  args: {
+    slug: v.string(),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
+    if (!user) throw new Error("User not found");
+
+    if (user.role !== "admin" && user.role !== "moderator") {
+      throw new Error("Unauthorized: must be moderator or admin");
+    }
+
+    const skill = await ctx.db
+      .query("skills")
+      .withIndex("by_slug", (q) => q.eq("slug", args.slug))
+      .first();
+    if (!skill) throw new Error("Skill not found");
+
+    await ctx.db.patch(skill._id, { softDeletedAt: Date.now() });
+    return { ok: true };
+  },
+});
+
+/**
  * Soft-delete a skill (admin only).
  */
 export const softDelete = mutation({

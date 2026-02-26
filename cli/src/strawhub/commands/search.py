@@ -1,3 +1,5 @@
+import json
+
 import click
 
 from strawhub.client import StrawHubClient
@@ -9,11 +11,15 @@ from strawhub.errors import StrawHubError
 @click.argument("query")
 @click.option("--kind", type=click.Choice(["skill", "role", "all"]), default="all")
 @click.option("--limit", type=int, default=20, help="Max results (1-100)")
-def search(query, kind, limit):
+@click.option("--json", "as_json", is_flag=True, default=False, help="Output as JSON")
+def search(query, kind, limit, as_json):
     """Search for skills and roles."""
     with StrawHubClient() as client:
         try:
             data = client.search(query, kind=kind, limit=limit)
+            if as_json:
+                console.print_json(json.dumps(data))
+                return
             results = data.get("results", [])
             if not results:
                 console.print("No results found.")

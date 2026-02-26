@@ -102,17 +102,64 @@ Set `VITE_CONVEX_URL` in the Vercel dashboard (Settings > Environment Variables)
 
 **Backend** is deployed via GitHub Actions on push to `main`. Requires the `CONVEX_DEPLOY_KEY` secret in the GitHub repo settings.
 
+## CLI
+
+Install the CLI from [PyPI](https://pypi.org/project/strawhub/):
+
+```bash
+pip install strawhub
+```
+
+### Commands
+
+| Command | Description |
+|---------|-------------|
+| `strawhub search <query>` | Search for skills and roles |
+| `strawhub info <slug>` | Show detail for a skill or role |
+| `strawhub install <slug>` | Install a skill or role (with dependency resolution) |
+| `strawhub remove <slug>` | Uninstall a skill or role |
+| `strawhub list` | List all available skills and roles |
+| `strawhub update <slug>` | Update installed packages |
+| `strawhub publish <path>` | Publish a skill or role to the registry |
+| `strawhub star <slug>` | Star a skill or role |
+| `strawhub unstar <slug>` | Remove a star |
+| `strawhub delete <slug>` | Soft-delete from registry (moderator/admin) |
+| `strawhub login` | Authenticate with an API token |
+| `strawhub logout` | Remove stored credentials |
+| `strawhub whoami` | Show current user info |
+| `strawhub ban-user <handle>` | Ban/unban a user (admin) |
+| `strawhub set-role <handle> <role>` | Set a user's role (admin) |
+
+Most commands support `--json` for machine-readable output. Run `strawhub <command> --help` for details.
+
+### Configuration
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `STRAWHUB_API_URL` | Override the API endpoint | `https://strawhub.dev` |
+| `STRAWHUB_TOKEN` | Override the auth token | (from `strawhub login`) |
+| `STRAWPOT_HOME` | Override the global install directory | `~/.strawpot` |
+
+Settings can also be persisted in `~/.config/strawhub/config.json`.
+
 ## API
 
 Full API documentation: [docs/http-api.md](docs/http-api.md)
 
 ```
-GET  /api/v1/skills          # list skills
-GET  /api/v1/roles           # list roles
-GET  /api/v1/search?q=...    # search skills and roles
-POST /api/v1/skills          # publish skill (bearer token required)
-POST /api/v1/roles           # publish role (bearer token required)
-GET  /api/v1/whoami          # validate token
+GET    /api/v1/skills          # list skills
+GET    /api/v1/skills/:slug    # skill detail
+DELETE /api/v1/skills/:slug    # delete skill (moderator/admin)
+GET    /api/v1/roles           # list roles
+GET    /api/v1/roles/:slug     # role detail
+DELETE /api/v1/roles/:slug     # delete role (moderator/admin)
+GET    /api/v1/search?q=...    # search skills and roles
+POST   /api/v1/skills          # publish skill (auth required)
+POST   /api/v1/roles           # publish role (auth required)
+POST   /api/v1/stars/toggle    # toggle star (auth required)
+GET    /api/v1/whoami          # current user info
+POST   /api/v1/admin/set-role  # set user role (admin)
+POST   /api/v1/admin/ban-user  # ban/unban user (admin)
 ```
 
 Authenticated endpoints require an `Authorization: Bearer <token>` header. Create tokens from the Settings page.

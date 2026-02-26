@@ -582,6 +582,33 @@ export const publish = mutation({
 });
 
 /**
+ * Soft-delete a role via API token auth (moderator or admin only).
+ */
+export const softDeleteInternal = internalMutation({
+  args: {
+    slug: v.string(),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
+    if (!user) throw new Error("User not found");
+
+    if (user.role !== "admin" && user.role !== "moderator") {
+      throw new Error("Unauthorized: must be moderator or admin");
+    }
+
+    const role = await ctx.db
+      .query("roles")
+      .withIndex("by_slug", (q) => q.eq("slug", args.slug))
+      .first();
+    if (!role) throw new Error("Role not found");
+
+    await ctx.db.patch(role._id, { softDeletedAt: Date.now() });
+    return { ok: true };
+  },
+});
+
+/**
  * Soft-delete a role (admin only).
  */
 export const softDelete = mutation({
