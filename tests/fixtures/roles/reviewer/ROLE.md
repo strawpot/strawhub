@@ -2,8 +2,9 @@
 name: reviewer
 description: "Reviews diffs against acceptance criteria"
 dependencies:
-  - code-review
-  - security-baseline
+  skills:
+    - code-review
+    - security-baseline
 metadata:
   strawpot:
     default_model:

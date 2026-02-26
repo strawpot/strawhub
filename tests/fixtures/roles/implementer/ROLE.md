@@ -2,9 +2,10 @@
 name: implementer
 description: "Writes code to implement features and fix bugs"
 dependencies:
-  - git-workflow
-  - code-review
-  - python-testing
+  skills:
+    - git-workflow
+    - code-review
+    - python-testing
 metadata:
   strawpot:
     default_model:

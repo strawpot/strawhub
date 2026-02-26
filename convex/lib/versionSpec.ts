@@ -2,16 +2,13 @@
  * Parse and validate semver version specifiers for dependencies.
  *
  * Supported formats:
- *   "slug"              — skill dep, resolves to latest
- *   "slug==1.0.0"       — skill dep, exact version
- *   "slug>=1.0.0"       — skill dep, minimum version
- *   "slug^1.0.0"        — skill dep, compatible (same major, >= specified)
- *   "role:slug"         — role dep, resolves to latest
- *   "role:slug>=1.0.0"  — role dep with version constraint
+ *   "slug"              — resolves to latest
+ *   "slug==1.0.0"       — exact version
+ *   "slug>=1.0.0"       — minimum version
+ *   "slug^1.0.0"        — compatible (same major, >= specified)
  */
 
 export interface DependencySpec {
-  kind: "skill" | "role";
   slug: string;
   operator: "latest" | "==" | ">=" | "^";
   version: string | null;
@@ -30,24 +27,15 @@ const VERSION_REGEX = /^(\d+)\.(\d+)\.(\d+)$/;
 /**
  * Parse a dependency string into its components.
  *
- *   "git-workflow"           → { kind: "skill", slug: "git-workflow", operator: "latest", version: null }
- *   "git-workflow>=1.0.0"    → { kind: "skill", slug: "git-workflow", operator: ">=", version: "1.0.0" }
- *   "role:reviewer"          → { kind: "role", slug: "reviewer", operator: "latest", version: null }
- *   "role:reviewer^2.0.0"   → { kind: "role", slug: "reviewer", operator: "^", version: "2.0.0" }
+ *   "git-workflow"           → { slug: "git-workflow", operator: "latest", version: null }
+ *   "git-workflow>=1.0.0"    → { slug: "git-workflow", operator: ">=", version: "1.0.0" }
  */
 export function parseDependencySpec(spec: string): DependencySpec {
-  let input = spec.trim();
-  let kind: "skill" | "role" = "skill";
-
-  if (input.startsWith("role:")) {
-    kind = "role";
-    input = input.slice(5);
-  }
+  const input = spec.trim();
 
   const match = input.match(SPEC_REGEX);
   if (match) {
     return {
-      kind,
       slug: match[1],
       operator: match[2] as "==" | ">=" | "^",
       version: match[3],
@@ -55,7 +43,7 @@ export function parseDependencySpec(spec: string): DependencySpec {
   }
 
   if (SLUG_REGEX.test(input)) {
-    return { kind, slug: input, operator: "latest", version: null };
+    return { slug: input, operator: "latest", version: null };
   }
 
   throw new Error(`Invalid dependency specifier: '${spec}'`);
@@ -122,32 +110,4 @@ export function satisfiesVersion(
  */
 export function extractSlug(spec: string): string {
   return parseDependencySpec(spec).slug;
-}
-
-/**
- * Split a flat frontmatter dependencies array into structured form.
- *
- * Entries prefixed with "role:" are role deps (prefix stripped for storage).
- * All others are skill deps.
- *
- *   ["code-review", "role:implementer>=1.0.0"]
- *   → { skills: ["code-review"], roles: ["implementer>=1.0.0"] }
- */
-export function splitDependencies(
-  deps: string[],
-): { skills?: string[]; roles?: string[] } {
-  const skills: string[] = [];
-  const roles: string[] = [];
-  for (const dep of deps) {
-    const trimmed = dep.trim();
-    if (trimmed.startsWith("role:")) {
-      roles.push(trimmed.slice(5));
-    } else {
-      skills.push(trimmed);
-    }
-  }
-  return {
-    ...(skills.length ? { skills } : {}),
-    ...(roles.length ? { roles } : {}),
-  };
 }

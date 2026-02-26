@@ -134,16 +134,19 @@ Instructions for the agent...
 
 ### ROLE.md
 
-Dependencies are declared directly in the frontmatter. Version specifiers are optional.
+Dependencies are declared in the frontmatter under `skills` and `roles` sub-keys. Version specifiers are optional.
 
 ```yaml
 ---
 name: implementer
 description: "Writes code to implement features and fix bugs"
 dependencies:
-  - git-workflow>=1.0.0
-  - code-review
-  - python-testing^2.0.0
+  skills:
+    - git-workflow>=1.0.0
+    - code-review
+    - python-testing^2.0.0
+  roles:
+    - reviewer
 metadata:
   strawpot:
     default_model:

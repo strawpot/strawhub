@@ -228,7 +228,7 @@ export const publishInternal = internalMutation({
     if (!dependencies && Array.isArray(parsed.frontmatter.dependencies)) {
       const skills = (parsed.frontmatter.dependencies as string[])
         .map((d) => d.trim())
-        .filter((d) => d && !d.startsWith("role:"));
+        .filter(Boolean);
       if (skills.length) {
         dependencies = { skills };
       }
@@ -410,7 +410,7 @@ export const publish = mutation({
     if (!dependencies && Array.isArray(parsed.frontmatter.dependencies)) {
       const skills = (parsed.frontmatter.dependencies as string[])
         .map((d) => d.trim())
-        .filter((d) => d && !d.startsWith("role:"));
+        .filter(Boolean);
       if (skills.length) {
         dependencies = { skills };
       }

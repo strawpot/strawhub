@@ -34,10 +34,12 @@ A role defines agent behavior, model configuration, and dependencies on skills a
 name: implementer
 description: "One-line summary"
 dependencies:
-  - git-workflow>=1.0.0
-  - code-review
-  - python-testing^2.0.0
-  - role:reviewer
+  skills:
+    - git-workflow>=1.0.0
+    - code-review
+    - python-testing^2.0.0
+  roles:
+    - reviewer
 metadata:
   strawpot:
     default_model:
@@ -47,16 +49,14 @@ metadata:
 
 ## Dependency Version Specifiers
 
-Dependencies support optional version constraints. By default, entries are skill dependencies. In role frontmatter, prefix with `role:` for role dependencies. Skills can only depend on other skills.
+Skills use a flat `dependencies` list (skills can only depend on other skills). Roles use a structured `dependencies` object with `skills` and `roles` sub-keys.
 
 | Format | Meaning | Example |
 |--------|---------|---------|
-| `slug` | Skill dep, latest version | `git-workflow` |
-| `slug==X.Y.Z` | Skill dep, exact version | `git-workflow==1.0.0` |
-| `slug>=X.Y.Z` | Skill dep, minimum version | `git-workflow>=1.0.0` |
-| `slug^X.Y.Z` | Skill dep, compatible (same major, >= specified) | `git-workflow^1.0.0` |
-| `role:slug` | Role dep, latest version | `role:reviewer` |
-| `role:slug>=X.Y.Z` | Role dep with version constraint | `role:reviewer>=1.0.0` |
+| `slug` | Latest version | `git-workflow` |
+| `slug==X.Y.Z` | Exact version | `git-workflow==1.0.0` |
+| `slug>=X.Y.Z` | Minimum version | `git-workflow>=1.0.0` |
+| `slug^X.Y.Z` | Compatible (same major, >= specified) | `git-workflow^1.0.0` |
 
 Versions follow semver (`major.minor.patch`). Constraints are validated at publish time — if no published version satisfies the constraint, the publish is rejected.
 
