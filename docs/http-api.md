@@ -124,6 +124,84 @@ Query params:
 
 Uses hybrid ranking: vector similarity + lexical matching + popularity boost.
 
+### Get Skill Detail
+
+```
+GET /api/v1/skills/:slug
+```
+
+Returns full detail for a single skill (public).
+
+### Get Skill File
+
+```
+GET /api/v1/skills/:slug/file?path=SKILL.md
+```
+
+Returns the raw file content for a skill. `path` defaults to `SKILL.md`.
+
+### Delete Skill (auth required)
+
+```
+DELETE /api/v1/skills/:slug
+Authorization: Bearer sh_xxxxx
+```
+
+Soft-deletes a skill. Requires moderator or admin role.
+
+---
+
+## Roles (continued)
+
+### Get Role Detail
+
+```
+GET /api/v1/roles/:slug
+```
+
+Returns full detail for a single role (public).
+
+### Get Role File
+
+```
+GET /api/v1/roles/:slug/file?path=ROLE.md
+```
+
+Returns the raw file content for a role. `path` defaults to `ROLE.md`.
+
+### Resolve Role Dependencies
+
+```
+GET /api/v1/roles/:slug/resolve
+```
+
+Returns the resolved dependency tree for a role (public).
+
+### Delete Role (auth required)
+
+```
+DELETE /api/v1/roles/:slug
+Authorization: Bearer sh_xxxxx
+```
+
+Soft-deletes a role. Requires moderator or admin role.
+
+---
+
+## Stars
+
+### Toggle Star (auth required)
+
+```
+POST /api/v1/stars/toggle
+Authorization: Bearer sh_xxxxx
+Content-Type: application/json
+
+{ "slug": "git-workflow", "kind": "skill" }
+```
+
+Toggles the star status for the authenticated user. Returns `{ "starred": true }` or `{ "starred": false }`.
+
 ---
 
 ## Auth
@@ -136,3 +214,31 @@ Authorization: Bearer sh_xxxxx
 ```
 
 Returns current user info: `{ handle, displayName, email, role, image }`.
+
+---
+
+## Admin
+
+### Set User Role (auth required, admin only)
+
+```
+POST /api/v1/admin/set-role
+Authorization: Bearer sh_xxxxx
+Content-Type: application/json
+
+{ "handle": "someuser", "role": "moderator" }
+```
+
+Sets a user's role. Valid roles: `admin`, `moderator`, `user`.
+
+### Ban / Unban User (auth required, admin only)
+
+```
+POST /api/v1/admin/ban-user
+Authorization: Bearer sh_xxxxx
+Content-Type: application/json
+
+{ "handle": "baduser", "blocked": true, "reason": "spam" }
+```
+
+Blocks or unblocks a user. The `reason` field is optional and only used when blocking.

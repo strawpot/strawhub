@@ -1,3 +1,5 @@
+import json
+
 import click
 
 from strawhub.client import StrawHubClient
@@ -17,25 +19,36 @@ from strawhub.errors import StrawHubError
     type=click.Choice(["updated", "downloads", "stars"]),
     default="updated",
 )
-def list_cmd(kind, limit, sort):
+@click.option("--json", "as_json", is_flag=True, default=False, help="Output as JSON")
+def list_cmd(kind, limit, sort, as_json):
     """List skills and/or roles."""
     with StrawHubClient() as client:
         try:
+            result = {}
             if kind in ("skills", "all"):
                 data = client.list_skills(limit=limit, sort=sort)
-                items = data.get("items", [])
-                if items:
-                    print_list_table(items, "skill")
-                elif kind == "skills":
-                    console.print("No skills found.")
+                if as_json:
+                    result["skills"] = data.get("items", [])
+                else:
+                    items = data.get("items", [])
+                    if items:
+                        print_list_table(items, "skill")
+                    elif kind == "skills":
+                        console.print("No skills found.")
 
             if kind in ("roles", "all"):
                 data = client.list_roles(limit=limit, sort=sort)
-                items = data.get("items", [])
-                if items:
-                    print_list_table(items, "role")
-                elif kind == "roles":
-                    console.print("No roles found.")
+                if as_json:
+                    result["roles"] = data.get("items", [])
+                else:
+                    items = data.get("items", [])
+                    if items:
+                        print_list_table(items, "role")
+                    elif kind == "roles":
+                        console.print("No roles found.")
+
+            if as_json:
+                console.print_json(json.dumps(result))
         except StrawHubError as e:
             print_error(str(e))
             raise SystemExit(1)

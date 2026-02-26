@@ -346,6 +346,29 @@ export const publishRole = httpAction(async (ctx, request) => {
   }
 });
 
+/**
+ * DELETE /api/v1/roles/:slug — soft-delete a role (owner or admin)
+ */
+export async function handleDeleteRole(ctx: any, request: Request): Promise<Response> {
+  const rateLimited = await checkHttpRateLimit(ctx, request, "write");
+  if (rateLimited) return rateLimited;
+
+  const authResult = await resolveTokenToUser(ctx, request);
+  if (authResult instanceof Response) return authResult;
+  const { userId } = authResult;
+
+  const url = new URL(request.url);
+  const slug = url.pathname.split("/").pop();
+  if (!slug) return errorResponse("Slug required", 400);
+
+  try {
+    const result = await ctx.runMutation(internal.roles.softDeleteInternal, { slug, userId });
+    return jsonResponse(result);
+  } catch (e: any) {
+    return errorResponse(e.message || "Delete failed", 400);
+  }
+}
+
 // ─── Formatters ──────────────────────────────────────────────────────────────
 
 function formatRole(role: any) {
