@@ -215,13 +215,14 @@ class TestResolveErrors:
                 local_root=strawpot_dir, global_root=strawpot_dir,
             )
 
-    def test_auto_detect_kind(self, strawpot_dir, make_skill):
+    def test_kind_required(self, strawpot_dir, make_skill):
+        """kind is a required argument."""
         make_skill("git-workflow", "1.0.0")
-        result = resolve(
-            "git-workflow",
-            local_root=strawpot_dir, global_root=strawpot_dir,
-        )
-        assert result["kind"] == "skill"
+        with pytest.raises(TypeError):
+            resolve(
+                "git-workflow",
+                local_root=strawpot_dir, global_root=strawpot_dir,
+            )
 
 
 class TestResolveRoleDeps:

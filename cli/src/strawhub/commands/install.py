@@ -18,36 +18,29 @@ from strawhub.paths import (
 from strawhub.version_spec import parse_dependency_spec
 
 
-@click.command()
-@click.argument("slug")
-@click.option(
-    "--kind",
-    type=click.Choice(["skill", "role"]),
-    default=None,
-    help="Specify kind (auto-detects if omitted)",
-)
-@click.option(
-    "--global",
-    "is_global",
-    is_flag=True,
-    default=False,
-    help="Install to global directory (~/.strawpot or STRAWPOT_HOME)",
-)
-def install(slug, kind, is_global):
+@click.group(invoke_without_command=True)
+@click.pass_context
+def install(ctx):
     """Install a skill or role with all dependencies."""
+    if ctx.invoked_subcommand is None:
+        click.echo(ctx.get_help())
+        ctx.exit(1)
+
+
+def _install_impl(slug, kind, is_global):
     root = get_root(is_global)
     lockfile = Lockfile.load(get_lockfile_path(root))
 
     with StrawHubClient() as client:
         try:
-            detected_kind, detail = client.get_info(slug, kind=kind)
+            _, detail = client.get_info(slug, kind=kind)
             lv = detail.get("latestVersion")
             if not lv:
                 print_error(f"'{slug}' has no published versions.")
                 raise SystemExit(1)
 
             version = lv["version"]
-            root_ref = PackageRef(kind=detected_kind, slug=slug, version=version)
+            root_ref = PackageRef(kind=kind, slug=slug, version=version)
 
             # Check if already installed in either scope
             if _already_installed(root_ref):
@@ -63,7 +56,7 @@ def install(slug, kind, is_global):
                 return
 
             # Resolve dependencies
-            dep_list = _resolve_deps(client, detected_kind, slug, detail)
+            dep_list = _resolve_deps(client, kind, slug, detail)
 
             # Install dependencies first (leaves before root)
             for dep in dep_list:
@@ -87,11 +80,11 @@ def install(slug, kind, is_global):
                 )
 
             # Install the root package
-            _download_package(client, detected_kind, slug, version, root)
+            _download_package(client, kind, slug, version, root)
             lockfile.add_package(root_ref)
             lockfile.add_direct_install(root_ref)
             lockfile.save()
-            print_success(f"Installed {detected_kind} '{slug}' v{version}")
+            print_success(f"Installed {kind} '{slug}' v{version}")
 
         except NotFoundError:
             print_error(f"'{slug}' not found.")
@@ -99,6 +92,34 @@ def install(slug, kind, is_global):
         except (StrawHubError, DependencyError) as e:
             print_error(str(e))
             raise SystemExit(1)
+
+
+@install.command("skill")
+@click.argument("slug")
+@click.option(
+    "--global",
+    "is_global",
+    is_flag=True,
+    default=False,
+    help="Install to global directory (~/.strawpot or STRAWPOT_HOME)",
+)
+def install_skill(slug, is_global):
+    """Install a skill with all dependencies."""
+    _install_impl(slug, kind="skill", is_global=is_global)
+
+
+@install.command("role")
+@click.argument("slug")
+@click.option(
+    "--global",
+    "is_global",
+    is_flag=True,
+    default=False,
+    help="Install to global directory (~/.strawpot or STRAWPOT_HOME)",
+)
+def install_role(slug, is_global):
+    """Install a role with all dependencies."""
+    _install_impl(slug, kind="role", is_global=is_global)
 
 
 def _resolve_deps(

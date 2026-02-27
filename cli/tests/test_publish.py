@@ -9,8 +9,8 @@ from click.testing import CliRunner
 from strawhub.cli import cli
 
 
-def test_publish_auto_detects_skill(tmp_path, monkeypatch):
-    """Publish auto-detects kind from SKILL.md."""
+def test_publish_skill(tmp_path, monkeypatch):
+    """Publish a skill with explicit kind."""
     skill_dir = tmp_path / "my-skill"
     skill_dir.mkdir()
     (skill_dir / "SKILL.md").write_text(
@@ -25,7 +25,7 @@ def test_publish_auto_detects_skill(tmp_path, monkeypatch):
 
     with patch("strawhub.commands.publish.StrawHubClient", return_value=mock_client):
         runner = CliRunner()
-        result = runner.invoke(cli, ["publish", str(skill_dir), "--changelog", "Initial"])
+        result = runner.invoke(cli, ["publish", "skill", str(skill_dir), "--changelog", "Initial"])
 
     assert result.exit_code == 0
     assert "Published" in result.output
@@ -35,8 +35,8 @@ def test_publish_auto_detects_skill(tmp_path, monkeypatch):
     assert call_args[0][0]["version"] == "1.0.0"
 
 
-def test_publish_auto_detects_role(tmp_path, monkeypatch):
-    """Publish auto-detects kind from ROLE.md."""
+def test_publish_role(tmp_path, monkeypatch):
+    """Publish a role with explicit kind."""
     role_dir = tmp_path / "my-role"
     role_dir.mkdir()
     (role_dir / "ROLE.md").write_text(
@@ -51,21 +51,21 @@ def test_publish_auto_detects_role(tmp_path, monkeypatch):
 
     with patch("strawhub.commands.publish.StrawHubClient", return_value=mock_client):
         runner = CliRunner()
-        result = runner.invoke(cli, ["publish", str(role_dir), "--changelog", "Initial"])
+        result = runner.invoke(cli, ["publish", "role", str(role_dir), "--changelog", "Initial"])
 
     assert result.exit_code == 0
     mock_client.publish_role.assert_called_once()
 
 
 def test_publish_no_main_file(tmp_path):
-    """Publish fails if no SKILL.md or ROLE.md found."""
+    """Publish fails if expected main file not found."""
     empty_dir = tmp_path / "empty"
     empty_dir.mkdir()
 
     runner = CliRunner()
-    result = runner.invoke(cli, ["publish", str(empty_dir)])
+    result = runner.invoke(cli, ["publish", "skill", str(empty_dir)])
     assert result.exit_code == 1
-    assert "No SKILL.md or ROLE.md" in result.output
+    assert "SKILL.md not found" in result.output
 
 
 def test_publish_missing_slug(tmp_path):
@@ -81,7 +81,7 @@ def test_publish_missing_slug(tmp_path):
 
     with patch("strawhub.commands.publish.StrawHubClient", return_value=mock_client):
         runner = CliRunner()
-        result = runner.invoke(cli, ["publish", str(skill_dir)])
+        result = runner.invoke(cli, ["publish", "skill", str(skill_dir)])
 
     assert result.exit_code == 1
     assert "Missing" in result.output
@@ -100,7 +100,7 @@ def test_publish_missing_version(tmp_path):
 
     with patch("strawhub.commands.publish.StrawHubClient", return_value=mock_client):
         runner = CliRunner()
-        result = runner.invoke(cli, ["publish", str(skill_dir)])
+        result = runner.invoke(cli, ["publish", "skill", str(skill_dir)])
 
     assert result.exit_code == 1
     assert "Version is required" in result.output
@@ -124,7 +124,7 @@ def test_publish_skips_dotfiles(tmp_path):
 
     with patch("strawhub.commands.publish.StrawHubClient", return_value=mock_client):
         runner = CliRunner()
-        result = runner.invoke(cli, ["publish", str(skill_dir), "--changelog", "test"])
+        result = runner.invoke(cli, ["publish", "skill", str(skill_dir), "--changelog", "test"])
 
     assert result.exit_code == 0
     call_args = mock_client.publish_skill.call_args
@@ -153,7 +153,7 @@ def test_publish_uses_forward_slash_paths(tmp_path):
 
     with patch("strawhub.commands.publish.StrawHubClient", return_value=mock_client):
         runner = CliRunner()
-        result = runner.invoke(cli, ["publish", str(skill_dir)])
+        result = runner.invoke(cli, ["publish", "skill", str(skill_dir)])
 
     assert result.exit_code == 0
     call_args = mock_client.publish_skill.call_args
@@ -177,7 +177,7 @@ def test_publish_not_logged_in(tmp_path):
 
     with patch("strawhub.commands.publish.StrawHubClient", return_value=mock_client):
         runner = CliRunner()
-        result = runner.invoke(cli, ["publish", str(skill_dir)])
+        result = runner.invoke(cli, ["publish", "skill", str(skill_dir)])
 
     assert result.exit_code == 1
     assert "Not logged in" in result.output

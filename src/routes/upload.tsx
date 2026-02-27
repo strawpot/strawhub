@@ -116,10 +116,9 @@ function UploadPage() {
   const publishRole = useMutation(api.roles.publish);
 
   const currentUser = useQuery(api.users.me);
-  const existingSkill = useQuery(api.skills.getBySlug, slug.trim() ? { slug: slug.trim() } : "skip");
-  const existingRole = useQuery(api.roles.getBySlug, slug.trim() ? { slug: slug.trim() } : "skip");
+  const existingSkill = useQuery(api.skills.getBySlug, kind === "skill" && slug.trim() ? { slug: slug.trim() } : "skip");
+  const existingRole = useQuery(api.roles.getBySlug, kind === "role" && slug.trim() ? { slug: slug.trim() } : "skip");
   const existing = kind === "skill" ? existingSkill : existingRole;
-  const isCrossKindConflict = !!(kind === "skill" ? existingRole : existingSkill);
   const isOwnedByOther = !!(existing && currentUser && existing.ownerUserId !== currentUser._id);
   const isUpdate = !!existing && !isOwnedByOther;
 
@@ -152,8 +151,6 @@ function UploadPage() {
     const errors: string[] = [];
     if (!slug.trim()) errors.push("Slug is required.");
     else if (slugError) errors.push(slugError);
-    if (isCrossKindConflict)
-      errors.push(`Slug is already used by a ${kind === "skill" ? "role" : "skill"}.`);
     if (isOwnedByOther) errors.push("Slug is owned by another user.");
     if (!isUpdate && !displayName.trim()) errors.push("Display name is required.");
     if (files.length === 0) errors.push(`At least one file is required.`);
@@ -162,7 +159,7 @@ function UploadPage() {
       errors.push("Role uploads must contain exactly one file: ROLE.md.");
     if (versionError) errors.push(versionError);
     return errors;
-  }, [slug, slugError, isCrossKindConflict, isOwnedByOther, kind, displayName, isUpdate, files, hasPrimaryFile, primaryFile, versionError]);
+  }, [slug, slugError, isOwnedByOther, kind, displayName, isUpdate, files, hasPrimaryFile, primaryFile, versionError]);
 
   const processFiles = useCallback(
     (newFiles: Array<{ file: File; path: string }>) => {
@@ -769,7 +766,7 @@ function UploadPage() {
               onChange={(e) => setSlug(e.target.value)}
               placeholder={kind === "role" ? "my-role" : "my-skill"}
               className={`mt-1 block w-full rounded border bg-gray-900 px-3 py-2 text-white placeholder-gray-500 focus:outline-none ${
-                slugError || (slug.trim() && isCrossKindConflict) || (slug.trim() && existing !== undefined && isOwnedByOther)
+                slugError || (slug.trim() && existing !== undefined && isOwnedByOther)
                   ? "border-red-600 focus:border-red-500"
                   : slug.trim() && existing !== undefined && isUpdate
                     ? "border-yellow-600 focus:border-yellow-500"
@@ -779,17 +776,12 @@ function UploadPage() {
             {slugError && (
               <p className="mt-1 text-xs text-red-400">{slugError}</p>
             )}
-            {!slugError && slug.trim() && isCrossKindConflict && (
-              <p className="mt-1 text-xs text-red-400">
-                This slug is already used by a {kind === "skill" ? "role" : "skill"}.
-              </p>
-            )}
-            {!slugError && slug.trim() && !isCrossKindConflict && existing !== undefined && isOwnedByOther && (
+            {!slugError && slug.trim() && existing !== undefined && isOwnedByOther && (
               <p className="mt-1 text-xs text-red-400">
                 This slug is owned by another user.
               </p>
             )}
-            {!slugError && slug.trim() && !isCrossKindConflict && existing !== undefined && isUpdate && (
+            {!slugError && slug.trim() && existing !== undefined && isUpdate && (
               <p className="mt-1 text-xs text-yellow-500">
                 This {kind} already exists — publishing will create a new version.
               </p>

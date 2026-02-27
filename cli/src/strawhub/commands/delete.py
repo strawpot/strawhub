@@ -5,25 +5,21 @@ from strawhub.display import print_success, print_error
 from strawhub.errors import NotFoundError, StrawHubError
 
 
-@click.command()
-@click.argument("slug")
-@click.option(
-    "--kind",
-    type=click.Choice(["skill", "role"]),
-    default=None,
-    help="Specify kind (auto-detects if omitted)",
-)
-@click.option("--yes", is_flag=True, default=False, help="Skip confirmation prompt")
-def delete(slug, kind, yes):
+@click.group(invoke_without_command=True)
+@click.pass_context
+def delete(ctx):
     """Delete (soft-delete) a skill or role from the registry (moderator/admin only)."""
+    if ctx.invoked_subcommand is None:
+        click.echo(ctx.get_help())
+        ctx.exit(1)
+
+
+def _delete_impl(slug, kind, yes):
     with StrawHubClient() as client:
         if not client.token:
             print_error("Not logged in. Run 'strawhub login' first.")
             raise SystemExit(1)
         try:
-            if kind is None:
-                kind, _ = client.get_info(slug)
-
             if not yes:
                 click.confirm(
                     f"Are you sure you want to delete {kind} '{slug}'?",
@@ -40,3 +36,19 @@ def delete(slug, kind, yes):
         except StrawHubError as e:
             print_error(str(e))
             raise SystemExit(1)
+
+
+@delete.command("skill")
+@click.argument("slug")
+@click.option("--yes", is_flag=True, default=False, help="Skip confirmation prompt")
+def delete_skill(slug, yes):
+    """Delete a skill from the registry."""
+    _delete_impl(slug, kind="skill", yes=yes)
+
+
+@delete.command("role")
+@click.argument("slug")
+@click.option("--yes", is_flag=True, default=False, help="Skip confirmation prompt")
+def delete_role(slug, yes):
+    """Delete a role from the registry."""
+    _delete_impl(slug, kind="role", yes=yes)

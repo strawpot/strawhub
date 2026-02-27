@@ -9,43 +9,17 @@ from strawhub.errors import StrawHubError
 from strawhub.frontmatter import parse_frontmatter
 
 
-@click.command()
-@click.argument(
-    "path",
-    type=click.Path(exists=True, file_okay=False, dir_okay=True),
-    default=".",
-)
-@click.option(
-    "--kind",
-    type=click.Choice(["skill", "role"]),
-    default=None,
-    help="Specify kind (auto-detects from SKILL.md or ROLE.md)",
-)
-@click.option("--version", "ver", default=None, help="Version to publish")
-@click.option("--changelog", default="", help="Changelog for this version")
-@click.option("--tag", "tags", multiple=True, help="Custom tags")
-def publish(path, kind, ver, changelog, tags):
+@click.group(invoke_without_command=True)
+@click.pass_context
+def publish(ctx):
     """Publish a skill or role to the StrawHub registry."""
+    if ctx.invoked_subcommand is None:
+        click.echo(ctx.get_help())
+        ctx.exit(1)
+
+
+def _publish_impl(path, kind, ver, changelog, tags):
     directory = Path(path).resolve()
-
-    # Auto-detect kind from file presence
-    has_skill = (directory / "SKILL.md").exists()
-    has_role = (directory / "ROLE.md").exists()
-
-    if kind is None:
-        if has_skill and not has_role:
-            kind = "skill"
-        elif has_role and not has_skill:
-            kind = "role"
-        elif has_skill and has_role:
-            print_error(
-                "Directory contains both SKILL.md and ROLE.md. "
-                "Use --kind to specify."
-            )
-            raise SystemExit(1)
-        else:
-            print_error("No SKILL.md or ROLE.md found in directory.")
-            raise SystemExit(1)
 
     main_file = "SKILL.md" if kind == "skill" else "ROLE.md"
     main_path = directory / main_file
@@ -123,6 +97,26 @@ def publish(path, kind, ver, changelog, tags):
         except StrawHubError as e:
             print_error(str(e))
             raise SystemExit(1)
+
+
+@publish.command("skill")
+@click.argument("path", type=click.Path(exists=True, file_okay=False, dir_okay=True), default=".")
+@click.option("--version", "ver", default=None, help="Version to publish")
+@click.option("--changelog", default="", help="Changelog for this version")
+@click.option("--tag", "tags", multiple=True, help="Custom tags")
+def publish_skill(path, ver, changelog, tags):
+    """Publish a skill to the StrawHub registry."""
+    _publish_impl(path, kind="skill", ver=ver, changelog=changelog, tags=tags)
+
+
+@publish.command("role")
+@click.argument("path", type=click.Path(exists=True, file_okay=False, dir_okay=True), default=".")
+@click.option("--version", "ver", default=None, help="Version to publish")
+@click.option("--changelog", default="", help="Changelog for this version")
+@click.option("--tag", "tags", multiple=True, help="Custom tags")
+def publish_role(path, ver, changelog, tags):
+    """Publish a role to the StrawHub registry."""
+    _publish_impl(path, kind="role", ver=ver, changelog=changelog, tags=tags)
 
 
 def _collect_files(directory: Path) -> list[tuple[str, tuple[str, bytes, str]]]:

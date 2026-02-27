@@ -27,7 +27,7 @@ test.describe("Smoke tests", () => {
     await expect(page.locator("text=The role and skill registry for")).toBeVisible();
     await expect(page.locator("h2", { hasText: "Roles" })).toBeVisible();
     await expect(page.locator("h2", { hasText: "Skills" })).toBeVisible();
-    await expect(page.locator("text=strawhub install implementer")).toBeVisible();
+    await expect(page.locator("text=strawhub install role implementer")).toBeVisible();
   });
 
   test("search page loads with input", async ({ page }) => {

@@ -37,7 +37,7 @@ class ResolvedPackage:
 
 def resolve(
     slug: str,
-    kind: str | None = None,
+    kind: str,
     version: str | None = None,
     local_root: Path | None = None,
     global_root: Path | None = None,
@@ -67,18 +67,7 @@ def resolve(
     # Step 1: Build index of all installed packages
     index = _build_index(lr, gr)
 
-    # Step 2: Determine kind
-    if kind is None:
-        if ("skill", slug) in index:
-            kind = "skill"
-        elif ("role", slug) in index:
-            kind = "role"
-        else:
-            raise DependencyError(
-                f"'{slug}' is not installed as a skill or role."
-            )
-
-    # Step 3: Validate the root package exists
+    # Step 2: Validate the root package exists
     candidates = index.get((kind, slug), [])
     if not candidates:
         raise DependencyError(
@@ -124,7 +113,7 @@ def resolve(
             raise DependencyError(
                 f"No installed version of {pkg_kind} '{pkg_slug}' "
                 f"satisfies '{pkg_slug}{constraint_str}'.\n"
-                f"Run: strawhub install {pkg_slug} --kind {pkg_kind}"
+                f"Run: strawhub install {pkg_kind} {pkg_slug}"
             )
 
         # Pick highest matching version

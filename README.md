@@ -115,15 +115,22 @@ pip install strawhub
 | Command | Description |
 |---------|-------------|
 | `strawhub search <query>` | Search for skills and roles |
-| `strawhub info <slug>` | Show detail for a skill or role |
-| `strawhub install <slug>` | Install a skill or role (with dependency resolution) |
-| `strawhub remove <slug>` | Uninstall a skill or role |
+| `strawhub info skill <slug>` | Show detail for a skill |
+| `strawhub info role <slug>` | Show detail for a role |
+| `strawhub install skill <slug>` | Install a skill (with dependency resolution) |
+| `strawhub install role <slug>` | Install a role (with dependency resolution) |
+| `strawhub uninstall skill <slug>` | Uninstall a skill |
+| `strawhub uninstall role <slug>` | Uninstall a role |
 | `strawhub list` | List all available skills and roles |
-| `strawhub update <slug>` | Update installed packages |
-| `strawhub publish <path>` | Publish a skill or role to the registry |
-| `strawhub star <slug>` | Star a skill or role |
-| `strawhub unstar <slug>` | Remove a star |
-| `strawhub delete <slug>` | Soft-delete from registry (moderator/admin) |
+| `strawhub update skill <slug>` | Update an installed skill |
+| `strawhub update role <slug>` | Update an installed role |
+| `strawhub update --all` | Update all installed packages |
+| `strawhub publish skill <path>` | Publish a skill to the registry |
+| `strawhub publish role <path>` | Publish a role to the registry |
+| `strawhub star skill <slug>` | Star a skill |
+| `strawhub star role <slug>` | Star a role |
+| `strawhub delete skill <slug>` | Soft-delete a skill (moderator/admin) |
+| `strawhub delete role <slug>` | Soft-delete a role (moderator/admin) |
 | `strawhub login` | Authenticate with an API token |
 | `strawhub logout` | Remove stored credentials |
 | `strawhub whoami` | Show current user info |

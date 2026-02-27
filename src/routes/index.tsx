@@ -55,7 +55,7 @@ function HomePage() {
           Quick Install
         </h3>
         <code className="rounded bg-gray-900 px-6 py-3 text-sm text-orange-400 inline-block max-w-full overflow-x-auto">
-          strawhub install implementer
+          strawhub install role implementer
         </code>
         <p className="text-gray-500 text-sm mt-2">
           Installs the role + all dependent skills recursively

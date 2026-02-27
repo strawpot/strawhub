@@ -116,7 +116,7 @@ The resolution logic exists server-side (handler in `rolesV1.ts`) but is not yet
 - **Web UI**: Drag-and-drop files or use the GitHub import (paste a URL, files are fetched via GitHub Contents API)
 - SKILL.md / ROLE.md frontmatter is auto-parsed to populate form fields (slug, display name)
 - Slug ownership: if a slug already exists and belongs to another user, publishing is blocked
-- Cross-kind slug uniqueness: a slug cannot be used by both a skill and a role
+- Slug uniqueness is per-type: skills and roles have separate slug namespaces
 - Version monotonicity: new versions must be strictly greater than the latest published version; auto-incremented patch if omitted
 - Dependency validation errors are aggregated — all issues are reported together rather than failing on the first one
 - Zip archives nest files under `{slug}-{version}/` so they extract into a named directory
