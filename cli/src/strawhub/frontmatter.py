@@ -1,12 +1,14 @@
 """Parse YAML frontmatter from markdown strings.
 
-Supports one level of nesting for objects with sub-key arrays:
-  dependencies:
-    skills:
-      - git-workflow
-    roles:
-      - reviewer
-  → {"dependencies": {"skills": ["git-workflow"], "roles": ["reviewer"]}}
+Supports arbitrary nesting depth via recursive descent:
+  metadata:
+    strawpot:
+      dependencies:
+        skills:
+          - git-workflow
+        roles:
+          - reviewer
+  → {"metadata": {"strawpot": {"dependencies": {"skills": ["git-workflow"], "roles": ["reviewer"]}}}}
 
 Python port of convex/lib/frontmatter.ts.
 """
@@ -25,149 +27,170 @@ def parse_frontmatter(text: str) -> dict:
 
     yaml_str = m.group(1)
     body = m.group(2)
-
-    frontmatter: dict = {}
     lines = yaml_str.split("\n")
 
-    # State for top-level arrays
-    current_key = ""
-    current_array: list[str] | None = None
+    result, _ = _parse_block(lines, 0, 0)
+    return {"frontmatter": result, "body": body}
 
-    # State for nested objects
-    nested_parent_key = ""
-    nested_object: dict[str, list[str]] | None = None
-    nested_sub_key = ""
-    nested_sub_array: list[str] | None = None
 
-    def flush_nested():
-        nonlocal nested_object, nested_parent_key, nested_sub_key, nested_sub_array
-        if nested_object is not None:
-            if nested_sub_array is not None and nested_sub_key:
-                nested_object[nested_sub_key] = nested_sub_array
-                nested_sub_array = None
-                nested_sub_key = ""
-            frontmatter[nested_parent_key] = nested_object
-            nested_object = None
-            nested_parent_key = ""
+def _get_indent(line: str) -> int:
+    return len(line) - len(line.lstrip())
 
-    def flush_array():
-        nonlocal current_array
-        if current_array is not None:
-            frontmatter[current_key] = current_array
-            current_array = None
 
-    for i, line in enumerate(lines):
+def _skip_blanks(lines: list[str], start: int) -> int:
+    i = start
+    while i < len(lines) and not lines[i].strip():
+        i += 1
+    return i
+
+
+def _parse_scalar(raw: str):
+    """Parse a scalar value: quoted string, boolean, number, or bare string."""
+    # Quoted string
+    if (raw.startswith('"') and raw.endswith('"')) or (
+        raw.startswith("'") and raw.endswith("'")
+    ):
+        return raw[1:-1]
+
+    # Boolean
+    if raw == "true":
+        return True
+    if raw == "false":
+        return False
+
+    # Number
+    if re.match(r"^\d+(\.\d+)?$", raw):
+        return float(raw) if "." in raw else int(raw)
+
+    # Bare string
+    return raw
+
+
+def _parse_inline_value(raw: str):
+    """Parse an inline value (scalar or inline array)."""
+    if raw.startswith("[") and raw.endswith("]"):
+        return [
+            s.strip().strip("\"'")
+            for s in raw[1:-1].split(",")
+            if s.strip()
+        ]
+    return _parse_scalar(raw)
+
+
+def _parse_block(
+    lines: list[str], start_idx: int, base_indent: int
+) -> tuple[dict, int]:
+    """Recursively parse a YAML block at a given indent level.
+
+    Returns (result_dict, next_index).
+    """
+    result: dict = {}
+    i = start_idx
+
+    while i < len(lines):
+        line = lines[i]
         trimmed = line.strip()
+
         if not trimmed:
+            i += 1
             continue
 
-        # Determine indentation (leading spaces)
-        indent = len(line) - len(line.lstrip())
+        indent = _get_indent(line)
+        if indent < base_indent:
+            break
 
-        # Inside nested object (indent >= 2)
-        if nested_object is not None and indent >= 2:
-            # Array item under a sub-key (starts with "- ")
-            if trimmed.startswith("- ") and nested_sub_array is not None:
-                nested_sub_array.append(trimmed[2:].strip())
-                continue
-
-            # Sub-key (e.g. "skills:" at indent 2+)
-            sub_kv = re.match(r"^(\w[\w-]*):\s*(.*)$", trimmed)
-            if sub_kv:
-                # Flush previous sub-key array
-                if nested_sub_array is not None and nested_sub_key:
-                    nested_object[nested_sub_key] = nested_sub_array
-
-                sub_key = sub_kv.group(1)
-                sub_value = sub_kv.group(2).strip()
-
-                if not sub_value:
-                    nested_sub_key = sub_key
-                    nested_sub_array = []
-                elif sub_value.startswith("[") and sub_value.endswith("]"):
-                    nested_object[sub_key] = [
-                        s.strip().strip("\"'")
-                        for s in sub_value[1:-1].split(",")
-                        if s.strip()
-                    ]
-                    nested_sub_key = ""
-                    nested_sub_array = None
-                continue
-            continue
-
-        # Top-level array item
-        if trimmed.startswith("- ") and current_array is not None:
-            current_array.append(trimmed[2:].strip())
-            continue
-
-        # Flush any pending state before processing a new top-level key
-        flush_nested()
-        flush_array()
-
-        # Top-level key: value pair
         kv = re.match(r"^(\w[\w-]*):\s*(.*)$", trimmed)
-        if kv:
-            key = kv.group(1)
-            value = kv.group(2).strip()
+        if not kv:
+            i += 1
+            continue
 
-            if not value:
-                # Peek at next non-empty line to decide: array or nested object?
-                peek_idx = i + 1
-                while peek_idx < len(lines) and not lines[peek_idx].strip():
-                    peek_idx += 1
-                if peek_idx < len(lines):
-                    peek_trimmed = lines[peek_idx].strip()
-                    peek_indent = len(lines[peek_idx]) - len(lines[peek_idx].lstrip())
-                    if (
-                        peek_indent >= 2
-                        and not peek_trimmed.startswith("- ")
-                        and re.match(r"^(\w[\w-]*):\s*(.*)$", peek_trimmed)
-                    ):
-                        # Next indented line is a sub-key → nested object
-                        nested_parent_key = key
-                        nested_object = {}
-                        nested_sub_key = ""
-                        nested_sub_array = None
-                        continue
+        key = kv.group(1)
+        value = kv.group(2).strip()
+        i += 1
 
-                # Default: start of array
-                current_key = key
-                current_array = []
-                continue
+        if value:
+            result[key] = _parse_inline_value(value)
+            continue
 
-            # Inline array: [a, b, c]
-            if value.startswith("[") and value.endswith("]"):
-                frontmatter[key] = [
-                    s.strip().strip("\"'")
-                    for s in value[1:-1].split(",")
-                    if s.strip()
-                ]
-                continue
+        # Empty value — peek to determine array vs nested object
+        peek_idx = _skip_blanks(lines, i)
 
-            # Quoted string
-            if (value.startswith('"') and value.endswith('"')) or (
-                value.startswith("'") and value.endswith("'")
-            ):
-                frontmatter[key] = value[1:-1]
-                continue
+        if peek_idx >= len(lines):
+            result[key] = ""
+            continue
 
-            # Boolean
-            if value == "true":
-                frontmatter[key] = True
-                continue
-            if value == "false":
-                frontmatter[key] = False
-                continue
+        peek_indent = _get_indent(lines[peek_idx])
+        if peek_indent <= indent:
+            result[key] = ""
+            continue
 
-            # Number
-            if re.match(r"^\d+(\.\d+)?$", value):
-                frontmatter[key] = float(value) if "." in value else int(value)
-                continue
+        peek_trimmed = lines[peek_idx].strip()
 
-            frontmatter[key] = value
+        if peek_trimmed.startswith("- "):
+            arr, next_idx = _parse_array(lines, peek_idx, peek_indent)
+            result[key] = arr
+            i = next_idx
+        elif re.match(r"^(\w[\w-]*):\s*(.*)$", peek_trimmed):
+            nested, next_idx = _parse_block(lines, peek_idx, peek_indent)
+            result[key] = nested
+            i = next_idx
+        else:
+            i = peek_idx + 1
 
-    # Flush any remaining state
-    flush_nested()
-    flush_array()
+    return result, i
 
-    return {"frontmatter": frontmatter, "body": body}
+
+def _parse_array(
+    lines: list[str], start_idx: int, base_indent: int
+) -> tuple[list[str], int]:
+    """Parse consecutive '- item' lines at a given indent level.
+
+    Returns (result_list, next_index).
+    """
+    result: list[str] = []
+    i = start_idx
+
+    while i < len(lines):
+        line = lines[i]
+        trimmed = line.strip()
+
+        if not trimmed:
+            i += 1
+            continue
+
+        indent = _get_indent(line)
+        if indent < base_indent:
+            break
+        if not trimmed.startswith("- "):
+            break
+
+        result.append(trimmed[2:].strip())
+        i += 1
+
+    return result, i
+
+
+def extract_dependencies(
+    fm: dict, kind: str
+) -> dict | None:
+    """Extract dependencies from parsed frontmatter.
+
+    Reads from metadata.strawpot.dependencies.
+    For skills: returns {"skills": [...]} from a flat array.
+    For roles: returns {"skills": [...], "roles": [...]} from a nested object.
+    """
+    deps = (
+        fm.get("metadata", {})
+        .get("strawpot", {})
+        .get("dependencies")
+    )
+
+    if deps is None:
+        return None
+
+    if kind == "skill" and isinstance(deps, list):
+        return {"skills": deps}
+    if kind == "role" and isinstance(deps, dict):
+        return deps
+
+    return None

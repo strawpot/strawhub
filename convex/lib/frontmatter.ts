@@ -2,13 +2,15 @@
  * Parse YAML frontmatter from a markdown string.
  * Returns { frontmatter, body }.
  *
- * Supports one level of nesting for objects with sub-key arrays:
- *   dependencies:
- *     skills:
- *       - git-workflow
- *     roles:
- *       - reviewer
- *   → { dependencies: { skills: ["git-workflow"], roles: ["reviewer"] } }
+ * Supports arbitrary nesting depth via recursive descent:
+ *   metadata:
+ *     strawpot:
+ *       dependencies:
+ *         skills:
+ *           - git-workflow
+ *         roles:
+ *           - reviewer
+ *   → { metadata: { strawpot: { dependencies: { skills: ["git-workflow"], roles: ["reviewer"] } } } }
  */
 export function parseFrontmatter(text: string): {
   frontmatter: Record<string, unknown>;
@@ -21,158 +23,175 @@ export function parseFrontmatter(text: string): {
 
   const yamlStr = match[1];
   const body = match[2];
-
-  const frontmatter: Record<string, unknown> = {};
   const lines = yamlStr.split("\n");
 
-  // State for top-level arrays (e.g. dependencies:\n  - a\n  - b)
-  let currentKey = "";
-  let currentArray: string[] | null = null;
+  const { result } = parseBlock(lines, 0, 0);
+  return { frontmatter: result, body };
+}
 
-  // State for nested objects (e.g. dependencies:\n  skills:\n    - a)
-  let nestedParentKey = "";
-  let nestedObject: Record<string, string[]> | null = null;
-  let nestedSubKey = "";
-  let nestedSubArray: string[] | null = null;
+function getIndent(line: string): number {
+  return line.search(/\S/);
+}
 
-  function flushNested() {
-    if (nestedObject !== null) {
-      if (nestedSubArray !== null && nestedSubKey) {
-        nestedObject[nestedSubKey] = nestedSubArray;
-        nestedSubArray = null;
-        nestedSubKey = "";
-      }
-      frontmatter[nestedParentKey] = nestedObject;
-      nestedObject = null;
-      nestedParentKey = "";
-    }
+function skipBlanks(lines: string[], from: number): number {
+  let i = from;
+  while (i < lines.length && !lines[i].trim()) i++;
+  return i;
+}
+
+function parseScalar(raw: string): unknown {
+  // Quoted string
+  if (
+    (raw.startsWith('"') && raw.endsWith('"')) ||
+    (raw.startsWith("'") && raw.endsWith("'"))
+  ) {
+    return raw.slice(1, -1);
   }
 
-  function flushArray() {
-    if (currentArray !== null) {
-      frontmatter[currentKey] = currentArray;
-      currentArray = null;
-    }
+  // Boolean
+  if (raw === "true") return true;
+  if (raw === "false") return false;
+
+  // Number
+  if (/^\d+(\.\d+)?$/.test(raw)) {
+    return parseFloat(raw);
   }
 
-  for (let i = 0; i < lines.length; i++) {
+  // Bare string
+  return raw;
+}
+
+function parseInlineValue(raw: string): unknown {
+  // Inline array: [a, b, c]
+  if (raw.startsWith("[") && raw.endsWith("]")) {
+    return raw
+      .slice(1, -1)
+      .split(",")
+      .map((s) => s.trim().replace(/^["']|["']$/g, ""))
+      .filter(Boolean);
+  }
+
+  return parseScalar(raw);
+}
+
+function parseBlock(
+  lines: string[],
+  startIdx: number,
+  baseIndent: number,
+): { result: Record<string, unknown>; nextIdx: number } {
+  const result: Record<string, unknown> = {};
+  let i = startIdx;
+
+  while (i < lines.length) {
     const line = lines[i];
     const trimmed = line.trim();
-    if (!trimmed) continue;
 
-    // Determine indentation (leading spaces)
-    const indent = line.search(/\S/);
-
-    // Inside nested object (indent >= 2)
-    if (nestedObject !== null && indent >= 2) {
-      // Array item under a sub-key (indent >= 4, starts with "- ")
-      if (trimmed.startsWith("- ") && nestedSubArray !== null) {
-        nestedSubArray.push(trimmed.slice(2).trim());
-        continue;
-      }
-
-      // Sub-key (e.g. "skills:" at indent 2+)
-      const subKvMatch = trimmed.match(/^(\w[\w-]*):\s*(.*)$/);
-      if (subKvMatch) {
-        // Flush previous sub-key array
-        if (nestedSubArray !== null && nestedSubKey) {
-          nestedObject[nestedSubKey] = nestedSubArray;
-        }
-        const [, subKey, subRawValue] = subKvMatch;
-        const subValue = subRawValue.trim();
-        if (!subValue) {
-          nestedSubKey = subKey;
-          nestedSubArray = [];
-        } else if (subValue.startsWith("[") && subValue.endsWith("]")) {
-          nestedObject[subKey] = subValue
-            .slice(1, -1)
-            .split(",")
-            .map((s) => s.trim().replace(/^["']|["']$/g, ""))
-            .filter(Boolean);
-          nestedSubKey = "";
-          nestedSubArray = null;
-        }
-        continue;
-      }
+    if (!trimmed) {
+      i++;
       continue;
     }
 
-    // Top-level array item
-    if (trimmed.startsWith("- ") && currentArray !== null) {
-      currentArray.push(trimmed.slice(2).trim());
-      continue;
-    }
+    const indent = getIndent(line);
+    if (indent < baseIndent) break;
 
-    // Flush any pending state before processing a new top-level key
-    flushNested();
-    flushArray();
-
-    // Top-level key: value pair
     const kvMatch = trimmed.match(/^(\w[\w-]*):\s*(.*)$/);
-    if (kvMatch) {
-      const [, key, rawValue] = kvMatch;
-      const value = rawValue.trim();
+    if (!kvMatch) {
+      i++;
+      continue;
+    }
 
-      if (!value) {
-        // Peek at next non-empty line to decide: array or nested object?
-        let peekIdx = i + 1;
-        while (peekIdx < lines.length && !lines[peekIdx].trim()) peekIdx++;
-        if (peekIdx < lines.length) {
-          const peekTrimmed = lines[peekIdx].trim();
-          const peekIndent = lines[peekIdx].search(/\S/);
-          if (
-            peekIndent >= 2 &&
-            !peekTrimmed.startsWith("- ") &&
-            peekTrimmed.match(/^(\w[\w-]*):\s*(.*)$/)
-          ) {
-            // Next indented line is a sub-key → nested object
-            nestedParentKey = key;
-            nestedObject = {};
-            nestedSubKey = "";
-            nestedSubArray = null;
-            continue;
-          }
-        }
-        // Default: start of array
-        currentKey = key;
-        currentArray = [];
-        continue;
-      }
+    const [, key, rawValue] = kvMatch;
+    const value = rawValue.trim();
+    i++;
 
-      // Inline array: [a, b, c]
-      if (value.startsWith("[") && value.endsWith("]")) {
-        frontmatter[key] = value
-          .slice(1, -1)
-          .split(",")
-          .map((s) => s.trim().replace(/^["']|["']$/g, ""))
-          .filter(Boolean);
-        continue;
-      }
+    if (value) {
+      result[key] = parseInlineValue(value);
+      continue;
+    }
 
-      // Quoted string
-      if ((value.startsWith('"') && value.endsWith('"')) ||
-          (value.startsWith("'") && value.endsWith("'"))) {
-        frontmatter[key] = value.slice(1, -1);
-        continue;
-      }
+    // Empty value — peek to determine array vs nested object
+    const peekIdx = skipBlanks(lines, i);
 
-      // Boolean
-      if (value === "true") { frontmatter[key] = true; continue; }
-      if (value === "false") { frontmatter[key] = false; continue; }
+    if (peekIdx >= lines.length) {
+      result[key] = "";
+      continue;
+    }
 
-      // Number
-      if (/^\d+(\.\d+)?$/.test(value)) {
-        frontmatter[key] = parseFloat(value);
-        continue;
-      }
+    const peekIndent = getIndent(lines[peekIdx]);
+    if (peekIndent <= indent) {
+      result[key] = "";
+      continue;
+    }
 
-      frontmatter[key] = value;
+    const peekTrimmed = lines[peekIdx].trim();
+
+    if (peekTrimmed.startsWith("- ")) {
+      const parsed = parseArray(lines, peekIdx, peekIndent);
+      result[key] = parsed.result;
+      i = parsed.nextIdx;
+    } else if (peekTrimmed.match(/^(\w[\w-]*):\s*(.*)$/)) {
+      const parsed = parseBlock(lines, peekIdx, peekIndent);
+      result[key] = parsed.result;
+      i = parsed.nextIdx;
+    } else {
+      i = peekIdx + 1;
     }
   }
 
-  // Flush any remaining state
-  flushNested();
-  flushArray();
+  return { result, nextIdx: i };
+}
 
-  return { frontmatter, body };
+function parseArray(
+  lines: string[],
+  startIdx: number,
+  baseIndent: number,
+): { result: string[]; nextIdx: number } {
+  const result: string[] = [];
+  let i = startIdx;
+
+  while (i < lines.length) {
+    const line = lines[i];
+    const trimmed = line.trim();
+
+    if (!trimmed) {
+      i++;
+      continue;
+    }
+
+    const indent = getIndent(line);
+    if (indent < baseIndent) break;
+    if (!trimmed.startsWith("- ")) break;
+
+    result.push(trimmed.slice(2).trim());
+    i++;
+  }
+
+  return { result, nextIdx: i };
+}
+
+/**
+ * Extract dependencies from parsed frontmatter.
+ *
+ * Reads from metadata.strawpot.dependencies.
+ * For skills: returns { skills: string[] } from a flat array.
+ * For roles: returns { skills?: string[], roles?: string[] } from a nested object.
+ */
+export function extractDependencies(
+  fm: Record<string, unknown>,
+  kind: "skill" | "role",
+): { skills?: string[]; roles?: string[] } | undefined {
+  const meta = fm.metadata as Record<string, unknown> | undefined;
+  const strawpot = meta?.strawpot as Record<string, unknown> | undefined;
+  const deps = strawpot?.dependencies;
+
+  if (deps == null) return undefined;
+
+  if (kind === "skill" && Array.isArray(deps)) {
+    return { skills: deps as string[] };
+  }
+  if (kind === "role" && typeof deps === "object" && !Array.isArray(deps)) {
+    return deps as { skills?: string[]; roles?: string[] };
+  }
+
+  return undefined;
 }

@@ -6,7 +6,7 @@ import click
 from strawhub.client import StrawHubClient
 from strawhub.display import print_success, print_error, console
 from strawhub.errors import StrawHubError
-from strawhub.frontmatter import parse_frontmatter
+from strawhub.frontmatter import parse_frontmatter, extract_dependencies
 
 
 @click.group(invoke_without_command=True)
@@ -51,15 +51,10 @@ def _publish_impl(path, kind, ver, changelog, tags):
         changelog = fm.get("changelog", "")
 
     # Build dependencies
-    deps = fm.get("dependencies")
+    deps = extract_dependencies(fm, kind)
     dependencies_json = None
-    if deps and isinstance(deps, dict):
+    if deps:
         dependencies_json = json.dumps(deps)
-    elif deps and isinstance(deps, list):
-        if kind == "skill":
-            dependencies_json = json.dumps({"skills": deps})
-        else:
-            dependencies_json = json.dumps({"roles": deps})
 
     # Collect files
     files = _collect_files(directory)

@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query, internalMutation } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { parseFrontmatter } from "./lib/frontmatter";
+import { parseFrontmatter, extractDependencies } from "./lib/frontmatter";
 import { parseDependencySpec, parseVersion, compareVersions, satisfiesVersion } from "./lib/versionSpec";
 import { validateSlug, validateVersion, validateDisplayName, validateChangelog, validateFiles, validateRoleFiles } from "./lib/publishValidation";
 
@@ -207,16 +207,8 @@ export const publishInternal = internalMutation({
     }
 
     let dependencies = args.dependencies;
-    if (!dependencies && parsed.frontmatter.dependencies != null) {
-      const fmDeps = parsed.frontmatter.dependencies as { skills?: string[]; roles?: string[] };
-      const skills = fmDeps.skills?.map((d) => d.trim()).filter(Boolean);
-      const roles = fmDeps.roles?.map((d) => d.trim()).filter(Boolean);
-      if (skills?.length || roles?.length) {
-        dependencies = {
-          ...(skills?.length ? { skills } : {}),
-          ...(roles?.length ? { roles } : {}),
-        };
-      }
+    if (!dependencies) {
+      dependencies = extractDependencies(parsed.frontmatter, "role");
     }
 
     // Validate all dependencies (collect errors by category)
@@ -392,16 +384,8 @@ export const publish = mutation({
 
     // Read dependencies from frontmatter if not provided in args
     let dependencies = args.dependencies;
-    if (!dependencies && parsed.frontmatter.dependencies != null) {
-      const fmDeps = parsed.frontmatter.dependencies as { skills?: string[]; roles?: string[] };
-      const skills = fmDeps.skills?.map((d) => d.trim()).filter(Boolean);
-      const roles = fmDeps.roles?.map((d) => d.trim()).filter(Boolean);
-      if (skills?.length || roles?.length) {
-        dependencies = {
-          ...(skills?.length ? { skills } : {}),
-          ...(roles?.length ? { roles } : {}),
-        };
-      }
+    if (!dependencies) {
+      dependencies = extractDependencies(parsed.frontmatter, "role");
     }
 
     // Validate all dependencies (collect errors by category)

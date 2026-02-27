@@ -32,8 +32,13 @@ def make_skill(strawpot_dir):
 
         dep_section = ""
         if deps:
-            dep_lines = "\n".join(f"  - {d}" for d in deps)
-            dep_section = f"dependencies:\n{dep_lines}\n"
+            dep_lines = "\n".join(f"      - {d}" for d in deps)
+            dep_section = (
+                "metadata:\n"
+                "  strawpot:\n"
+                "    dependencies:\n"
+                f"{dep_lines}\n"
+            )
 
         (d / "SKILL.md").write_text(
             f"---\nname: {slug}\ndescription: \"{slug} skill\"\n{dep_section}---\n\n# {slug}\n"
@@ -53,13 +58,17 @@ def make_role(strawpot_dir):
 
         dep_section = ""
         if skill_deps or role_deps:
-            dep_section = "dependencies:\n"
+            dep_section = (
+                "metadata:\n"
+                "  strawpot:\n"
+                "    dependencies:\n"
+            )
             if skill_deps:
-                dep_section += "  skills:\n"
-                dep_section += "".join(f"    - {s}\n" for s in skill_deps)
+                dep_section += "      skills:\n"
+                dep_section += "".join(f"        - {s}\n" for s in skill_deps)
             if role_deps:
-                dep_section += "  roles:\n"
-                dep_section += "".join(f"    - {r}\n" for r in role_deps)
+                dep_section += "      roles:\n"
+                dep_section += "".join(f"        - {r}\n" for r in role_deps)
 
         (d / "ROLE.md").write_text(
             f"---\nname: {slug}\ndescription: \"{slug} role\"\n{dep_section}---\n\n# {slug}\n"
