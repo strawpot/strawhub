@@ -16,6 +16,7 @@ from strawhub.commands.star import star, unstar
 from strawhub.commands.delete import delete
 from strawhub.commands.ban_user import ban_user
 from strawhub.commands.set_role import set_role
+from strawhub.commands.install_tools import install_tools
 
 
 @click.group()
@@ -31,6 +32,7 @@ cli.add_command(search)
 cli.add_command(info)
 cli.add_command(list_cmd, name="list")
 cli.add_command(install)
+cli.add_command(install_tools, name="install-tools")
 cli.add_command(uninstall)
 cli.add_command(update)
 cli.add_command(publish)
