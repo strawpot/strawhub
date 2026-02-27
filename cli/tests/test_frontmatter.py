@@ -1,6 +1,6 @@
 """Tests for frontmatter.py — ported from convex/lib/frontmatter.test.ts."""
 
-from strawhub.frontmatter import parse_frontmatter
+from strawhub.frontmatter import parse_frontmatter, extract_dependencies
 
 
 class TestParseFrontmatter:
@@ -17,12 +17,12 @@ class TestParseFrontmatter:
         assert result["frontmatter"] == {}
         assert result["body"] == "Just plain markdown."
 
-    def test_yaml_list_dependencies(self):
-        text = '---\nname: code-review\ndependencies:\n  - security-baseline\n  - git-workflow>=1.0.0\n---\nBody.\n'
+    def test_yaml_list(self):
+        text = '---\nname: code-review\ntags:\n  - security-baseline\n  - git-workflow\n---\nBody.\n'
         result = parse_frontmatter(text)
-        assert result["frontmatter"]["dependencies"] == [
+        assert result["frontmatter"]["tags"] == [
             "security-baseline",
-            "git-workflow>=1.0.0",
+            "git-workflow",
         ]
 
     def test_inline_array(self):
@@ -64,48 +64,87 @@ class TestParseFrontmatter:
         assert result["body"] == ""
 
     def test_multiple_yaml_lists(self):
-        text = "---\ndependencies:\n  - skill-a\n  - skill-b\ntags:\n  - foo\n  - bar\n---\nBody.\n"
+        text = "---\ntopics:\n  - skill-a\n  - skill-b\ntags:\n  - foo\n  - bar\n---\nBody.\n"
         result = parse_frontmatter(text)
-        assert result["frontmatter"]["dependencies"] == ["skill-a", "skill-b"]
+        assert result["frontmatter"]["topics"] == ["skill-a", "skill-b"]
         assert result["frontmatter"]["tags"] == ["foo", "bar"]
 
     def test_mixed_scalar_and_list(self):
-        text = '---\nname: implementer\ndescription: "One-line summary"\ndependencies:\n  - git-workflow>=1.0.0\n  - code-review\n---\nInstructions here.\n'
+        text = '---\nname: implementer\ndescription: "One-line summary"\ntags:\n  - git-workflow\n  - code-review\n---\nInstructions here.\n'
         result = parse_frontmatter(text)
         assert result["frontmatter"]["name"] == "implementer"
         assert result["frontmatter"]["description"] == "One-line summary"
-        assert result["frontmatter"]["dependencies"] == [
-            "git-workflow>=1.0.0",
+        assert result["frontmatter"]["tags"] == [
+            "git-workflow",
             "code-review",
         ]
         assert result["body"] == "Instructions here.\n"
 
     def test_nested_object_with_sub_key_arrays(self):
-        text = "---\nname: implementer\ndependencies:\n  skills:\n    - git-workflow\n    - code-review>=1.0.0\n  roles:\n    - reviewer\n---\nBody.\n"
+        text = "---\nname: implementer\nconfig:\n  skills:\n    - git-workflow\n    - code-review>=1.0.0\n  roles:\n    - reviewer\n---\nBody.\n"
         result = parse_frontmatter(text)
         assert result["frontmatter"]["name"] == "implementer"
-        assert result["frontmatter"]["dependencies"] == {
+        assert result["frontmatter"]["config"] == {
             "skills": ["git-workflow", "code-review>=1.0.0"],
             "roles": ["reviewer"],
         }
 
     def test_nested_object_single_sub_key(self):
-        text = "---\ndependencies:\n  skills:\n    - git-workflow\n---\nBody.\n"
+        text = "---\nconfig:\n  skills:\n    - git-workflow\n---\nBody.\n"
         result = parse_frontmatter(text)
-        assert result["frontmatter"]["dependencies"] == {
+        assert result["frontmatter"]["config"] == {
             "skills": ["git-workflow"],
         }
 
-    def test_nested_object_followed_by_top_level_key(self):
+    def test_deeply_nested_metadata_strawpot_dependencies(self):
         text = (
             "---\n"
             "name: implementer\n"
-            "dependencies:\n"
-            "  skills:\n"
-            "    - git-workflow\n"
-            "    - code-review\n"
-            "  roles:\n"
-            "    - reviewer\n"
+            "metadata:\n"
+            "  strawpot:\n"
+            "    dependencies:\n"
+            "      skills:\n"
+            "        - git-workflow\n"
+            "        - code-review\n"
+            "      roles:\n"
+            "        - reviewer\n"
+            "---\n"
+            "Body.\n"
+        )
+        result = parse_frontmatter(text)
+        assert result["frontmatter"]["name"] == "implementer"
+        assert result["frontmatter"]["metadata"] == {
+            "strawpot": {
+                "dependencies": {
+                    "skills": ["git-workflow", "code-review"],
+                    "roles": ["reviewer"],
+                },
+            },
+        }
+
+    def test_skill_deps_under_metadata_strawpot_as_flat_array(self):
+        text = (
+            "---\n"
+            "name: code-review\n"
+            "metadata:\n"
+            "  strawpot:\n"
+            "    dependencies:\n"
+            "      - security-baseline\n"
+            "      - git-workflow>=1.0.0\n"
+            "---\n"
+            "Body.\n"
+        )
+        result = parse_frontmatter(text)
+        assert result["frontmatter"]["metadata"] == {
+            "strawpot": {
+                "dependencies": ["security-baseline", "git-workflow>=1.0.0"],
+            },
+        }
+
+    def test_deep_nesting_with_scalar_values(self):
+        text = (
+            "---\n"
+            "name: implementer\n"
             "metadata:\n"
             "  strawpot:\n"
             "    default_model:\n"
@@ -114,15 +153,84 @@ class TestParseFrontmatter:
             "Body.\n"
         )
         result = parse_frontmatter(text)
-        assert result["frontmatter"]["name"] == "implementer"
-        assert result["frontmatter"]["dependencies"] == {
-            "skills": ["git-workflow", "code-review"],
-            "roles": ["reviewer"],
+        assert result["frontmatter"]["metadata"] == {
+            "strawpot": {
+                "default_model": {
+                    "provider": "claude_session",
+                },
+            },
         }
-        assert "metadata" in result["frontmatter"]
+
+    def test_nested_object_followed_by_top_level_key(self):
+        text = (
+            "---\n"
+            "name: implementer\n"
+            "metadata:\n"
+            "  strawpot:\n"
+            "    dependencies:\n"
+            "      skills:\n"
+            "        - git-workflow\n"
+            "        - code-review\n"
+            "      roles:\n"
+            "        - reviewer\n"
+            "tags:\n"
+            "  - coding\n"
+            "---\n"
+            "Body.\n"
+        )
+        result = parse_frontmatter(text)
+        assert result["frontmatter"]["name"] == "implementer"
+        assert result["frontmatter"]["metadata"] == {
+            "strawpot": {
+                "dependencies": {
+                    "skills": ["git-workflow", "code-review"],
+                    "roles": ["reviewer"],
+                },
+            },
+        }
+        assert result["frontmatter"]["tags"] == ["coding"]
 
     def test_blank_lines_in_frontmatter(self):
         text = '---\nname: test\n\ndescription: "hello"\n---\nBody.\n'
         result = parse_frontmatter(text)
         assert result["frontmatter"]["name"] == "test"
         assert result["frontmatter"]["description"] == "hello"
+
+
+class TestExtractDependencies:
+    def test_extract_skill_deps_flat_array(self):
+        fm = {
+            "metadata": {
+                "strawpot": {
+                    "dependencies": ["security-baseline", "git-workflow>=1.0.0"],
+                },
+            },
+        }
+        result = extract_dependencies(fm, "skill")
+        assert result == {"skills": ["security-baseline", "git-workflow>=1.0.0"]}
+
+    def test_extract_role_deps_nested_object(self):
+        fm = {
+            "metadata": {
+                "strawpot": {
+                    "dependencies": {
+                        "skills": ["git-workflow"],
+                        "roles": ["reviewer"],
+                    },
+                },
+            },
+        }
+        result = extract_dependencies(fm, "role")
+        assert result == {"skills": ["git-workflow"], "roles": ["reviewer"]}
+
+    def test_returns_none_when_no_metadata(self):
+        fm = {"name": "test"}
+        assert extract_dependencies(fm, "skill") is None
+
+    def test_returns_none_when_no_strawpot(self):
+        fm = {"metadata": {"other": {}}}
+        assert extract_dependencies(fm, "skill") is None
+
+    def test_returns_none_when_no_dependencies(self):
+        fm = {"metadata": {"strawpot": {"other": "value"}}}
+        assert extract_dependencies(fm, "skill") is None

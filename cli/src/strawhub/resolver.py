@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from strawhub.errors import DependencyError
-from strawhub.frontmatter import parse_frontmatter
+from strawhub.frontmatter import parse_frontmatter, extract_dependencies
 from strawhub.paths import (
     get_global_root,
     get_local_root,
@@ -211,23 +211,16 @@ def _read_dependency_specs(
     text = main_file_path.read_text()
     parsed = parse_frontmatter(text)
     fm = parsed.get("frontmatter", {})
-    deps = fm.get("dependencies")
+    deps = extract_dependencies(fm, kind)
     if not deps:
         return []
 
     result: list[tuple[str, DependencySpec]] = []
 
-    if kind == "skill":
-        # Skills: flat list of skill specs
-        if isinstance(deps, list):
-            for spec_str in deps:
-                result.append(("skill", parse_dependency_spec(spec_str)))
-    else:
-        # Roles: structured {skills: [...], roles: [...]}
-        if isinstance(deps, dict):
-            for spec_str in deps.get("skills", []):
-                result.append(("skill", parse_dependency_spec(spec_str)))
-            for spec_str in deps.get("roles", []):
-                result.append(("role", parse_dependency_spec(spec_str)))
+    for spec_str in deps.get("skills", []):
+        result.append(("skill", parse_dependency_spec(spec_str)))
+    if kind == "role":
+        for spec_str in deps.get("roles", []):
+            result.append(("role", parse_dependency_spec(spec_str)))
 
     return result

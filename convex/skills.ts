@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import { mutation, query, internalMutation } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { parseFrontmatter } from "./lib/frontmatter";
+import { parseFrontmatter, extractDependencies } from "./lib/frontmatter";
 import { parseDependencySpec, parseVersion, compareVersions, satisfiesVersion } from "./lib/versionSpec";
 import { validateSlug, validateVersion, validateDisplayName, validateChangelog, validateFiles } from "./lib/publishValidation";
 
@@ -225,13 +225,8 @@ export const publishInternal = internalMutation({
 
     // Read dependencies from frontmatter if not provided in args
     let dependencies = args.dependencies;
-    if (!dependencies && Array.isArray(parsed.frontmatter.dependencies)) {
-      const skills = (parsed.frontmatter.dependencies as string[])
-        .map((d) => d.trim())
-        .filter(Boolean);
-      if (skills.length) {
-        dependencies = { skills };
-      }
+    if (!dependencies) {
+      dependencies = extractDependencies(parsed.frontmatter, "skill");
     }
 
     // Validate skill dependencies
@@ -398,13 +393,8 @@ export const publish = mutation({
 
     // Read dependencies from frontmatter if not provided in args
     let dependencies = args.dependencies;
-    if (!dependencies && Array.isArray(parsed.frontmatter.dependencies)) {
-      const skills = (parsed.frontmatter.dependencies as string[])
-        .map((d) => d.trim())
-        .filter(Boolean);
-      if (skills.length) {
-        dependencies = { skills };
-      }
+    if (!dependencies) {
+      dependencies = extractDependencies(parsed.frontmatter, "skill");
     }
 
     // Validate skill dependencies

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseFrontmatter } from "./frontmatter";
+import { parseFrontmatter, extractDependencies } from "./frontmatter";
 
 describe("parseFrontmatter", () => {
   it("parses basic key-value pairs", () => {
@@ -22,19 +22,19 @@ Body content here.
     expect(result.body).toBe("Just plain markdown.");
   });
 
-  it("parses YAML list dependencies", () => {
+  it("parses YAML list", () => {
     const text = `---
 name: code-review
-dependencies:
+tags:
   - security-baseline
-  - git-workflow>=1.0.0
+  - git-workflow
 ---
 Body.
 `;
     const result = parseFrontmatter(text);
-    expect(result.frontmatter.dependencies).toEqual([
+    expect(result.frontmatter.tags).toEqual([
       "security-baseline",
-      "git-workflow>=1.0.0",
+      "git-workflow",
     ]);
   });
 
@@ -114,7 +114,7 @@ name: test
 
   it("handles multiple YAML lists", () => {
     const text = `---
-dependencies:
+topics:
   - skill-a
   - skill-b
 tags:
@@ -124,7 +124,7 @@ tags:
 Body.
 `;
     const result = parseFrontmatter(text);
-    expect(result.frontmatter.dependencies).toEqual(["skill-a", "skill-b"]);
+    expect(result.frontmatter.topics).toEqual(["skill-a", "skill-b"]);
     expect(result.frontmatter.tags).toEqual(["foo", "bar"]);
   });
 
@@ -132,8 +132,8 @@ Body.
     const text = `---
 name: implementer
 description: "One-line summary"
-dependencies:
-  - git-workflow>=1.0.0
+tags:
+  - git-workflow
   - code-review
 ---
 Instructions here.
@@ -141,8 +141,8 @@ Instructions here.
     const result = parseFrontmatter(text);
     expect(result.frontmatter.name).toBe("implementer");
     expect(result.frontmatter.description).toBe("One-line summary");
-    expect(result.frontmatter.dependencies).toEqual([
-      "git-workflow>=1.0.0",
+    expect(result.frontmatter.tags).toEqual([
+      "git-workflow",
       "code-review",
     ]);
     expect(result.body).toBe("Instructions here.\n");
@@ -151,7 +151,7 @@ Instructions here.
   it("parses nested object with sub-key arrays", () => {
     const text = `---
 name: implementer
-dependencies:
+config:
   skills:
     - git-workflow
     - code-review>=1.0.0
@@ -162,7 +162,7 @@ Body.
 `;
     const result = parseFrontmatter(text);
     expect(result.frontmatter.name).toBe("implementer");
-    expect(result.frontmatter.dependencies).toEqual({
+    expect(result.frontmatter.config).toEqual({
       skills: ["git-workflow", "code-review>=1.0.0"],
       roles: ["reviewer"],
     });
@@ -170,27 +170,66 @@ Body.
 
   it("parses nested object with only one sub-key", () => {
     const text = `---
-dependencies:
+config:
   skills:
     - git-workflow
 ---
 Body.
 `;
     const result = parseFrontmatter(text);
-    expect(result.frontmatter.dependencies).toEqual({
+    expect(result.frontmatter.config).toEqual({
       skills: ["git-workflow"],
     });
   });
 
-  it("parses nested object followed by another top-level key", () => {
+  it("parses deeply nested objects (metadata.strawpot.dependencies)", () => {
     const text = `---
 name: implementer
-dependencies:
-  skills:
-    - git-workflow
-    - code-review
-  roles:
-    - reviewer
+metadata:
+  strawpot:
+    dependencies:
+      skills:
+        - git-workflow
+        - code-review
+      roles:
+        - reviewer
+---
+Body.
+`;
+    const result = parseFrontmatter(text);
+    expect(result.frontmatter.name).toBe("implementer");
+    expect(result.frontmatter.metadata).toEqual({
+      strawpot: {
+        dependencies: {
+          skills: ["git-workflow", "code-review"],
+          roles: ["reviewer"],
+        },
+      },
+    });
+  });
+
+  it("parses skill deps under metadata.strawpot.dependencies as flat array", () => {
+    const text = `---
+name: code-review
+metadata:
+  strawpot:
+    dependencies:
+      - security-baseline
+      - git-workflow>=1.0.0
+---
+Body.
+`;
+    const result = parseFrontmatter(text);
+    expect(result.frontmatter.metadata).toEqual({
+      strawpot: {
+        dependencies: ["security-baseline", "git-workflow>=1.0.0"],
+      },
+    });
+  });
+
+  it("parses deep nesting with scalar values", () => {
+    const text = `---
+name: implementer
 metadata:
   strawpot:
     default_model:
@@ -199,13 +238,42 @@ metadata:
 Body.
 `;
     const result = parseFrontmatter(text);
-    expect(result.frontmatter.name).toBe("implementer");
-    expect(result.frontmatter.dependencies).toEqual({
-      skills: ["git-workflow", "code-review"],
-      roles: ["reviewer"],
+    expect(result.frontmatter.metadata).toEqual({
+      strawpot: {
+        default_model: {
+          provider: "claude_session",
+        },
+      },
     });
-    // metadata is parsed as a nested object too
-    expect(result.frontmatter.metadata).toBeDefined();
+  });
+
+  it("parses nested object followed by another top-level key", () => {
+    const text = `---
+name: implementer
+metadata:
+  strawpot:
+    dependencies:
+      skills:
+        - git-workflow
+        - code-review
+      roles:
+        - reviewer
+tags:
+  - coding
+---
+Body.
+`;
+    const result = parseFrontmatter(text);
+    expect(result.frontmatter.name).toBe("implementer");
+    expect(result.frontmatter.metadata).toEqual({
+      strawpot: {
+        dependencies: {
+          skills: ["git-workflow", "code-review"],
+          roles: ["reviewer"],
+        },
+      },
+    });
+    expect(result.frontmatter.tags).toEqual(["coding"]);
   });
 
   it("skips blank lines in frontmatter", () => {
@@ -219,5 +287,49 @@ Body.
     const result = parseFrontmatter(text);
     expect(result.frontmatter.name).toBe("test");
     expect(result.frontmatter.description).toBe("hello");
+  });
+});
+
+describe("extractDependencies", () => {
+  it("extracts skill deps from flat array", () => {
+    const fm = {
+      metadata: {
+        strawpot: {
+          dependencies: ["security-baseline", "git-workflow>=1.0.0"],
+        },
+      },
+    };
+    const result = extractDependencies(fm, "skill");
+    expect(result).toEqual({ skills: ["security-baseline", "git-workflow>=1.0.0"] });
+  });
+
+  it("extracts role deps from nested object", () => {
+    const fm = {
+      metadata: {
+        strawpot: {
+          dependencies: {
+            skills: ["git-workflow"],
+            roles: ["reviewer"],
+          },
+        },
+      },
+    };
+    const result = extractDependencies(fm, "role");
+    expect(result).toEqual({ skills: ["git-workflow"], roles: ["reviewer"] });
+  });
+
+  it("returns undefined when no metadata", () => {
+    const fm = { name: "test" };
+    expect(extractDependencies(fm, "skill")).toBeUndefined();
+  });
+
+  it("returns undefined when no strawpot key", () => {
+    const fm = { metadata: { other: {} } };
+    expect(extractDependencies(fm, "skill")).toBeUndefined();
+  });
+
+  it("returns undefined when no dependencies", () => {
+    const fm = { metadata: { strawpot: { other: "value" } } };
+    expect(extractDependencies(fm, "skill")).toBeUndefined();
   });
 });

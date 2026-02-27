@@ -200,13 +200,13 @@ class TestResolveErrors:
         d = strawpot_dir / "skills" / "a-1.0.0"
         d.mkdir(parents=True)
         (d / "SKILL.md").write_text(
-            "---\nname: a\ndescription: \"a\"\ndependencies:\n  - b\n---\n# A\n"
+            "---\nname: a\ndescription: \"a\"\nmetadata:\n  strawpot:\n    dependencies:\n      - b\n---\n# A\n"
         )
 
         d = strawpot_dir / "skills" / "b-1.0.0"
         d.mkdir(parents=True)
         (d / "SKILL.md").write_text(
-            "---\nname: b\ndescription: \"b\"\ndependencies:\n  - a\n---\n# B\n"
+            "---\nname: b\ndescription: \"b\"\nmetadata:\n  strawpot:\n    dependencies:\n      - a\n---\n# B\n"
         )
 
         with pytest.raises(DependencyError, match="Circular dependency"):
