@@ -128,18 +128,12 @@ class StrawHubClient:
         resp = self._request("GET",f"/api/v1/roles/{slug}/resolve")
         return self._handle_response(resp)
 
-    def get_info(self, slug: str, kind: str | None = None) -> tuple[str, dict]:
-        """Get info for a slug, auto-detecting kind if not specified.
+    def get_info(self, slug: str, kind: str) -> tuple[str, dict]:
+        """Get info for a slug with explicit kind.
         Returns (kind, detail_dict)."""
         if kind == "skill":
             return ("skill", self.get_skill(slug))
-        if kind == "role":
-            return ("role", self.get_role(slug))
-        # Auto-detect: try skill first, then role
-        try:
-            return ("skill", self.get_skill(slug))
-        except NotFoundError:
-            return ("role", self.get_role(slug))
+        return ("role", self.get_role(slug))
 
     # ── Publish ────────────────────────────────────────────────────────────────
 

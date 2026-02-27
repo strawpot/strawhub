@@ -25,7 +25,7 @@ class TestInfoJson:
 
         with patch("strawhub.commands.info.StrawHubClient", return_value=mock):
             runner = CliRunner()
-            result = runner.invoke(cli, ["info", "test", "--json"])
+            result = runner.invoke(cli, ["info", "skill", "test", "--json"])
 
         assert result.exit_code == 0
         parsed = json.loads(result.output)
@@ -40,7 +40,7 @@ class TestInfoJson:
 
         with patch("strawhub.commands.info.StrawHubClient", return_value=mock):
             runner = CliRunner()
-            result = runner.invoke(cli, ["info", "test", "--file", "SKILL.md"])
+            result = runner.invoke(cli, ["info", "skill", "test", "--file", "SKILL.md"])
 
         assert result.exit_code == 0
         assert "Hello world" in result.output
@@ -123,7 +123,7 @@ class TestStar:
 
         with patch("strawhub.commands.star.StrawHubClient", return_value=mock):
             runner = CliRunner()
-            result = runner.invoke(cli, ["star", "test"])
+            result = runner.invoke(cli, ["star", "skill", "test"])
 
         assert result.exit_code == 0
         assert "Starred" in result.output
@@ -131,14 +131,13 @@ class TestStar:
     def test_unstar_success(self):
         mock = MagicMock()
         mock.token = "sh_test"
-        mock.get_info.return_value = ("skill", {"slug": "test"})
         mock.toggle_star.return_value = {"starred": False}
         mock.__enter__ = MagicMock(return_value=mock)
         mock.__exit__ = MagicMock(return_value=False)
 
         with patch("strawhub.commands.star.StrawHubClient", return_value=mock):
             runner = CliRunner()
-            result = runner.invoke(cli, ["unstar", "test"])
+            result = runner.invoke(cli, ["unstar", "skill", "test"])
 
         assert result.exit_code == 0
         assert "Unstarred" in result.output
@@ -151,7 +150,7 @@ class TestStar:
 
         with patch("strawhub.commands.star.StrawHubClient", return_value=mock):
             runner = CliRunner()
-            result = runner.invoke(cli, ["star", "test"])
+            result = runner.invoke(cli, ["star", "skill", "test"])
 
         assert result.exit_code == 1
         assert "Not logged in" in result.output
@@ -164,14 +163,13 @@ class TestDelete:
     def test_delete_with_confirmation(self):
         mock = MagicMock()
         mock.token = "sh_test"
-        mock.get_info.return_value = ("skill", {"slug": "test"})
         mock.delete_package.return_value = {"ok": True}
         mock.__enter__ = MagicMock(return_value=mock)
         mock.__exit__ = MagicMock(return_value=False)
 
         with patch("strawhub.commands.delete.StrawHubClient", return_value=mock):
             runner = CliRunner()
-            result = runner.invoke(cli, ["delete", "test", "--yes"])
+            result = runner.invoke(cli, ["delete", "skill", "test", "--yes"])
 
         assert result.exit_code == 0
         assert "Deleted" in result.output
@@ -184,7 +182,7 @@ class TestDelete:
 
         with patch("strawhub.commands.delete.StrawHubClient", return_value=mock):
             runner = CliRunner()
-            result = runner.invoke(cli, ["delete", "test", "--yes"])
+            result = runner.invoke(cli, ["delete", "skill", "test", "--yes"])
 
         assert result.exit_code == 1
         assert "Not logged in" in result.output

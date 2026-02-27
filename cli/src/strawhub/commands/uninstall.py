@@ -11,29 +11,16 @@ from strawhub.paths import (
 )
 
 
-@click.command()
-@click.argument("slug")
-@click.option(
-    "--kind",
-    type=click.Choice(["skill", "role"]),
-    default=None,
-    help="Specify kind (auto-detects from lockfile if omitted)",
-)
-@click.option(
-    "--version",
-    "ver",
-    default=None,
-    help="Specific version to remove (removes all versions if omitted)",
-)
-@click.option(
-    "--global",
-    "is_global",
-    is_flag=True,
-    default=False,
-    help="Remove from global directory (~/.strawpot or STRAWPOT_HOME)",
-)
-def uninstall(slug, kind, ver, is_global):
+@click.group(invoke_without_command=True)
+@click.pass_context
+def uninstall(ctx):
     """Remove an installed skill or role and clean up orphaned dependencies."""
+    if ctx.invoked_subcommand is None:
+        click.echo(ctx.get_help())
+        ctx.exit(1)
+
+
+def _uninstall_impl(slug, kind, ver, is_global):
     root = get_root(is_global)
     lockfile_path = get_lockfile_path(root)
     lockfile = Lockfile.load(lockfile_path)
@@ -71,15 +58,33 @@ def uninstall(slug, kind, ver, is_global):
     print_success("Uninstall complete.")
 
 
+@uninstall.command("skill")
+@click.argument("slug")
+@click.option("--version", "ver", default=None, help="Specific version to remove (removes all versions if omitted)")
+@click.option("--global", "is_global", is_flag=True, default=False, help="Remove from global directory (~/.strawpot or STRAWPOT_HOME)")
+def uninstall_skill(slug, ver, is_global):
+    """Remove an installed skill and clean up orphaned dependencies."""
+    _uninstall_impl(slug, kind="skill", ver=ver, is_global=is_global)
+
+
+@uninstall.command("role")
+@click.argument("slug")
+@click.option("--version", "ver", default=None, help="Specific version to remove (removes all versions if omitted)")
+@click.option("--global", "is_global", is_flag=True, default=False, help="Remove from global directory (~/.strawpot or STRAWPOT_HOME)")
+def uninstall_role(slug, ver, is_global):
+    """Remove an installed role and clean up orphaned dependencies."""
+    _uninstall_impl(slug, kind="role", ver=ver, is_global=is_global)
+
+
 def _find_targets(
-    lockfile: Lockfile, slug: str, kind: str | None, ver: str | None
+    lockfile: Lockfile, slug: str, kind: str, ver: str | None
 ) -> list[PackageRef]:
     """Find direct installs matching the given criteria."""
     targets = []
     for ref in lockfile.direct_installs:
         if ref.slug != slug:
             continue
-        if kind and ref.kind != kind:
+        if ref.kind != kind:
             continue
         if ver and ref.version != ver:
             continue

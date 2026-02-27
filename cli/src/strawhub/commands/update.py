@@ -16,8 +16,7 @@ from strawhub.paths import (
 from strawhub.version_spec import compare_versions
 
 
-@click.command()
-@click.argument("slug", required=False, default=None)
+@click.group(invoke_without_command=True)
 @click.option(
     "--all",
     "update_all",
@@ -32,12 +31,18 @@ from strawhub.version_spec import compare_versions
     default=False,
     help="Update global packages (~/.strawpot or STRAWPOT_HOME)",
 )
-def update(slug, update_all, is_global):
+@click.pass_context
+def update(ctx, update_all, is_global):
     """Update installed skills/roles to their latest versions."""
-    if not slug and not update_all:
-        print_error("Specify a slug or use --all to update everything.")
-        raise SystemExit(1)
+    if update_all:
+        _update_all_impl(is_global)
+        return
+    if ctx.invoked_subcommand is None:
+        click.echo("Specify 'skill <slug>', 'role <slug>', or use --all.")
+        ctx.exit(1)
 
+
+def _update_all_impl(is_global):
     root = get_root(is_global)
     lockfile = Lockfile.load(get_lockfile_path(root))
 
@@ -45,15 +50,27 @@ def update(slug, update_all, is_global):
         print_error("No packages installed.")
         raise SystemExit(1)
 
-    # Determine which packages to check
-    if update_all:
-        targets = list(lockfile.direct_installs)
-    else:
-        targets = [r for r in lockfile.direct_installs if r.slug == slug]
-        if not targets:
-            print_error(f"'{slug}' is not installed as a direct install.")
-            raise SystemExit(1)
+    targets = list(lockfile.direct_installs)
+    _update_targets(targets, root, lockfile)
 
+
+def _update_one_impl(slug, kind, is_global):
+    root = get_root(is_global)
+    lockfile = Lockfile.load(get_lockfile_path(root))
+
+    if not lockfile.direct_installs:
+        print_error("No packages installed.")
+        raise SystemExit(1)
+
+    targets = [r for r in lockfile.direct_installs if r.slug == slug and r.kind == kind]
+    if not targets:
+        print_error(f"{kind} '{slug}' is not installed as a direct install.")
+        raise SystemExit(1)
+
+    _update_targets(targets, root, lockfile)
+
+
+def _update_targets(targets, root, lockfile):
     updated_count = 0
 
     with StrawHubClient() as client:
@@ -129,3 +146,19 @@ def update(slug, update_all, is_global):
         print_success(f"Updated {updated_count} package(s).")
     else:
         console.print("Everything is up to date.")
+
+
+@update.command("skill")
+@click.argument("slug")
+@click.option("--global", "is_global", is_flag=True, default=False, help="Update global packages (~/.strawpot or STRAWPOT_HOME)")
+def update_skill(slug, is_global):
+    """Update an installed skill to its latest version."""
+    _update_one_impl(slug, kind="skill", is_global=is_global)
+
+
+@update.command("role")
+@click.argument("slug")
+@click.option("--global", "is_global", is_flag=True, default=False, help="Update global packages (~/.strawpot or STRAWPOT_HOME)")
+def update_role(slug, is_global):
+    """Update an installed role to its latest version."""
+    _update_one_impl(slug, kind="role", is_global=is_global)
