@@ -120,6 +120,7 @@ pip install strawhub
 | `strawhub info role <slug>` | Show detail for a role |
 | `strawhub install skill <slug>` | Install a skill (with dependency resolution) |
 | `strawhub install role <slug>` | Install a role (with dependency resolution) |
+| `strawhub install-tools` | Install system tools declared by installed packages |
 | `strawhub uninstall skill <slug>` | Uninstall a skill |
 | `strawhub uninstall role <slug>` | Uninstall a role |
 | `strawhub list` | List all available skills and roles |
@@ -176,7 +177,7 @@ Authenticated endpoints require an `Authorization: Bearer <token>` header. Creat
 
 ### SKILL.md
 
-Dependencies on other skills are declared under `metadata.strawpot.dependencies`. Version specifiers are optional.
+Dependencies on other skills are declared under `metadata.strawpot.dependencies`. System tool requirements are declared under `metadata.strawpot.tools` with OS-specific install commands.
 
 ```yaml
 ---
@@ -187,6 +188,13 @@ metadata:
     dependencies:
       - security-baseline
       - git-workflow>=1.0.0
+    tools:
+      gh:
+        description: GitHub CLI
+        install:
+          macos: brew install gh
+          linux: apt install gh
+          windows: winget install GitHub.cli
 ---
 
 # Code Review

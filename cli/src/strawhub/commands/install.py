@@ -15,6 +15,7 @@ from strawhub.paths import (
     get_package_dir,
     package_exists,
 )
+from strawhub.tools import run_tool_installs_for_package
 from strawhub.version_spec import parse_dependency_spec
 
 
@@ -27,7 +28,7 @@ def install(ctx):
         ctx.exit(1)
 
 
-def _install_impl(slug, kind, is_global):
+def _install_impl(slug, kind, is_global, skip_tools=False, yes=False):
     root = get_root(is_global)
     lockfile = Lockfile.load(get_lockfile_path(root))
 
@@ -86,6 +87,28 @@ def _install_impl(slug, kind, is_global):
             lockfile.save()
             print_success(f"Installed {kind} '{slug}' v{version}")
 
+            # Run tool installs (non-fatal)
+            if not skip_tools:
+                seen: set[str] = set()
+                all_results: list[dict] = []
+                for dep in dep_list:
+                    results = run_tool_installs_for_package(
+                        root, dep["kind"], dep["slug"], dep["version"],
+                        yes=yes, seen=seen,
+                    )
+                    all_results.extend(results)
+                results = run_tool_installs_for_package(
+                    root, kind, slug, version, yes=yes, seen=seen,
+                )
+                all_results.extend(results)
+                failed = [r for r in all_results if r["status"] == "failed"]
+                if failed:
+                    names = ", ".join(r["tool"] for r in failed)
+                    console.print(
+                        f"\n[yellow]Note:[/yellow] Some tools failed to install: "
+                        f"{names}. Run 'strawhub install-tools' to retry."
+                    )
+
         except NotFoundError:
             print_error(f"'{slug}' not found.")
             raise SystemExit(1)
@@ -103,9 +126,21 @@ def _install_impl(slug, kind, is_global):
     default=False,
     help="Install to global directory (~/.strawpot or STRAWPOT_HOME)",
 )
-def install_skill(slug, is_global):
+@click.option(
+    "--skip-tools",
+    is_flag=True,
+    default=False,
+    help="Skip running system tool install commands",
+)
+@click.option(
+    "--yes", "-y",
+    is_flag=True,
+    default=False,
+    help="Automatically confirm tool install commands without prompting",
+)
+def install_skill(slug, is_global, skip_tools, yes):
     """Install a skill with all dependencies."""
-    _install_impl(slug, kind="skill", is_global=is_global)
+    _install_impl(slug, kind="skill", is_global=is_global, skip_tools=skip_tools, yes=yes)
 
 
 @install.command("role")
@@ -117,9 +152,21 @@ def install_skill(slug, is_global):
     default=False,
     help="Install to global directory (~/.strawpot or STRAWPOT_HOME)",
 )
-def install_role(slug, is_global):
+@click.option(
+    "--skip-tools",
+    is_flag=True,
+    default=False,
+    help="Skip running system tool install commands",
+)
+@click.option(
+    "--yes", "-y",
+    is_flag=True,
+    default=False,
+    help="Automatically confirm tool install commands without prompting",
+)
+def install_role(slug, is_global, skip_tools, yes):
     """Install a role with all dependencies."""
-    _install_impl(slug, kind="role", is_global=is_global)
+    _install_impl(slug, kind="role", is_global=is_global, skip_tools=skip_tools, yes=yes)
 
 
 def _resolve_deps(

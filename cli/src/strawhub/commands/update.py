@@ -13,6 +13,7 @@ from strawhub.paths import (
     get_package_dir,
     package_exists,
 )
+from strawhub.tools import run_tool_installs_for_package
 from strawhub.version_spec import compare_versions
 
 
@@ -31,18 +32,30 @@ from strawhub.version_spec import compare_versions
     default=False,
     help="Update global packages (~/.strawpot or STRAWPOT_HOME)",
 )
+@click.option(
+    "--skip-tools",
+    is_flag=True,
+    default=False,
+    help="Skip running system tool install commands",
+)
+@click.option(
+    "--yes", "-y",
+    is_flag=True,
+    default=False,
+    help="Automatically confirm tool install commands without prompting",
+)
 @click.pass_context
-def update(ctx, update_all, is_global):
+def update(ctx, update_all, is_global, skip_tools, yes):
     """Update installed skills/roles to their latest versions."""
     if update_all:
-        _update_all_impl(is_global)
+        _update_all_impl(is_global, skip_tools=skip_tools, yes=yes)
         return
     if ctx.invoked_subcommand is None:
         click.echo("Specify 'skill <slug>', 'role <slug>', or use --all.")
         ctx.exit(1)
 
 
-def _update_all_impl(is_global):
+def _update_all_impl(is_global, skip_tools=False, yes=False):
     root = get_root(is_global)
     lockfile = Lockfile.load(get_lockfile_path(root))
 
@@ -51,10 +64,10 @@ def _update_all_impl(is_global):
         raise SystemExit(1)
 
     targets = list(lockfile.direct_installs)
-    _update_targets(targets, root, lockfile)
+    _update_targets(targets, root, lockfile, skip_tools=skip_tools, yes=yes)
 
 
-def _update_one_impl(slug, kind, is_global):
+def _update_one_impl(slug, kind, is_global, skip_tools=False, yes=False):
     root = get_root(is_global)
     lockfile = Lockfile.load(get_lockfile_path(root))
 
@@ -67,10 +80,10 @@ def _update_one_impl(slug, kind, is_global):
         print_error(f"{kind} '{slug}' is not installed as a direct install.")
         raise SystemExit(1)
 
-    _update_targets(targets, root, lockfile)
+    _update_targets(targets, root, lockfile, skip_tools=skip_tools, yes=yes)
 
 
-def _update_targets(targets, root, lockfile):
+def _update_targets(targets, root, lockfile, skip_tools=False, yes=False):
     updated_count = 0
 
     with StrawHubClient() as client:
@@ -118,6 +131,29 @@ def _update_targets(targets, root, lockfile):
                 lockfile.add_package(new_ref)
                 lockfile.add_direct_install(new_ref)
 
+                # Run tool installs (non-fatal)
+                if not skip_tools:
+                    seen: set[str] = set()
+                    all_results: list[dict] = []
+                    for dep in dep_list:
+                        results = run_tool_installs_for_package(
+                            root, dep["kind"], dep["slug"], dep["version"],
+                            yes=yes, seen=seen,
+                        )
+                        all_results.extend(results)
+                    results = run_tool_installs_for_package(
+                        root, ref.kind, ref.slug, latest_version,
+                        yes=yes, seen=seen,
+                    )
+                    all_results.extend(results)
+                    failed = [r for r in all_results if r["status"] == "failed"]
+                    if failed:
+                        names = ", ".join(r["tool"] for r in failed)
+                        console.print(
+                            f"\n[yellow]Note:[/yellow] Some tools failed to install: "
+                            f"{names}. Run 'strawhub install-tools' to retry."
+                        )
+
                 # Remove old version from direct installs
                 lockfile.remove_direct_install(ref)
 
@@ -151,14 +187,18 @@ def _update_targets(targets, root, lockfile):
 @update.command("skill")
 @click.argument("slug")
 @click.option("--global", "is_global", is_flag=True, default=False, help="Update global packages (~/.strawpot or STRAWPOT_HOME)")
-def update_skill(slug, is_global):
+@click.option("--skip-tools", is_flag=True, default=False, help="Skip running system tool install commands")
+@click.option("--yes", "-y", is_flag=True, default=False, help="Automatically confirm tool install commands without prompting")
+def update_skill(slug, is_global, skip_tools, yes):
     """Update an installed skill to its latest version."""
-    _update_one_impl(slug, kind="skill", is_global=is_global)
+    _update_one_impl(slug, kind="skill", is_global=is_global, skip_tools=skip_tools, yes=yes)
 
 
 @update.command("role")
 @click.argument("slug")
 @click.option("--global", "is_global", is_flag=True, default=False, help="Update global packages (~/.strawpot or STRAWPOT_HOME)")
-def update_role(slug, is_global):
+@click.option("--skip-tools", is_flag=True, default=False, help="Skip running system tool install commands")
+@click.option("--yes", "-y", is_flag=True, default=False, help="Automatically confirm tool install commands without prompting")
+def update_role(slug, is_global, skip_tools, yes):
     """Update an installed role to its latest version."""
-    _update_one_impl(slug, kind="role", is_global=is_global)
+    _update_one_impl(slug, kind="role", is_global=is_global, skip_tools=skip_tools, yes=yes)

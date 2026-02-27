@@ -8,7 +8,7 @@ StrawHub is a web registry for StrawPot roles and skills. Users discover, publis
 
 ### Skills
 
-A skill is a markdown instruction module that agents load into context. Skills can declare dependencies on other skills.
+A skill is a markdown instruction module that agents load into context. Skills can declare dependencies on other skills and system tool requirements.
 
 **Files:**
 - `SKILL.md` (required) — YAML frontmatter + markdown body
@@ -22,6 +22,13 @@ metadata:
   strawpot:
     dependencies:
       - security-baseline
+    tools:
+      gh:
+        description: GitHub CLI
+        install:
+          macos: brew install gh
+          linux: apt install gh
+          windows: winget install GitHub.cli
 ```
 
 ### Roles
@@ -61,6 +68,34 @@ Dependencies are declared under `metadata.strawpot.dependencies`. Skills use a f
 | `slug^X.Y.Z` | Compatible (same major, >= specified) | `git-workflow^1.0.0` |
 
 Versions follow semver (`major.minor.patch`). Constraints are validated at publish time — if no published version satisfies the constraint, the publish is rejected.
+
+## System Tools
+
+Skills and roles can declare system tool requirements under `metadata.strawpot.tools`. Each tool has a `description` and an `install` block with OS-specific install commands.
+
+```yaml
+metadata:
+  strawpot:
+    tools:
+      gh:
+        description: GitHub CLI
+        install:
+          macos: brew install gh
+          linux: apt install gh
+          windows: winget install GitHub.cli
+      docker:
+        description: Docker
+        install:
+          macos: brew install docker
+          linux: apt install docker.io
+          windows: winget install Docker.DockerDesktop
+```
+
+Supported OS keys: `macos`, `linux`, `windows`.
+
+During `strawhub install` / `strawhub update`, the CLI checks if each declared tool is on PATH (via `which`) and runs the install command for the current OS if missing. Users are prompted before each command unless `--yes` is passed. Use `--skip-tools` to opt out entirely.
+
+The `strawhub install-tools` command re-runs tool checks for all installed packages — useful for re-provisioning or when tools have been removed.
 
 ## Dependency Resolution
 
