@@ -13,9 +13,10 @@ Live: [`https://strawhub.dev`](https://strawhub.dev)
 
 Following the same architecture as [ClawHub](https://clawhub.ai/), it extends the pattern to manage both **roles** and **skills** with recursive dependency resolution.
 
-- **Skills** are markdown instruction modules that agents load into context — based on the [Agent Skills](https://agentskills.io/) open spec, extended with a `dependencies` frontmatter key
+- **Skills** are markdown instruction modules that agents load into context — based on the [Agent Skills](https://agentskills.io/) open spec, extended with `metadata.strawpot` for dependencies and configuration
 - **Roles** define agent behavior, default tools, model config, and dependent skills — follow the same markdown-with-frontmatter pattern, extended for agent configuration
 - Skills can depend on other skills; roles depend on both skills and other roles
+- Dependencies are declared under `metadata.strawpot.dependencies` in frontmatter
 - Dependencies are resolved recursively on install
 
 ## Features
@@ -175,34 +176,41 @@ Authenticated endpoints require an `Authorization: Bearer <token>` header. Creat
 
 ### SKILL.md
 
+Dependencies on other skills are declared under `metadata.strawpot.dependencies`. Version specifiers are optional.
+
 ```yaml
 ---
-name: git-workflow
-description: "Git branching and commit conventions"
+name: code-review
+description: "Code review checklist and structured review output"
+metadata:
+  strawpot:
+    dependencies:
+      - security-baseline
+      - git-workflow>=1.0.0
 ---
 
-# Git Workflow
+# Code Review
 
 Instructions for the agent...
 ```
 
 ### ROLE.md
 
-Dependencies are declared in the frontmatter under `skills` and `roles` sub-keys. Version specifiers are optional.
+Role dependencies are declared under `metadata.strawpot.dependencies` with `skills` and `roles` sub-keys. Version specifiers are optional.
 
 ```yaml
 ---
 name: implementer
 description: "Writes code to implement features and fix bugs"
-dependencies:
-  skills:
-    - git-workflow>=1.0.0
-    - code-review
-    - python-testing^2.0.0
-  roles:
-    - reviewer
 metadata:
   strawpot:
+    dependencies:
+      skills:
+        - git-workflow>=1.0.0
+        - code-review
+        - python-testing^2.0.0
+      roles:
+        - reviewer
     default_model:
       provider: claude_session
       id: claude-opus-4-6

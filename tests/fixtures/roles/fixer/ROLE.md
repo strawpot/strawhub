@@ -1,11 +1,11 @@
 ---
 name: fixer
 description: "Fixes failing checks or review blockers"
-dependencies:
-  skills:
-    - git-workflow
 metadata:
   strawpot:
+    dependencies:
+      skills:
+        - git-workflow
     default_model:
       provider: claude_session
       id: claude-opus-4-6

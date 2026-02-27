@@ -1,8 +1,10 @@
 ---
 name: code-review
 description: "Code review checklist and structured review output"
-dependencies:
-  - security-baseline
+metadata:
+  strawpot:
+    dependencies:
+      - security-baseline
 ---
 
 # Code Review

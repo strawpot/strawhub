@@ -18,8 +18,10 @@ A skill is a markdown instruction module that agents load into context. Skills c
 ```yaml
 name: code-review
 description: "One-line summary"
-dependencies:
-  - security-baseline
+metadata:
+  strawpot:
+    dependencies:
+      - security-baseline
 ```
 
 ### Roles
@@ -33,15 +35,15 @@ A role defines agent behavior, model configuration, and dependencies on skills a
 ```yaml
 name: implementer
 description: "One-line summary"
-dependencies:
-  skills:
-    - git-workflow>=1.0.0
-    - code-review
-    - python-testing^2.0.0
-  roles:
-    - reviewer
 metadata:
   strawpot:
+    dependencies:
+      skills:
+        - git-workflow>=1.0.0
+        - code-review
+        - python-testing^2.0.0
+      roles:
+        - reviewer
     default_model:
       provider: claude_session
       id: claude-opus-4-6
@@ -49,7 +51,7 @@ metadata:
 
 ## Dependency Version Specifiers
 
-Skills use a flat `dependencies` list (skills can only depend on other skills). Roles use a structured `dependencies` object with `skills` and `roles` sub-keys.
+Dependencies are declared under `metadata.strawpot.dependencies`. Skills use a flat list (skills can only depend on other skills). Roles use a structured object with `skills` and `roles` sub-keys.
 
 | Format | Meaning | Example |
 |--------|---------|---------|
@@ -64,7 +66,7 @@ Versions follow semver (`major.minor.patch`). Constraints are validated at publi
 
 When a consumer (StrawPot CLI) installs a role:
 
-1. Fetch role → get dependencies (skills + roles) with version constraints from frontmatter
+1. Fetch role → get dependencies (skills + roles) with version constraints from `metadata.strawpot.dependencies` in frontmatter
 2. For each dependency, check its own dependencies for transitive deps
 3. Resolve version constraints (find best matching version for each)
 4. Topological sort with cycle detection
