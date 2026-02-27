@@ -1,13 +1,13 @@
 ---
 name: implementer
 description: "Writes code to implement features and fix bugs"
-dependencies:
-  skills:
-    - git-workflow
-    - code-review
-    - python-testing
 metadata:
   strawpot:
+    dependencies:
+      skills:
+        - git-workflow
+        - code-review
+        - python-testing
     default_model:
       provider: claude_session
       id: claude-opus-4-6

@@ -64,7 +64,7 @@ Content-Type: multipart/form-data
 payload: { slug, displayName, version, changelog, dependencies?, customTags?, files[] }
 ```
 
-The `dependencies` field is optional JSON: `{"skills": ["security-baseline", "git-workflow>=1.0.0"]}`. Skills can only depend on other skills. If omitted, dependencies are read from the SKILL.md frontmatter.
+The `dependencies` field is optional JSON: `{"skills": ["security-baseline", "git-workflow>=1.0.0"]}`. Skills can only depend on other skills. If omitted, dependencies are read from `metadata.strawpot.dependencies` in the SKILL.md frontmatter.
 
 File constraints: up to 20 files, 512 KB each. Allowed extensions: `.md`, `.txt`, `.json`, `.yaml`, `.yml`, `.toml`.
 
@@ -98,7 +98,7 @@ Content-Type: multipart/form-data
 payload: { slug, displayName, version, changelog, dependencies?, customTags?, files[] }
 ```
 
-The `dependencies` field is optional JSON: `{"skills": ["git-workflow>=1.0.0", "code-review"], "roles": ["reviewer"]}`. If omitted, dependencies are read from the ROLE.md frontmatter.
+The `dependencies` field is optional JSON: `{"skills": ["git-workflow>=1.0.0", "code-review"], "roles": ["reviewer"]}`. If omitted, dependencies are read from `metadata.strawpot.dependencies` in the ROLE.md frontmatter.
 
 Roles must contain exactly one file named `ROLE.md`.
 

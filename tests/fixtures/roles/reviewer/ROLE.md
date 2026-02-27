@@ -1,12 +1,12 @@
 ---
 name: reviewer
 description: "Reviews diffs against acceptance criteria"
-dependencies:
-  skills:
-    - code-review
-    - security-baseline
 metadata:
   strawpot:
+    dependencies:
+      skills:
+        - code-review
+        - security-baseline
     default_model:
       provider: claude_session
       id: claude-opus-4-6
