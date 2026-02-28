@@ -91,6 +91,10 @@ VITE_CONVEX_SITE_URL=https://your-deployment.convex.site
 # Start dev server (Convex + Vite concurrently)
 npm run dev
 
+# Or run them individually
+npx convex dev
+npx vite dev
+
 # Type check
 npm run typecheck
 ```
@@ -237,6 +241,11 @@ Role instructions for the agent...
 | `slug==X.Y.Z` | Exact version | `git-workflow==1.0.0` |
 | `slug>=X.Y.Z` | Minimum version | `git-workflow>=1.0.0` |
 | `slug^X.Y.Z` | Compatible (same major, >= specified) | `git-workflow^1.0.0` |
+
+## TODO
+
+- [ ] Add support for agents
+- [ ] Add support for memory
 
 ## Testing
 
