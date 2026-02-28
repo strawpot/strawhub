@@ -1,6 +1,6 @@
 # StrawHub HTTP API v1
 
-Base URL: `https://strawhub.ai/api/v1/`
+Base URL: `https://strawhub.dev/api/v1/`
 
 ## Authentication
 
