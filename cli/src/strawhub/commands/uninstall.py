@@ -8,7 +8,9 @@ from strawhub.paths import (
     get_root,
     get_lockfile_path,
     get_package_dir,
+    get_project_file_path,
 )
+from strawhub.project_file import ProjectFile
 
 
 @click.group(invoke_without_command=True)
@@ -20,7 +22,11 @@ def uninstall(ctx):
         ctx.exit(1)
 
 
-def _uninstall_impl(slug, kind, ver, is_global):
+def _uninstall_impl(slug, kind, ver, is_global, save=False):
+    if save and is_global:
+        print_error("--save cannot be used with --global")
+        raise SystemExit(1)
+
     root = get_root(is_global)
     lockfile_path = get_lockfile_path(root)
     lockfile = Lockfile.load(lockfile_path)
@@ -55,6 +61,14 @@ def _uninstall_impl(slug, kind, ver, is_global):
         console.print(f"  Removed {pkg['kind']} '{pkg['slug']}' v{pkg['version']}")
 
     lockfile.save()
+
+    # Remove from project file if requested
+    if save:
+        pf = ProjectFile.load(get_project_file_path())
+        if pf.remove_dependency(kind, slug):
+            pf.save()
+            console.print(f"Removed '{slug}' from strawpot.toml")
+
     print_success("Uninstall complete.")
 
 
@@ -62,18 +76,20 @@ def _uninstall_impl(slug, kind, ver, is_global):
 @click.argument("slug")
 @click.option("--version", "ver", default=None, help="Specific version to remove (removes all versions if omitted)")
 @click.option("--global", "is_global", is_flag=True, default=False, help="Remove from global directory (~/.strawpot or STRAWPOT_HOME)")
-def uninstall_skill(slug, ver, is_global):
+@click.option("--save", is_flag=True, default=False, help="Also remove from strawpot.toml")
+def uninstall_skill(slug, ver, is_global, save):
     """Remove an installed skill and clean up orphaned dependencies."""
-    _uninstall_impl(slug, kind="skill", ver=ver, is_global=is_global)
+    _uninstall_impl(slug, kind="skill", ver=ver, is_global=is_global, save=save)
 
 
 @uninstall.command("role")
 @click.argument("slug")
 @click.option("--version", "ver", default=None, help="Specific version to remove (removes all versions if omitted)")
 @click.option("--global", "is_global", is_flag=True, default=False, help="Remove from global directory (~/.strawpot or STRAWPOT_HOME)")
-def uninstall_role(slug, ver, is_global):
+@click.option("--save", is_flag=True, default=False, help="Also remove from strawpot.toml")
+def uninstall_role(slug, ver, is_global, save):
     """Remove an installed role and clean up orphaned dependencies."""
-    _uninstall_impl(slug, kind="role", ver=ver, is_global=is_global)
+    _uninstall_impl(slug, kind="role", ver=ver, is_global=is_global, save=save)
 
 
 def _find_targets(

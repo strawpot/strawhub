@@ -7,6 +7,7 @@ from strawhub.commands.whoami import whoami
 from strawhub.commands.search import search
 from strawhub.commands.info import info
 from strawhub.commands.list import list_cmd
+from strawhub.commands.init import init
 from strawhub.commands.install import install
 from strawhub.commands.uninstall import uninstall
 from strawhub.commands.update import update
@@ -31,6 +32,7 @@ cli.add_command(whoami)
 cli.add_command(search)
 cli.add_command(info)
 cli.add_command(list_cmd, name="list")
+cli.add_command(init)
 cli.add_command(install)
 cli.add_command(install_tools, name="install-tools")
 cli.add_command(uninstall)
