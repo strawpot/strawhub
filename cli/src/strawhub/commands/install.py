@@ -639,7 +639,7 @@ def _download_package(
 
         out_file = target_dir / file_path
         out_file.parent.mkdir(parents=True, exist_ok=True)
-        out_file.write_text(content)
+        out_file.write_text(content, encoding="utf-8")
 
 
 # ── Project file install ─────────────────────────────────────────────────────

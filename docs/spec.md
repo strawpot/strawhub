@@ -93,7 +93,7 @@ metadata:
 
 Supported OS keys: `macos`, `linux`, `windows`.
 
-During `strawhub install` / `strawhub update`, the CLI checks if each declared tool is on PATH (via `which`) and runs the install command for the current OS if missing. Users are prompted before each command unless `--yes` is passed. Use `--skip-tools` to opt out entirely.
+During `strawhub install` / `strawhub update`, the CLI checks if each declared tool is on PATH and runs the install command for the current OS if missing. Users are prompted before each command unless `--yes` is passed. Use `--skip-tools` to opt out entirely.
 
 The `strawhub install-tools` command re-runs tool checks for all installed packages — useful for re-provisioning or when tools have been removed.
 

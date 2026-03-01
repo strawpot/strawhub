@@ -204,7 +204,7 @@ def _read_dependency_slugs(
     if not main_file_path.exists():
         return []
 
-    text = main_file_path.read_text()
+    text = main_file_path.read_text(encoding="utf-8")
     parsed = parse_frontmatter(text)
     fm = parsed.get("frontmatter", {})
     deps = extract_dependencies(fm, kind)

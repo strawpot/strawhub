@@ -12,6 +12,7 @@ Example frontmatter:
             install:
               macos: brew install gh
               linux: apt install gh
+              windows: winget install GitHub.cli
 """
 
 import platform
@@ -163,7 +164,7 @@ def run_tool_installs_for_package(
     if not md_path.is_file():
         return []
 
-    parsed = parse_frontmatter(md_path.read_text())
+    parsed = parse_frontmatter(md_path.read_text(encoding="utf-8"))
     tools = extract_tools(parsed["frontmatter"])
     if not tools:
         return []

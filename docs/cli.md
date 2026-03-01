@@ -6,6 +6,8 @@ Complete reference for the `strawhub` command-line interface.
 pip install strawhub
 ```
 
+> **Cross-platform:** The CLI runs on macOS, Linux, and Windows. Examples in this document use Unix shell syntax (`bash`, `$` prompt) but the commands themselves work on all platforms.
+
 ## Command Overview
 
 ```
@@ -283,7 +285,7 @@ Install system tools declared by installed packages.
 strawhub install-tools [--global] [--yes]
 ```
 
-Scans all installed skills and roles for `metadata.strawpot.tools` in their frontmatter. For each declared tool, checks if it is available on `PATH` (via `which`) and runs the OS-specific install command if missing.
+Scans all installed skills and roles for `metadata.strawpot.tools` in their frontmatter. For each declared tool, checks if it is available on `PATH` and runs the OS-specific install command if missing.
 
 | Option | Description |
 |--------|-------------|
@@ -545,7 +547,7 @@ Authenticate with your StrawHub API token.
 strawhub login
 ```
 
-Prompts for an API token (generated at <https://strawhub.dev/settings>). Tokens must start with `sh_`. The token is validated against the API and stored locally in `~/.config/strawhub/config.json`.
+Prompts for an API token (generated at <https://strawhub.dev/settings>). Tokens must start with `sh_`. The token is validated against the API and stored in the platform-specific config directory (`~/.config/strawhub/config.json` on Linux, `~/Library/Application Support/strawhub/config.json` on macOS, `%LOCALAPPDATA%\strawhub\config.json` on Windows).
 
 ### `logout`
 
@@ -679,6 +681,8 @@ See [Project File documentation](project-file.md) for full details on workflows 
 └── strawpot.lock
 ```
 
+> **Note:** `~` resolves to the user home directory on all platforms (e.g. `C:\Users\<username>` on Windows). Use the `STRAWPOT_HOME` environment variable to override.
+
 ### Scope resolution
 
 - **Install**: defaults to local (`.strawpot/`). Use `--global` for global.
@@ -711,10 +715,11 @@ metadata:
 ### Tool install behavior
 
 1. Detect current OS (`macos`, `linux`, `windows`)
-2. For each declared tool, check if it's on `PATH` via `which`
+2. For each declared tool, check if it's on `PATH`
 3. If missing, prompt the user before running the install command (or auto-confirm with `--yes`)
 4. Tool names are deduplicated — if multiple packages declare the same tool, it is installed once
-5. Failed installs are logged as warnings but do not abort the main operation
+5. On Windows, install commands run via `cmd.exe` — package authors should ensure `windows` commands use compatible syntax
+6. Failed installs are logged as warnings but do not abort the main operation
 
 ---
 
@@ -730,7 +735,15 @@ metadata:
 
 ### Config File
 
-Settings are persisted in `~/.config/strawhub/config.json`. Currently stores:
+Settings are persisted in the platform-specific config directory (resolved via [`platformdirs`](https://pypi.org/project/platformdirs/)). Default locations:
+
+| OS | Path |
+|----|------|
+| Linux | `~/.config/strawhub/config.json` |
+| macOS | `~/Library/Application Support/strawhub/config.json` |
+| Windows | `%LOCALAPPDATA%\strawhub\config.json` |
+
+Currently stores:
 
 - `token` — API authentication token (set via `strawhub login`)
 

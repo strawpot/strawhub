@@ -69,7 +69,7 @@ class ProjectFile:
             for slug in sorted(self.roles):
                 lines.append(f'{slug} = "{self.roles[slug]}"')
             lines.append("")
-        self.path.write_text("\n".join(lines))
+        self.path.write_text("\n".join(lines), encoding="utf-8")
 
     def add_dependency(
         self, kind: str, slug: str, version: str, exact: bool = False

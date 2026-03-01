@@ -28,7 +28,7 @@ def _publish_impl(path, kind, ver, changelog, tags):
         raise SystemExit(1)
 
     # Parse frontmatter for metadata
-    content = main_path.read_text()
+    content = main_path.read_text(encoding="utf-8")
     parsed = parse_frontmatter(content)
     fm = parsed.get("frontmatter", {})
 
