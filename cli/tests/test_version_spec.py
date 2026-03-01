@@ -7,6 +7,7 @@ from strawhub.version_spec import (
     ParsedVersion,
     compare_versions,
     extract_slug,
+    parse_constraint,
     parse_dependency_spec,
     parse_dir_name,
     parse_version,
@@ -158,3 +159,38 @@ class TestParseDirName:
 
     def test_numeric_slug(self):
         assert parse_dir_name("s3-utils-0.1.0") == ("s3-utils", "0.1.0")
+
+
+# --- parseConstraint ---
+
+
+class TestParseConstraint:
+    def test_star_constraint(self):
+        assert parse_constraint("*") == DependencySpec("", "latest", None)
+
+    def test_empty_constraint(self):
+        assert parse_constraint("") == DependencySpec("", "latest", None)
+
+    def test_caret_constraint(self):
+        assert parse_constraint("^1.2.3") == DependencySpec("", "^", "1.2.3")
+
+    def test_exact_constraint(self):
+        assert parse_constraint("==1.0.0") == DependencySpec("", "==", "1.0.0")
+
+    def test_gte_constraint(self):
+        assert parse_constraint(">=2.0.0") == DependencySpec("", ">=", "2.0.0")
+
+    def test_whitespace_trimmed(self):
+        assert parse_constraint("  ^1.0.0  ") == DependencySpec("", "^", "1.0.0")
+
+    def test_invalid_constraint(self):
+        with pytest.raises(ValueError, match="Invalid version constraint"):
+            parse_constraint("not-valid")
+
+    def test_invalid_no_version(self):
+        with pytest.raises(ValueError, match="Invalid version constraint"):
+            parse_constraint("^")
+
+    def test_invalid_partial_version(self):
+        with pytest.raises(ValueError, match="Invalid version constraint"):
+            parse_constraint("==1.0")

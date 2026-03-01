@@ -1,8 +1,8 @@
-"""Runtime dependency resolution — selects paths to the latest compatible installed versions.
+"""Runtime dependency resolution — selects paths to installed versions.
 
 Scans local .strawpot/ first, then global, to build an index of installed packages.
 For a given root package, reads its SKILL.md/ROLE.md frontmatter to get dependency
-constraints, then selects the highest installed version satisfying each constraint.
+slugs, then selects the highest installed version for each.
 
 Importable as: from strawhub.resolver import resolve
 """
@@ -19,7 +19,7 @@ from strawhub.paths import (
 )
 from strawhub.version_spec import (
     DependencySpec,
-    parse_dependency_spec,
+    extract_slug,
     parse_dir_name,
     parse_version,
     satisfies_version,
@@ -83,7 +83,7 @@ def resolve(
                 f"Installed versions: {installed}"
             )
 
-    # Step 4: Resolve transitive dependencies via DFS
+    # Step 3: Resolve transitive dependencies via DFS
     resolved: dict[tuple[str, str], ResolvedPackage] = {}
     visiting: set[tuple[str, str]] = set()
 
@@ -107,12 +107,8 @@ def resolve(
                 if satisfies_version(v, constraint)
             ]
         if not pkg_candidates:
-            constraint_str = ""
-            if constraint and constraint.version:
-                constraint_str = f" {constraint.operator}{constraint.version}"
             raise DependencyError(
-                f"No installed version of {pkg_kind} '{pkg_slug}' "
-                f"satisfies '{pkg_slug}{constraint_str}'.\n"
+                f"No installed version of {pkg_kind} '{pkg_slug}'.\n"
                 f"Run: strawhub install {pkg_kind} {pkg_slug}"
             )
 
@@ -120,14 +116,14 @@ def resolve(
         pkg_candidates.sort(key=lambda c: parse_version(c[0]), reverse=True)
         best_version, best_path, best_source = pkg_candidates[0]
 
-        # Read frontmatter to get dependency constraints
+        # Read frontmatter to get dependency slugs
         main_file = "SKILL.md" if pkg_kind == "skill" else "ROLE.md"
         main_path = Path(best_path) / main_file
-        deps_specs = _read_dependency_specs(main_path, pkg_kind)
+        deps_slugs = _read_dependency_slugs(main_path, pkg_kind)
 
-        # Recurse into dependencies
-        for dep_kind, dep_spec in deps_specs:
-            resolve_pkg(dep_kind, dep_spec.slug, dep_spec)
+        # Recurse into dependencies (no version constraints)
+        for dep_kind, dep_slug in deps_slugs:
+            resolve_pkg(dep_kind, dep_slug)
 
         visiting.discard(key)
         resolved[key] = ResolvedPackage(
@@ -144,7 +140,7 @@ def resolve(
         root_constraint = DependencySpec(slug=slug, operator="==", version=version)
     resolve_pkg(kind, slug, root_constraint)
 
-    # Step 5: Format output
+    # Step 4: Format output
     root_pkg = resolved.pop((kind, slug))
     return {
         "slug": root_pkg.slug,
@@ -198,12 +194,12 @@ def _build_index(
     return index
 
 
-def _read_dependency_specs(
+def _read_dependency_slugs(
     main_file_path: Path, kind: str
-) -> list[tuple[str, DependencySpec]]:
-    """Read and parse dependency specs from a SKILL.md or ROLE.md file.
+) -> list[tuple[str, str]]:
+    """Read dependency slugs from a SKILL.md or ROLE.md file.
 
-    Returns list of (dep_kind, DependencySpec) tuples.
+    Returns list of (dep_kind, slug) tuples.
     """
     if not main_file_path.exists():
         return []
@@ -215,12 +211,12 @@ def _read_dependency_specs(
     if not deps:
         return []
 
-    result: list[tuple[str, DependencySpec]] = []
+    result: list[tuple[str, str]] = []
 
     for spec_str in deps.get("skills", []):
-        result.append(("skill", parse_dependency_spec(spec_str)))
+        result.append(("skill", extract_slug(spec_str)))
     if kind == "role":
         for spec_str in deps.get("roles", []):
-            result.append(("role", parse_dependency_spec(spec_str)))
+            result.append(("role", extract_slug(spec_str)))
 
     return result

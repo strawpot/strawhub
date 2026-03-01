@@ -100,26 +100,34 @@ class StrawHubClient:
         )
         return self._handle_response(resp)
 
-    def get_skill(self, slug: str) -> dict:
-        resp = self._request("GET",f"/api/v1/skills/{slug}")
+    def get_skill(self, slug: str, version: str | None = None) -> dict:
+        params = {}
+        if version:
+            params["version"] = version
+        resp = self._request("GET", f"/api/v1/skills/{slug}", params=params or None)
         return self._handle_response(resp)
 
-    def get_role(self, slug: str) -> dict:
-        resp = self._request("GET",f"/api/v1/roles/{slug}")
+    def get_role(self, slug: str, version: str | None = None) -> dict:
+        params = {}
+        if version:
+            params["version"] = version
+        resp = self._request("GET", f"/api/v1/roles/{slug}", params=params or None)
         return self._handle_response(resp)
 
-    def get_skill_file(self, slug: str, path: str = "SKILL.md") -> str:
-        resp = self._request("GET",
-            f"/api/v1/skills/{slug}/file", params={"path": path}
-        )
+    def get_skill_file(self, slug: str, path: str = "SKILL.md", version: str | None = None) -> str:
+        params: dict = {"path": path}
+        if version:
+            params["version"] = version
+        resp = self._request("GET", f"/api/v1/skills/{slug}/file", params=params)
         if resp.status_code >= 400:
             self._handle_response(resp)
         return resp.text
 
-    def get_role_file(self, slug: str, path: str = "ROLE.md") -> str:
-        resp = self._request("GET",
-            f"/api/v1/roles/{slug}/file", params={"path": path}
-        )
+    def get_role_file(self, slug: str, path: str = "ROLE.md", version: str | None = None) -> str:
+        params: dict = {"path": path}
+        if version:
+            params["version"] = version
+        resp = self._request("GET", f"/api/v1/roles/{slug}/file", params=params)
         if resp.status_code >= 400:
             self._handle_response(resp)
         return resp.text
@@ -128,12 +136,12 @@ class StrawHubClient:
         resp = self._request("GET",f"/api/v1/roles/{slug}/resolve")
         return self._handle_response(resp)
 
-    def get_info(self, slug: str, kind: str) -> tuple[str, dict]:
+    def get_info(self, slug: str, kind: str, version: str | None = None) -> tuple[str, dict]:
         """Get info for a slug with explicit kind.
         Returns (kind, detail_dict)."""
         if kind == "skill":
-            return ("skill", self.get_skill(slug))
-        return ("role", self.get_role(slug))
+            return ("skill", self.get_skill(slug, version=version))
+        return ("role", self.get_role(slug, version=version))
 
     # ── Publish ────────────────────────────────────────────────────────────────
 

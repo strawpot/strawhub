@@ -10,6 +10,11 @@ from pathlib import Path
 from strawhub.version_spec import parse_dir_name
 
 
+def get_project_file_path() -> Path:
+    """Return the path to strawpot.toml in the current working directory."""
+    return Path.cwd() / "strawpot.toml"
+
+
 def get_global_root() -> Path:
     """Return the global .strawpot root directory.
 

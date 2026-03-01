@@ -68,8 +68,8 @@ class TestResolveMultiVersion:
         )
         assert result["version"] == "2.0.0"
 
-    def test_caret_constraint(self, strawpot_dir, make_skill, make_role):
-        """^1.0.0 should pick 1.4.0, not 2.0.0."""
+    def test_dep_version_spec_ignored(self, strawpot_dir, make_skill, make_role):
+        """Version specs in deps are stripped; resolver picks highest installed."""
         make_skill("git-workflow", "1.0.0")
         make_skill("git-workflow", "1.4.0")
         make_skill("git-workflow", "2.0.0")
@@ -80,13 +80,14 @@ class TestResolveMultiVersion:
             local_root=strawpot_dir, global_root=strawpot_dir,
         )
         gw = next(d for d in result["dependencies"] if d["slug"] == "git-workflow")
-        assert gw["version"] == "1.4.0"
+        # Version constraint is ignored; picks highest
+        assert gw["version"] == "2.0.0"
 
-    def test_gte_constraint(self, strawpot_dir, make_skill, make_role):
-        """>=2.0.0 should pick 2.0.0."""
+    def test_bare_slug_dep_picks_highest(self, strawpot_dir, make_skill, make_role):
+        """Bare slug deps pick the highest installed version."""
         make_skill("git-workflow", "1.0.0")
         make_skill("git-workflow", "2.0.0")
-        make_role("reviewer", "1.0.0", skill_deps=["git-workflow>=2.0.0"])
+        make_role("reviewer", "1.0.0", skill_deps=["git-workflow"])
 
         result = resolve(
             "reviewer", kind="role",
@@ -94,18 +95,6 @@ class TestResolveMultiVersion:
         )
         gw = next(d for d in result["dependencies"] if d["slug"] == "git-workflow")
         assert gw["version"] == "2.0.0"
-
-    def test_exact_constraint(self, strawpot_dir, make_skill, make_role):
-        make_skill("git-workflow", "1.0.0")
-        make_skill("git-workflow", "1.4.0")
-        make_role("strict", "1.0.0", skill_deps=["git-workflow==1.0.0"])
-
-        result = resolve(
-            "strict", kind="role",
-            local_root=strawpot_dir, global_root=strawpot_dir,
-        )
-        gw = next(d for d in result["dependencies"] if d["slug"] == "git-workflow")
-        assert gw["version"] == "1.0.0"
 
     def test_resolve_specific_version(self, strawpot_dir, make_skill):
         make_skill("git-workflow", "1.0.0")
@@ -182,16 +171,6 @@ class TestResolveErrors:
         with pytest.raises(DependencyError, match="not installed"):
             resolve(
                 "git-workflow", kind="skill", version="9.9.9",
-                local_root=strawpot_dir, global_root=strawpot_dir,
-            )
-
-    def test_no_version_satisfies_constraint(self, strawpot_dir, make_skill, make_role):
-        make_skill("git-workflow", "1.0.0")
-        make_role("needs-v2", "1.0.0", skill_deps=["git-workflow>=2.0.0"])
-
-        with pytest.raises(DependencyError, match="No installed version"):
-            resolve(
-                "needs-v2", kind="role",
                 local_root=strawpot_dir, global_root=strawpot_dir,
             )
 

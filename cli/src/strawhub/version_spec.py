@@ -17,6 +17,7 @@ SPEC_REGEX = re.compile(r"^([a-z0-9][a-z0-9-]*)(==|>=|\^)(\d+\.\d+\.\d+)$")
 SLUG_REGEX = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 VERSION_REGEX = re.compile(r"^(\d+)\.(\d+)\.(\d+)$")
 DIR_NAME_REGEX = re.compile(r"^(.+)-(\d+\.\d+\.\d+)$")
+CONSTRAINT_REGEX = re.compile(r"^(==|>=|\^)(\d+\.\d+\.\d+)$")
 
 
 @dataclass(frozen=True)
@@ -103,6 +104,26 @@ def satisfies_version(candidate_version: str, spec: DependencySpec) -> bool:
 def extract_slug(spec: str) -> str:
     """Extract just the slug from a dependency spec string."""
     return parse_dependency_spec(spec).slug
+
+
+def parse_constraint(constraint: str) -> DependencySpec:
+    """Parse a standalone constraint string from strawpot.toml.
+
+    "*"       → DependencySpec("", "latest", None)
+    "^1.0.0"  → DependencySpec("", "^", "1.0.0")
+    "==1.0.0" → DependencySpec("", "==", "1.0.0")
+    ">=1.0.0" → DependencySpec("", ">=", "1.0.0")
+
+    The slug is empty because in the TOML context the slug comes from
+    the dict key, not the constraint string.
+    """
+    s = constraint.strip()
+    if s == "*" or s == "":
+        return DependencySpec(slug="", operator="latest", version=None)
+    m = CONSTRAINT_REGEX.match(s)
+    if m:
+        return DependencySpec(slug="", operator=m.group(1), version=m.group(2))  # type: ignore[arg-type]
+    raise ValueError(f"Invalid version constraint: '{constraint}'")
 
 
 def parse_dir_name(name: str) -> tuple[str, str] | None:
