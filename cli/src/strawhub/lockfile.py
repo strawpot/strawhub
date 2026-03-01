@@ -55,7 +55,7 @@ class Lockfile:
         if not path.exists():
             return lf
 
-        data = json.loads(path.read_text())
+        data = json.loads(path.read_text(encoding="utf-8"))
         for d in data.get("directInstalls", []):
             lf.direct_installs.append(
                 PackageRef(kind=d["kind"], slug=d["slug"], version=d["version"])
@@ -74,7 +74,7 @@ class Lockfile:
             ],
             "packages": self.packages,
         }
-        self.path.write_text(json.dumps(data, indent=2) + "\n")
+        self.path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
 
     def add_direct_install(self, ref: PackageRef) -> None:
         """Register a package as a direct (user-requested) install."""
