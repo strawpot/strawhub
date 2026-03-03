@@ -3,6 +3,7 @@ import { api, internal } from "../_generated/api";
 import { jsonResponse, errorResponse, getSearchParams, resolveTokenToUser, checkHttpRateLimit } from "./shared";
 import { parseDependencySpec, satisfiesVersion } from "../lib/versionSpec";
 import { validateSlug, validateVersion, validateDisplayName, validateChangelog, validateRoleFiles, assertRoleFileIsText, MAX_FILE_SIZE } from "../lib/publishValidation";
+import { parseFrontmatter, extractName } from "../lib/frontmatter";
 import { createZipBlob } from "../lib/zip";
 
 /**
@@ -310,6 +311,18 @@ export const publishRole = httpAction(async (ctx, request) => {
 
   if (fileEntries.length === 0) {
     return errorResponse("At least one file is required", 400);
+  }
+
+  // Validate frontmatter name matches slug
+  if (roleMdText) {
+    const { frontmatter } = parseFrontmatter(roleMdText);
+    const fmName = extractName(frontmatter);
+    if (fmName && fmName !== slug) {
+      return errorResponse(
+        `Frontmatter name '${fmName}' does not match slug '${slug}'`,
+        400,
+      );
+    }
   }
 
   try {
