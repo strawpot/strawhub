@@ -81,11 +81,11 @@ class TestParseFrontmatter:
         assert result["body"] == "Instructions here.\n"
 
     def test_nested_object_with_sub_key_arrays(self):
-        text = "---\nname: implementer\nconfig:\n  skills:\n    - git-workflow\n    - code-review>=1.0.0\n  roles:\n    - reviewer\n---\nBody.\n"
+        text = "---\nname: implementer\nconfig:\n  skills:\n    - git-workflow\n    - code-review\n  roles:\n    - reviewer\n---\nBody.\n"
         result = parse_frontmatter(text)
         assert result["frontmatter"]["name"] == "implementer"
         assert result["frontmatter"]["config"] == {
-            "skills": ["git-workflow", "code-review>=1.0.0"],
+            "skills": ["git-workflow", "code-review"],
             "roles": ["reviewer"],
         }
 
@@ -130,14 +130,14 @@ class TestParseFrontmatter:
             "  strawpot:\n"
             "    dependencies:\n"
             "      - security-baseline\n"
-            "      - git-workflow>=1.0.0\n"
+            "      - git-workflow\n"
             "---\n"
             "Body.\n"
         )
         result = parse_frontmatter(text)
         assert result["frontmatter"]["metadata"] == {
             "strawpot": {
-                "dependencies": ["security-baseline", "git-workflow>=1.0.0"],
+                "dependencies": ["security-baseline", "git-workflow"],
             },
         }
 
@@ -147,17 +147,14 @@ class TestParseFrontmatter:
             "name: implementer\n"
             "metadata:\n"
             "  strawpot:\n"
-            "    default_model:\n"
-            "      provider: claude_session\n"
+            "    default_agent: claude_code\n"
             "---\n"
             "Body.\n"
         )
         result = parse_frontmatter(text)
         assert result["frontmatter"]["metadata"] == {
             "strawpot": {
-                "default_model": {
-                    "provider": "claude_session",
-                },
+                "default_agent": "claude_code",
             },
         }
 
@@ -202,12 +199,12 @@ class TestExtractDependencies:
         fm = {
             "metadata": {
                 "strawpot": {
-                    "dependencies": ["security-baseline", "git-workflow>=1.0.0"],
+                    "dependencies": ["security-baseline", "git-workflow"],
                 },
             },
         }
         result = extract_dependencies(fm, "skill")
-        assert result == {"skills": ["security-baseline", "git-workflow>=1.0.0"]}
+        assert result == {"skills": ["security-baseline", "git-workflow"]}
 
     def test_extract_role_deps_nested_object(self):
         fm = {

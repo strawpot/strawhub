@@ -19,7 +19,7 @@ metadata:
   strawpot:
     dependencies:
       - security-baseline
-      - git-workflow>=1.0.0
+      - git-workflow
     tools:
       gh:
         description: GitHub CLI
@@ -41,7 +41,8 @@ Instructions for the agent...
 | `name` | Yes | Package slug (lowercase, URL-safe) |
 | `description` | Yes | One-line summary shown in search results |
 | `version` | No | Semver version (auto-incremented if omitted) |
-| `metadata.strawpot.dependencies` | No | Flat list of skill slugs with optional version specifiers |
+| `metadata.strawpot.dependencies` | No | Flat list of skill slugs |
+| `metadata.strawpot.env` | No | Required environment variables |
 | `metadata.strawpot.tools` | No | System tool requirements with OS-specific install commands |
 
 Skills can only depend on other skills.
@@ -62,14 +63,12 @@ metadata:
   strawpot:
     dependencies:
       skills:
-        - git-workflow>=1.0.0
+        - git-workflow
         - code-review
-        - python-testing^2.0.0
+        - python-testing
       roles:
         - reviewer
-    default_model:
-      provider: claude_session
-      id: claude-opus-4-6
+    default_agent: claude_code
 ---
 
 # Implementer
@@ -84,27 +83,15 @@ Role instructions for the agent...
 | `name` | Yes | Package slug (lowercase, URL-safe) |
 | `description` | Yes | One-line summary |
 | `version` | No | Semver version (auto-incremented if omitted) |
-| `metadata.strawpot.dependencies.skills` | No | List of skill slugs with optional version specifiers |
-| `metadata.strawpot.dependencies.roles` | No | List of role slugs with optional version specifiers |
-| `metadata.strawpot.default_model` | No | Default model configuration (`provider` + `id`) |
-| `metadata.strawpot.tools` | No | System tool requirements (same format as skills) |
+| `metadata.strawpot.dependencies.skills` | No | List of skill slugs |
+| `metadata.strawpot.dependencies.roles` | No | List of role slugs |
+| `metadata.strawpot.default_agent` | No | Default agent runtime name |
 
 Roles can depend on both skills and other roles.
 
-## Dependency Version Specifiers
-
-| Format | Meaning | Example |
-|--------|---------|---------|
-| `slug` | Latest version | `git-workflow` |
-| `slug==X.Y.Z` | Exact version | `git-workflow==1.0.0` |
-| `slug>=X.Y.Z` | Minimum version | `git-workflow>=1.0.0` |
-| `slug^X.Y.Z` | Compatible (same major, >= specified) | `git-workflow^1.0.0` |
-
-Versions follow semver (`major.minor.patch`). Constraints are validated at publish time — if no published version satisfies the constraint, the publish is rejected.
-
 ## System Tools
 
-Skills and roles can declare system tool requirements under `metadata.strawpot.tools`:
+Skills can declare system tool requirements under `metadata.strawpot.tools`:
 
 ```yaml
 metadata:

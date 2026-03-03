@@ -29,11 +29,15 @@ metadata:
           macos: brew install gh
           linux: apt install gh
           windows: winget install GitHub.cli
+    env:
+      GITHUB_TOKEN:
+        required: true
+        description: GitHub API token
 ```
 
 ### Roles
 
-A role defines agent behavior, model configuration, and dependencies on skills and other roles.
+A role defines agent behavior, default agent runtime, and dependencies on skills and other roles.
 
 **Files:**
 - `ROLE.md` (required) — YAML frontmatter + markdown body (includes dependency declarations)
@@ -46,32 +50,56 @@ metadata:
   strawpot:
     dependencies:
       skills:
-        - git-workflow>=1.0.0
+        - git-workflow
         - code-review
-        - python-testing^2.0.0
+        - python-testing
       roles:
         - reviewer
-    default_model:
-      provider: claude_session
-      id: claude-opus-4-6
+    default_agent: claude_code
 ```
 
-## Dependency Version Specifiers
+### Agents
 
-Dependencies are declared under `metadata.strawpot.dependencies`. Skills use a flat list (skills can only depend on other skills). Roles use a structured object with `skills` and `roles` sub-keys.
+An agent is a wrapper binary that translates StrawPot protocol arguments into a native agent CLI command. Agents are discovered locally or published to the registry.
 
-| Format | Meaning | Example |
-|--------|---------|---------|
-| `slug` | Latest version | `git-workflow` |
-| `slug==X.Y.Z` | Exact version | `git-workflow==1.0.0` |
-| `slug>=X.Y.Z` | Minimum version | `git-workflow>=1.0.0` |
-| `slug^X.Y.Z` | Compatible (same major, >= specified) | `git-workflow^1.0.0` |
+**Files:**
+- `AGENT.md` (required) — YAML frontmatter + markdown body
+- Compiled binary (required) — per-OS wrapper executable
 
-Versions follow semver (`major.minor.patch`). Constraints are validated at publish time — if no published version satisfies the constraint, the publish is rejected.
+**Frontmatter:**
+```yaml
+name: claude-code
+description: "Claude Code agent"
+metadata:
+  version: "0.1.0"
+  strawpot:
+    bin:
+      macos: strawpot_claude_code
+      linux: strawpot_claude_code
+    tools:
+      claude:
+        description: Claude Code CLI
+        install:
+          macos: npm install -g @anthropic-ai/claude-code
+          linux: npm install -g @anthropic-ai/claude-code
+    params:
+      model:
+        type: string
+        default: claude-sonnet-4-6
+        description: Model to use
+    env:
+      ANTHROPIC_API_KEY:
+        required: false
+        description: Anthropic API key
+```
+
+## Dependencies
+
+Dependencies are declared under `metadata.strawpot.dependencies`. Skills use a flat list of slugs (skills can only depend on other skills). Roles use a structured object with `skills` and `roles` sub-keys.
 
 ## System Tools
 
-Skills and roles can declare system tool requirements under `metadata.strawpot.tools`. Each tool has a `description` and an `install` block with OS-specific install commands.
+Skills can declare system tool requirements under `metadata.strawpot.tools`. Each tool has a `description` and an `install` block with OS-specific install commands.
 
 ```yaml
 metadata:
@@ -97,15 +125,31 @@ During `strawhub install` / `strawhub update`, the CLI checks if each declared t
 
 The `strawhub install-tools` command re-runs tool checks for all installed packages — useful for re-provisioning or when tools have been removed.
 
+## Environment Variables
+
+Skills and agents can declare required environment variables under `metadata.strawpot.env`.
+
+```yaml
+metadata:
+  strawpot:
+    env:
+      GITHUB_TOKEN:
+        required: true
+        description: GitHub API token
+```
+
+At session start, the CLI checks if each required variable is set and prompts the user interactively for missing ones. Variables set at session start are inherited by all sub-agents. During delegation, missing required variables cause the delegation to fail.
+
+If the same variable appears in multiple skills, `required: true` takes precedence.
+
 ## Dependency Resolution
 
 When a consumer (StrawPot CLI) installs a role:
 
-1. Fetch role → get dependencies (skills + roles) with version constraints from `metadata.strawpot.dependencies` in frontmatter
+1. Fetch role → get dependencies (skills + roles) from `metadata.strawpot.dependencies` in frontmatter
 2. For each dependency, check its own dependencies for transitive deps
-3. Resolve version constraints (find best matching version for each)
-4. Topological sort with cycle detection
-5. Return install order with resolved versions (leaves first)
+3. Topological sort with cycle detection
+4. Return install order (leaves first)
 
 The resolution logic exists server-side (handler in `rolesV1.ts`) but is not yet routed as an HTTP endpoint. When wired up, it will return:
 
@@ -189,7 +233,7 @@ Admins are designated via the `ADMIN_GITHUB_LOGINS` Convex environment variable 
 - `skillVersions` — versioned skill bundles (files in Convex storage, optional skill dependency declarations)
 - `skillEmbeddings` — vector embeddings for search
 - `roles` — role registry entries (parallel to skills)
-- `roleVersions` — versioned role bundles with skill/role dependency declarations (version specifiers)
+- `roleVersions` — versioned role bundles with skill/role dependency declarations
 - `roleEmbeddings` — vector embeddings for search
 - `stars` — user stars on skills/roles
 - `comments` — user comments on skills/roles
