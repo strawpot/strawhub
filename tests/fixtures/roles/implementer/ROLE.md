@@ -8,9 +8,7 @@ metadata:
         - git-workflow
         - code-review
         - python-testing
-    default_model:
-      provider: claude_session
-      id: claude-opus-4-6
+    default_agent: claude_code
 ---
 
 # Implementer

@@ -154,7 +154,7 @@ name: implementer
 config:
   skills:
     - git-workflow
-    - code-review>=1.0.0
+    - code-review
   roles:
     - reviewer
 ---
@@ -163,7 +163,7 @@ Body.
     const result = parseFrontmatter(text);
     expect(result.frontmatter.name).toBe("implementer");
     expect(result.frontmatter.config).toEqual({
-      skills: ["git-workflow", "code-review>=1.0.0"],
+      skills: ["git-workflow", "code-review"],
       roles: ["reviewer"],
     });
   });
@@ -215,14 +215,14 @@ metadata:
   strawpot:
     dependencies:
       - security-baseline
-      - git-workflow>=1.0.0
+      - git-workflow
 ---
 Body.
 `;
     const result = parseFrontmatter(text);
     expect(result.frontmatter.metadata).toEqual({
       strawpot: {
-        dependencies: ["security-baseline", "git-workflow>=1.0.0"],
+        dependencies: ["security-baseline", "git-workflow"],
       },
     });
   });
@@ -232,17 +232,14 @@ Body.
 name: implementer
 metadata:
   strawpot:
-    default_model:
-      provider: claude_session
+    default_agent: claude_code
 ---
 Body.
 `;
     const result = parseFrontmatter(text);
     expect(result.frontmatter.metadata).toEqual({
       strawpot: {
-        default_model: {
-          provider: "claude_session",
-        },
+        default_agent: "claude_code",
       },
     });
   });
@@ -295,12 +292,12 @@ describe("extractDependencies", () => {
     const fm = {
       metadata: {
         strawpot: {
-          dependencies: ["security-baseline", "git-workflow>=1.0.0"],
+          dependencies: ["security-baseline", "git-workflow"],
         },
       },
     };
     const result = extractDependencies(fm, "skill");
-    expect(result).toEqual({ skills: ["security-baseline", "git-workflow>=1.0.0"] });
+    expect(result).toEqual({ skills: ["security-baseline", "git-workflow"] });
   });
 
   it("extracts role deps from nested object", () => {

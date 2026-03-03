@@ -16,10 +16,10 @@ description: "Code review checklist"       # Required: one-line summary
 metadata:
   strawpot:
     dependencies:                          # Optional: skill dependencies
-      - security-baseline                  #   latest version
-      - git-workflow>=1.0.0                #   minimum version
-      - python-testing^2.0.0              #   compatible version
-      - code-style==1.5.0                 #   exact version
+      - security-baseline
+      - git-workflow
+      - python-testing
+      - code-style
     tools:                                 # Optional: system tool requirements
       gh:
         description: GitHub CLI
@@ -40,7 +40,7 @@ Markdown body with instructions for the agent...
 |-------|----------|-------------|
 | `name` | Yes | Package slug (unique within skills) |
 | `description` | Yes | One-line summary |
-| `metadata.strawpot.dependencies` | No | Flat list of skill slugs with optional version constraints |
+| `metadata.strawpot.dependencies` | No | Flat list of skill slugs |
 | `metadata.strawpot.tools` | No | System tool requirements |
 
 ## Role Frontmatter (`ROLE.md`)
@@ -53,20 +53,11 @@ metadata:
   strawpot:
     dependencies:                           # Optional: dependencies
       skills:                               #   skill dependencies
-        - git-workflow>=1.0.0
+        - git-workflow
         - code-review
       roles:                                #   role dependencies
         - reviewer
-    default_model:                          # Optional: model configuration
-      provider: claude_session
-      id: claude-opus-4-6
-    tools:                                  # Optional: system tool requirements
-      gh:
-        description: GitHub CLI
-        install:
-          macos: brew install gh
-          linux: apt install gh
-          windows: winget install GitHub.cli
+    default_agent: claude_code               # Optional: default agent runtime
 ---
 
 # Role Title
@@ -82,20 +73,7 @@ Markdown body with role instructions for the agent...
 | `description` | Yes | One-line summary |
 | `metadata.strawpot.dependencies.skills` | No | List of skill dependencies |
 | `metadata.strawpot.dependencies.roles` | No | List of role dependencies |
-| `metadata.strawpot.default_model.provider` | No | Model provider identifier |
-| `metadata.strawpot.default_model.id` | No | Model ID |
-| `metadata.strawpot.tools` | No | System tool requirements |
-
-## Version Specifiers
-
-Used in dependency declarations:
-
-| Format | Meaning | Example |
-|--------|---------|---------|
-| `slug` | Latest version | `git-workflow` |
-| `slug==X.Y.Z` | Exact version | `git-workflow==1.0.0` |
-| `slug>=X.Y.Z` | Minimum version | `git-workflow>=1.0.0` |
-| `slug^X.Y.Z` | Compatible (same major) | `git-workflow^1.0.0` |
+| `metadata.strawpot.default_agent` | No | Default agent runtime name |
 
 ## System Tools Schema
 
@@ -122,5 +100,5 @@ metadata:
 |--------|--------|-------|
 | File | `SKILL.md` | `ROLE.md` |
 | Dependencies format | Flat list (skills only) | Structured with `skills` and `roles` sub-keys |
-| Model config | Not supported | `default_model` field |
+| Default agent | No | `default_agent` field |
 | Namespace | Separate | Separate (same slug allowed in both) |

@@ -6,9 +6,7 @@ metadata:
     dependencies:
       skills:
         - git-workflow
-    default_model:
-      provider: claude_session
-      id: claude-opus-4-6
+    default_agent: claude_code
 ---
 
 # Fixer

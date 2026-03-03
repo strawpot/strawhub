@@ -191,7 +191,7 @@ metadata:
   strawpot:
     dependencies:
       - security-baseline
-      - git-workflow>=1.0.0
+      - git-workflow
     tools:
       gh:
         description: GitHub CLI
@@ -208,7 +208,7 @@ Instructions for the agent...
 
 ### ROLE.md
 
-Role dependencies are declared under `metadata.strawpot.dependencies` with `skills` and `roles` sub-keys. Version specifiers are optional.
+Role dependencies are declared under `metadata.strawpot.dependencies` with `skills` and `roles` sub-keys.
 
 ```yaml
 ---
@@ -218,29 +218,18 @@ metadata:
   strawpot:
     dependencies:
       skills:
-        - git-workflow>=1.0.0
+        - git-workflow
         - code-review
-        - python-testing^2.0.0
+        - python-testing
       roles:
         - reviewer
-    default_model:
-      provider: claude_session
-      id: claude-opus-4-6
+    default_agent: claude_code
 ---
 
 # Implementer
 
 Role instructions for the agent...
 ```
-
-### Dependency Version Specifiers
-
-| Format | Meaning | Example |
-|--------|---------|---------|
-| `slug` | Latest version | `git-workflow` |
-| `slug==X.Y.Z` | Exact version | `git-workflow==1.0.0` |
-| `slug>=X.Y.Z` | Minimum version | `git-workflow>=1.0.0` |
-| `slug^X.Y.Z` | Compatible (same major, >= specified) | `git-workflow^1.0.0` |
 
 ## TODO
 

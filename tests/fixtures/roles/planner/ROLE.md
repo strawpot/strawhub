@@ -6,9 +6,7 @@ metadata:
   tags: [planning, architecture]
   author: strawpot
   strawpot:
-    default_model:
-      provider: claude_session
-      id: claude-opus-4-6
+    default_agent: claude_code
 ---
 
 # Planner
