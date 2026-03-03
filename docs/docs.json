@@ -61,11 +61,11 @@
     "links": [
       {
         "label": "StrawPot",
-        "url": "https://strawpot.com"
+        "href": "https://strawpot.com"
       },
       {
         "label": "Registry",
-        "url": "https://strawhub.dev"
+        "href": "https://strawhub.dev"
       }
     ]
   },
