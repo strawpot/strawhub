@@ -13,7 +13,7 @@ const PAGE_SIZE = 20;
 function SearchPage() {
   useSEO({
     title: "Search - StrawHub",
-    description: "Search for skills and roles on StrawHub.",
+    description: "Search for skills, roles, and agents on StrawHub.",
     url: "/search",
   });
 

@@ -20,7 +20,7 @@ strawhub [--version] [--help] <command>
 | [`uninstall`](#uninstall) | Remove a package and clean up orphaned dependencies |
 | [`update`](#update) | Update packages to their latest versions |
 | [`init`](#init) | Create `strawpot.toml` from installed packages |
-| [`search`](#search) | Search for skills and roles |
+| [`search`](#search) | Search for skills, roles, and agents |
 | [`info`](#info) | Show detailed information about a package |
 | [`list`](#list) | List available skills and roles |
 | [`resolve`](#resolve) | Resolve a package to its installed path and dependencies |
@@ -313,7 +313,7 @@ strawhub install-tools --global
 
 ### `search`
 
-Search for skills and roles in the registry.
+Search for skills, roles, and agents in the registry.
 
 ```bash
 strawhub search <query> [--kind skill|role|all] [--limit N] [--json]

@@ -525,7 +525,7 @@ function UploadPage() {
         <h1 className="text-3xl font-bold text-white">Publish</h1>
         <div className="rounded-lg border border-gray-800 p-8 text-center">
           <p className="text-gray-400 mb-4">
-            Sign in with GitHub to publish roles and skills.
+            Sign in with GitHub to publish skills, roles, and agents.
           </p>
           <button
             onClick={() => void signIn("github")}

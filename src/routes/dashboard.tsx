@@ -29,7 +29,7 @@ function DashboardPage() {
         <h1 className="text-2xl md:text-3xl font-bold text-white">Dashboard</h1>
         <div className="rounded-lg border border-gray-800 p-5 md:p-8 text-center">
           <p className="text-gray-400 mb-4">
-            Sign in with GitHub to manage your published roles and skills.
+            Sign in with GitHub to manage your published skills, roles, and agents.
           </p>
           <button
             onClick={() => void signIn("github")}
@@ -83,7 +83,7 @@ function UserContent({ userId }: { userId: string; handle?: string }) {
           No content yet
         </p>
         <p className="text-sm text-gray-500 mb-6">
-          Publish your first skill or role to share it with the community.
+          Publish your first skill, role, or agent to share it with the community.
         </p>
         <Link
           to="/upload"

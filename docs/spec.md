@@ -181,9 +181,9 @@ The resolution logic exists server-side (handler in `rolesV1.ts`) but is not yet
 | `/skills/$slug` | Skill detail — file viewer with frontmatter table, version history, zip download, owner update button |
 | `/roles` | Browse roles |
 | `/roles/$slug` | Role detail — file viewer, version history, zip download |
-| `/search` | Search skills and roles |
+| `/search` | Search skills, roles, and agents |
 | `/upload` | Publish — drag-and-drop files or folders, GitHub import, form auto-fill from frontmatter, update mode via `?updateSlug=` |
-| `/dashboard` | My content — manage published skills and roles |
+| `/dashboard` | My content — manage published skills, roles, and agents |
 | `/settings` | Profile editing, API tokens, account deletion |
 
 ### Authentication
