@@ -170,6 +170,32 @@ def _parse_array(
     return result, i
 
 
+def rewrite_frontmatter_name(text: str, new_name: str) -> str:
+    """Rewrite the ``name`` field in YAML frontmatter.
+
+    If the frontmatter contains a ``name:`` line, its value is replaced
+    with *new_name*.  If no ``name:`` line exists, one is inserted as the
+    first line of the frontmatter block.
+
+    Returns the full text with the updated frontmatter.
+    """
+    m = re.match(r"^---\s*\n([\s\S]*?\n)---\s*\n([\s\S]*)$", text)
+    if not m:
+        return text
+
+    yaml_str = m.group(1)
+    body = m.group(2)
+
+    if re.search(r"^name:\s*.*$", yaml_str, re.MULTILINE):
+        yaml_str = re.sub(
+            r"^name:\s*.*$", f"name: {new_name}", yaml_str, count=1, flags=re.MULTILINE
+        )
+    else:
+        yaml_str = f"name: {new_name}\n" + yaml_str
+
+    return f"---\n{yaml_str}---\n{body}"
+
+
 def extract_dependencies(
     fm: dict, kind: str
 ) -> dict | None:

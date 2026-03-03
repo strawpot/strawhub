@@ -1,6 +1,6 @@
 """Tests for frontmatter.py — ported from convex/lib/frontmatter.test.ts."""
 
-from strawhub.frontmatter import parse_frontmatter, extract_dependencies
+from strawhub.frontmatter import parse_frontmatter, extract_dependencies, rewrite_frontmatter_name
 
 
 class TestParseFrontmatter:
@@ -231,3 +231,51 @@ class TestExtractDependencies:
     def test_returns_none_when_no_dependencies(self):
         fm = {"metadata": {"strawpot": {"other": "value"}}}
         assert extract_dependencies(fm, "skill") is None
+
+
+class TestRewriteFrontmatterName:
+    def test_replaces_existing_name(self):
+        text = '---\nname: old-name\ndescription: "A skill"\n---\nBody.\n'
+        result = rewrite_frontmatter_name(text, "new-name")
+        parsed = parse_frontmatter(result)
+        assert parsed["frontmatter"]["name"] == "new-name"
+        assert parsed["frontmatter"]["description"] == "A skill"
+        assert parsed["body"] == "Body.\n"
+
+    def test_inserts_name_when_missing(self):
+        text = '---\ndescription: "A skill"\n---\nBody.\n'
+        result = rewrite_frontmatter_name(text, "my-skill")
+        parsed = parse_frontmatter(result)
+        assert parsed["frontmatter"]["name"] == "my-skill"
+        assert parsed["frontmatter"]["description"] == "A skill"
+
+    def test_preserves_body(self):
+        text = "---\nname: old\n---\n# Hello\n\nWorld\n"
+        result = rewrite_frontmatter_name(text, "new")
+        parsed = parse_frontmatter(result)
+        assert parsed["frontmatter"]["name"] == "new"
+        assert "# Hello" in parsed["body"]
+        assert "World" in parsed["body"]
+
+    def test_no_frontmatter_returns_unchanged(self):
+        text = "Just plain markdown."
+        result = rewrite_frontmatter_name(text, "new-name")
+        assert result == text
+
+    def test_preserves_other_fields(self):
+        text = (
+            "---\n"
+            "name: old\n"
+            "description: test\n"
+            "metadata:\n"
+            "  strawpot:\n"
+            "    dependencies:\n"
+            "      - dep-a\n"
+            "---\n"
+            "Body.\n"
+        )
+        result = rewrite_frontmatter_name(text, "new")
+        parsed = parse_frontmatter(result)
+        assert parsed["frontmatter"]["name"] == "new"
+        assert parsed["frontmatter"]["description"] == "test"
+        assert parsed["frontmatter"]["metadata"]["strawpot"]["dependencies"] == ["dep-a"]

@@ -170,6 +170,14 @@ function parseArray(
 }
 
 /**
+ * Extract the ``name`` field from parsed frontmatter.
+ */
+export function extractName(fm: Record<string, unknown>): string | undefined {
+  const name = fm.name;
+  return typeof name === "string" ? name : undefined;
+}
+
+/**
  * Extract dependencies from parsed frontmatter.
  *
  * Reads from metadata.strawpot.dependencies.

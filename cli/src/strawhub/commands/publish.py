@@ -6,7 +6,7 @@ import click
 from strawhub.client import StrawHubClient
 from strawhub.display import print_success, print_error, console
 from strawhub.errors import StrawHubError
-from strawhub.frontmatter import parse_frontmatter, extract_dependencies
+from strawhub.frontmatter import parse_frontmatter, extract_dependencies, rewrite_frontmatter_name
 
 
 @click.group(invoke_without_command=True)
@@ -39,6 +39,13 @@ def _publish_impl(path, kind, ver, changelog, tags):
         )
         raise SystemExit(1)
 
+    # Ensure frontmatter name matches the slug
+    name_rewritten = False
+    fm_name = fm.get("name")
+    if fm_name != slug:
+        content = rewrite_frontmatter_name(content, slug)
+        name_rewritten = True
+
     display_name = fm.get("displayName") or fm.get("display_name") or slug
     version = ver or fm.get("version")
     if not version:
@@ -61,6 +68,19 @@ def _publish_impl(path, kind, ver, changelog, tags):
     if not files:
         print_error("No files found in directory.")
         raise SystemExit(1)
+
+    # Patch the main file in-memory if name was rewritten
+    if name_rewritten:
+        patched = content.encode("utf-8")
+        files = [
+            ("files", (main_file, patched, "text/markdown"))
+            if name == main_file
+            else (key, (name, data, ct))
+            for key, (name, data, ct) in files
+        ]
+        console.print(
+            f"  [dim]Updated frontmatter name to match slug '{slug}'[/dim]"
+        )
 
     console.print(f"Publishing {kind} '{slug}' v{version}...")
     console.print(f"  Files: {len(files)}")
