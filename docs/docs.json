@@ -1,0 +1,79 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "StrawHub",
+  "colors": {
+    "primary": "#2A8FE8",
+    "light": "#52ADF2",
+    "dark": "#1C6EC4"
+  },
+  "favicon": "/favicon.ico",
+  "icons": {
+    "library": "lucide"
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "icon": "rocket",
+            "pages": ["index", "quickstart"]
+          },
+          {
+            "group": "Concepts",
+            "icon": "lightbulb",
+            "pages": [
+              "concepts/skills",
+              "concepts/roles",
+              "concepts/dependencies"
+            ]
+          },
+          {
+            "group": "CLI Reference",
+            "icon": "terminal",
+            "pages": ["cli/commands"]
+          },
+          {
+            "group": "Publishing",
+            "icon": "upload",
+            "pages": [
+              "publishing/guide",
+              "publishing/frontmatter"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "HTTP API",
+            "icon": "code",
+            "pages": ["api/reference"]
+          }
+        ]
+      }
+    ]
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "StrawPot",
+        "url": "https://strawpot.com"
+      },
+      {
+        "label": "Registry",
+        "url": "https://strawhub.dev"
+      }
+    ]
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/strawpot/strawhub",
+      "discord": "https://discord.gg/buEbvEMC",
+      "website": "https://strawhub.dev"
+    }
+  }
+}
