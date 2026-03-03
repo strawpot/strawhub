@@ -12,5 +12,6 @@
 2. Wait for my explicit approval before proceeding
 3. Once approved:
    - Rebase from `main` before committing (`git fetch origin && git rebase origin/main`)
-   - Create a new branch, commit, push, and open a PR with a descriptive title and summary
-   - **If the current branch already has a merged PR**, do not force-reopen it. Instead, create a fresh branch and open a new PR.
+   - **Always create a fresh branch from `main`** for each new change. Never push additional commits to an existing PR branch.
+   - Commit, push, and open a new PR with a descriptive title and summary.
+   - **Never reuse a branch that already has a PR** (open or merged). Each PR gets its own branch.
