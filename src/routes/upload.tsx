@@ -11,7 +11,7 @@ import { fetchFromClawHub } from "../lib/clawhubImport";
 import JSZip from "jszip";
 import { isBinaryByMagicBytes, containsNullBytes } from "../../convex/lib/binaryDetection";
 
-type UploadSearch = { mode?: "import"; updateSlug?: string; kind?: "skill" | "role" };
+type UploadSearch = { mode?: "import"; updateSlug?: string; kind?: "skill" | "role" | "agent" };
 
 /** Recursively read all files from a dropped directory entry. */
 async function readDirectoryRecursively(
@@ -58,7 +58,7 @@ export const Route = createFileRoute("/upload")({
   validateSearch: (search: Record<string, unknown>): UploadSearch => ({
     mode: search.mode === "import" ? "import" : undefined,
     updateSlug: typeof search.updateSlug === "string" ? search.updateSlug : undefined,
-    kind: search.kind === "role" ? "role" : search.kind === "skill" ? "skill" : undefined,
+    kind: search.kind === "role" ? "role" : search.kind === "agent" ? "agent" : search.kind === "skill" ? "skill" : undefined,
   }),
   component: UploadPage,
 });
@@ -74,7 +74,7 @@ interface UploadFile {
 function UploadPage() {
   useSEO({
     title: "Publish - StrawHub",
-    description: "Publish or update a skill or role on StrawHub.",
+    description: "Publish or update a skill, role, or agent on StrawHub.",
     url: "/upload",
   });
 
@@ -83,7 +83,7 @@ function UploadPage() {
   const navigate = useNavigate();
   const { mode, updateSlug, kind: initialKind } = Route.useSearch();
 
-  const [kind, setKind] = useState<"skill" | "role">(initialKind ?? "skill");
+  const [kind, setKind] = useState<"skill" | "role" | "agent">(initialKind ?? "skill");
   const [slug, setSlug] = useState(updateSlug ?? "");
   const [displayName, setDisplayName] = useState(
     updateSlug
@@ -114,11 +114,13 @@ function UploadPage() {
   const generateUploadUrl = useMutation(api.files.generateUploadUrl);
   const publishSkill = useMutation(api.skills.publish);
   const publishRole = useMutation(api.roles.publish);
+  const publishAgent = useMutation(api.agents.publish);
 
   const currentUser = useQuery(api.users.me);
   const existingSkill = useQuery(api.skills.getBySlug, kind === "skill" && slug.trim() ? { slug: slug.trim() } : "skip");
   const existingRole = useQuery(api.roles.getBySlug, kind === "role" && slug.trim() ? { slug: slug.trim() } : "skip");
-  const existing = kind === "skill" ? existingSkill : existingRole;
+  const existingAgent = useQuery(api.agents.getBySlug, kind === "agent" && slug.trim() ? { slug: slug.trim() } : "skip");
+  const existing = kind === "skill" ? existingSkill : kind === "role" ? existingRole : existingAgent;
   const isOwnedByOther = !!(existing && currentUser && existing.ownerUserId !== currentUser._id);
   const isUpdate = !!existing && !isOwnedByOther;
 
@@ -144,7 +146,7 @@ function UploadPage() {
     return null;
   })();
 
-  const primaryFile = kind === "skill" ? "SKILL.md" : "ROLE.md";
+  const primaryFile = kind === "skill" ? "SKILL.md" : kind === "role" ? "ROLE.md" : "AGENT.md";
   const hasPrimaryFile = files.some((f) => f.path === primaryFile);
 
   const validationErrors = useMemo(() => {
@@ -173,6 +175,15 @@ function UploadPage() {
         newFiles = [roleMd];
       }
 
+      // Agents require AGENT.md
+      if (kind === "agent") {
+        const agentMd = newFiles.find((f) => f.path === "AGENT.md");
+        if (!agentMd) {
+          setError("Agent uploads must include an AGENT.md file.");
+          return;
+        }
+      }
+
       setError(null);
 
       const incoming: UploadFile[] = newFiles.map((f) => ({
@@ -192,7 +203,9 @@ function UploadPage() {
       // Parse frontmatter from the primary file matching the current kind
       const mdFile = kind === "role"
         ? newFiles.find((f) => f.path === "ROLE.md")
-        : newFiles.find((f) => f.path === "SKILL.md");
+        : kind === "agent"
+          ? newFiles.find((f) => f.path === "AGENT.md")
+          : newFiles.find((f) => f.path === "SKILL.md");
 
       if (mdFile) {
         mdFile.file.text().then((text) => {
@@ -341,7 +354,7 @@ function UploadPage() {
       return;
     }
 
-    const primaryFile = kind === "skill" ? "SKILL.md" : "ROLE.md";
+    const primaryFile = kind === "skill" ? "SKILL.md" : kind === "role" ? "ROLE.md" : "AGENT.md";
     if (!files.some((f) => f.path === primaryFile)) {
       setError(`A ${primaryFile} file is required.`);
       return;
@@ -458,7 +471,7 @@ function UploadPage() {
           skillMdText,
           zipStorageId,
         });
-      } else {
+      } else if (kind === "role") {
         const roleMdFile = files.find((f) => f.path === "ROLE.md");
         const roleMdText = roleMdFile ? await roleMdFile.file.text() : undefined;
         await publishRole({
@@ -470,9 +483,21 @@ function UploadPage() {
           roleMdText,
           zipStorageId,
         });
+      } else {
+        const agentMdFile = files.find((f) => f.path === "AGENT.md");
+        const agentMdText = agentMdFile ? await agentMdFile.file.text() : undefined;
+        await publishAgent({
+          slug: slug.trim(),
+          displayName: resolvedDisplayName,
+          version: version.trim() || undefined,
+          changelog: changelog.trim(),
+          files: uploadedFiles as any,
+          agentMdText,
+          zipStorageId,
+        });
       }
 
-      navigate({ to: kind === "skill" ? "/skills" : "/roles" });
+      navigate({ to: kind === "skill" ? "/skills" : kind === "role" ? "/roles" : "/agents" });
     } catch (e: any) {
       const raw = e.message || "Publish failed";
       // Strip Convex internal prefix and stack trace to show only the meaningful error
@@ -539,6 +564,16 @@ function UploadPage() {
             }`}
           >
             Role
+          </button>
+          <button
+            onClick={() => { setKind("agent"); setFiles([]); setError(null); }}
+            className={`rounded px-4 py-2 text-sm font-medium transition-colors ${
+              kind === "agent"
+                ? "bg-orange-500 text-white"
+                : "bg-gray-800 text-gray-400 hover:text-white"
+            }`}
+          >
+            Agent
           </button>
         </div>
 
@@ -625,11 +660,37 @@ function UploadPage() {
           onDragOver={(e) => e.preventDefault()}
           onClick={kind === "role" ? () => fileInputRef.current?.click() : undefined}
           className={`rounded border border-dashed border-gray-700 p-8 text-center hover:border-gray-500 transition-colors ${kind === "role" ? "cursor-pointer" : ""}`}
+
         >
           {files.length === 0 ? (
             <p className="text-gray-400 text-sm">
               {kind === "role"
                 ? "Drop your ROLE.md file here, or click to browse."
+                : kind === "agent"
+                ? <>
+                    Drop your AGENT.md and binary files or folder here, or browse{" "}
+                    <span
+                      role="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        fileInputRef.current?.click();
+                      }}
+                      className="text-orange-400 hover:text-orange-300 underline cursor-pointer"
+                    >
+                      files
+                    </span>
+                    {" or "}
+                    <span
+                      role="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        folderInputRef.current?.click();
+                      }}
+                      className="text-orange-400 hover:text-orange-300 underline cursor-pointer"
+                    >
+                      folder
+                    </span>.
+                  </>
                 : <>
                     Drop your SKILL.md and supporting files or folder here, or browse{" "}
                     <span
@@ -658,7 +719,7 @@ function UploadPage() {
             </p>
           ) : (
             <div className="space-y-2">
-              {kind === "skill" && !isPublishing && files.length > 1 && (
+              {kind !== "role" && !isPublishing && files.length > 1 && (
                 <div className="flex justify-end">
                   <button
                     onClick={(e) => {
@@ -764,7 +825,7 @@ function UploadPage() {
               type="text"
               value={slug}
               onChange={(e) => setSlug(e.target.value)}
-              placeholder={kind === "role" ? "my-role" : "my-skill"}
+              placeholder={kind === "role" ? "my-role" : kind === "agent" ? "my-agent" : "my-skill"}
               className={`mt-1 block w-full rounded border bg-gray-900 px-3 py-2 text-white placeholder-gray-500 focus:outline-none ${
                 slugError || (slug.trim() && existing !== undefined && isOwnedByOther)
                   ? "border-red-600 focus:border-red-500"
@@ -794,7 +855,7 @@ function UploadPage() {
               type="text"
               value={isUpdate ? (existing?.displayName ?? displayName) : displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              placeholder={kind === "role" ? "My Role" : "My Skill"}
+              placeholder={kind === "role" ? "My Role" : kind === "agent" ? "My Agent" : "My Skill"}
               disabled={isUpdate}
               className={`mt-1 block w-full rounded border border-gray-700 bg-gray-900 px-3 py-2 text-white placeholder-gray-500 focus:outline-none ${
                 isUpdate
@@ -873,8 +934,8 @@ function UploadPage() {
           {isPublishing
             ? "Publishing..."
             : isUpdate
-              ? `Update ${kind === "skill" ? "Skill" : "Role"}`
-              : `Publish ${kind === "skill" ? "Skill" : "Role"}`}
+              ? `Update ${kind === "skill" ? "Skill" : kind === "role" ? "Role" : "Agent"}`
+              : `Publish ${kind === "skill" ? "Skill" : kind === "role" ? "Role" : "Agent"}`}
         </button>
       </div>
     </div>

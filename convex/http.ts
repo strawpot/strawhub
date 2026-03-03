@@ -3,6 +3,7 @@ import { httpAction } from "./_generated/server";
 import { auth } from "./auth";
 import { listSkills, handleGetSkill, handleGetSkillFile, publishSkill, handleDeleteSkill } from "./httpApiV1/skillsV1";
 import { listRoles, handleGetRole, handleGetRoleFile, handleResolveRoleDeps, publishRole, handleDeleteRole } from "./httpApiV1/rolesV1";
+import { listAgents, handleGetAgent, handleGetAgentFile, publishAgent, handleDeleteAgent } from "./httpApiV1/agentsV1";
 import { searchAll } from "./httpApiV1/searchV1";
 import { whoami } from "./httpApiV1/whoamiV1";
 import { serveSitemap } from "./httpApiV1/sitemapV1";
@@ -54,6 +55,23 @@ const roleSlugDeleteDispatcher = httpAction(async (ctx, request) => {
 http.route({ pathPrefix: "/api/v1/roles/", method: "GET", handler: roleSlugDispatcher });
 http.route({ pathPrefix: "/api/v1/roles/", method: "DELETE", handler: roleSlugDeleteDispatcher });
 http.route({ pathPrefix: "/api/v1/roles/", method: "OPTIONS", handler: corsHandler });
+
+// ── Agents ──────────────────────────────────────────────────────────────────
+http.route({ path: "/api/v1/agents", method: "GET", handler: listAgents });
+http.route({ path: "/api/v1/agents", method: "POST", handler: publishAgent });
+http.route({ path: "/api/v1/agents", method: "OPTIONS", handler: corsHandler });
+
+const agentSlugDispatcher = httpAction(async (ctx, request) => {
+  const parts = new URL(request.url).pathname.split("/");
+  if (parts[5] === "file") return handleGetAgentFile(ctx, request);
+  return handleGetAgent(ctx, request);
+});
+const agentSlugDeleteDispatcher = httpAction(async (ctx, request) => {
+  return handleDeleteAgent(ctx, request);
+});
+http.route({ pathPrefix: "/api/v1/agents/", method: "GET", handler: agentSlugDispatcher });
+http.route({ pathPrefix: "/api/v1/agents/", method: "DELETE", handler: agentSlugDeleteDispatcher });
+http.route({ pathPrefix: "/api/v1/agents/", method: "OPTIONS", handler: corsHandler });
 
 // ── Stars ───────────────────────────────────────────────────────────────────
 http.route({ path: "/api/v1/stars/toggle", method: "POST", handler: toggleStar });

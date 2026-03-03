@@ -3,7 +3,7 @@ import { api } from "../_generated/api";
 import { jsonResponse, errorResponse, getSearchParams, checkHttpRateLimit } from "./shared";
 
 /**
- * GET /api/v1/search — search skills and roles
+ * GET /api/v1/search — search skills, roles, and agents
  */
 export const searchAll = httpAction(async (ctx, request) => {
   const rateLimited = await checkHttpRateLimit(ctx, request, "search");
@@ -14,7 +14,7 @@ export const searchAll = httpAction(async (ctx, request) => {
   if (!query) return errorResponse("Query parameter 'q' is required", 400);
 
   const limit = Math.min(parseInt(params.get("limit") ?? "20", 10), 100);
-  const kind = (params.get("kind") ?? "all") as "skill" | "role" | "all";
+  const kind = (params.get("kind") ?? "all") as "skill" | "role" | "agent" | "all";
 
   const results = await ctx.runQuery(api.search.search, {
     query,

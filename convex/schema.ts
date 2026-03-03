@@ -209,11 +209,92 @@ export default defineSchema({
       filterFields: ["visibility"],
     }),
 
+  // ── Agents ─────────────────────────────────────────────────────────────
+
+  agents: defineTable({
+    slug: v.string(),
+    displayName: v.string(),
+    summary: v.optional(v.string()),
+    ownerUserId: v.id("users"),
+    latestVersionId: v.optional(v.id("agentVersions")),
+    tags: v.any(), // Record<string, Id<"agentVersions">>
+    badges,
+    softDeletedAt: v.optional(v.number()),
+    moderationStatus: v.optional(
+      v.union(v.literal("active"), v.literal("hidden"), v.literal("removed")),
+    ),
+    stats,
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_owner", ["ownerUserId"])
+    .index("by_updated", ["updatedAt"])
+    .index("by_stats_downloads", ["stats.downloads"])
+    .index("by_stats_stars", ["stats.stars"]),
+
+  agentVersions: defineTable({
+    agentId: v.id("agents"),
+    version: v.string(),
+    changelog: v.string(),
+    files: v.array(fileEntry),
+    zipStorageId: v.optional(v.id("_storage")),
+    parsed: v.object({
+      frontmatter: v.any(),
+      metadata: v.optional(v.any()),
+    }),
+    dependencies: v.optional(v.any()),
+    downloads: v.optional(v.number()),
+    scanStatus: v.optional(
+      v.union(
+        v.literal("pending"),
+        v.literal("skipped"),
+        v.literal("scanning"),
+        v.literal("clean"),
+        v.literal("flagged"),
+        v.literal("error"),
+        v.literal("rate_limited"),
+      ),
+    ),
+    scanResult: v.optional(
+      v.object({
+        analysisId: v.optional(v.string()),
+        positives: v.optional(v.number()),
+        total: v.optional(v.number()),
+        scanDate: v.optional(v.number()),
+        permalink: v.optional(v.string()),
+        errorMessage: v.optional(v.string()),
+      }),
+    ),
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+    softDeletedAt: v.optional(v.number()),
+  })
+    .index("by_agent", ["agentId"])
+    .index("by_agent_version", ["agentId", "version"]),
+
+  agentEmbeddings: defineTable({
+    agentId: v.id("agents"),
+    versionId: v.id("agentVersions"),
+    ownerId: v.id("users"),
+    embedding: v.array(v.float64()),
+    isLatest: v.boolean(),
+    visibility: v.string(),
+    updatedAt: v.number(),
+  })
+    .index("by_agent", ["agentId"])
+    .index("by_version", ["versionId"])
+    .vectorIndex("by_embedding", {
+      vectorField: "embedding",
+      dimensions: 1536,
+      filterFields: ["visibility"],
+    }),
+
   // ── Community ────────────────────────────────────────────────────────────
 
   stars: defineTable({
-    targetId: v.string(), // skill or role ID
-    targetKind: v.union(v.literal("skill"), v.literal("role")),
+    targetId: v.string(), // skill, role, or agent ID
+    targetKind: v.union(v.literal("skill"), v.literal("role"), v.literal("agent")),
     userId: v.id("users"),
     createdAt: v.number(),
   })
@@ -222,8 +303,8 @@ export default defineSchema({
     .index("by_target_user", ["targetId", "userId"]),
 
   comments: defineTable({
-    targetId: v.string(), // skill or role ID
-    targetKind: v.union(v.literal("skill"), v.literal("role")),
+    targetId: v.string(), // skill, role, or agent ID
+    targetKind: v.union(v.literal("skill"), v.literal("role"), v.literal("agent")),
     userId: v.id("users"),
     body: v.string(),
     createdAt: v.number(),
@@ -233,8 +314,8 @@ export default defineSchema({
     .index("by_user", ["userId"]),
 
   reports: defineTable({
-    targetId: v.string(), // skill or role ID
-    targetKind: v.union(v.literal("skill"), v.literal("role")),
+    targetId: v.string(), // skill, role, or agent ID
+    targetKind: v.union(v.literal("skill"), v.literal("role"), v.literal("agent")),
     userId: v.id("users"),
     description: v.string(),
     status: v.union(

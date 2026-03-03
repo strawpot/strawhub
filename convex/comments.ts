@@ -51,7 +51,7 @@ export const list = query({
 export const create = mutation({
   args: {
     targetId: v.string(),
-    targetKind: v.union(v.literal("skill"), v.literal("role")),
+    targetKind: v.union(v.literal("skill"), v.literal("role"), v.literal("agent")),
     body: v.string(),
   },
   handler: async (ctx, args) => {

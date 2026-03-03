@@ -1,6 +1,6 @@
 # StrawHub Design
 
-StrawHub is the public registry for [StrawPot](https://strawpot.com) agent skills and roles. Users discover, publish, and install reusable agent components through a web UI, REST API, or Python CLI.
+StrawHub is the public registry for [StrawPot](https://strawpot.com) agent skills, roles, and agents. Users discover, publish, and install reusable agent components through a web UI, REST API, or Python CLI.
 
 ## System Architecture
 
@@ -41,7 +41,7 @@ Three-tier monorepo: React frontend, Convex backend, Python CLI.
 
 ## Content Model
 
-Two content types with parallel structure:
+Three content types with parallel structure:
 
 ### Skills
 
@@ -59,9 +59,18 @@ Agent behavior definitions — instructions, default agent runtime, and dependen
 - **Dependencies:** structured object with `skills` and `roles` sub-keys
 - **Can specify:** `default_agent` for runtime binding
 
+### Agents
+
+CLI wrapper binaries that translate StrawPot's protocol into native AI tool interfaces. Agents contain an `AGENT.md` frontmatter file plus compiled binaries per OS.
+
+- **Files:** `AGENT.md` (required) + binary files (up to 50 files, 10 MB each, 50 MB total)
+- **Dependencies:** none (agents are standalone)
+- **Allowed file types:** any (binaries allowed)
+- **Unique fields:** `bin` (OS-specific binary paths), `params`, `tools`, `env`
+
 ### Frontmatter
 
-Both types use YAML frontmatter for metadata. The `name` field is the package slug and must match the slug used for publishing.
+All three types use YAML frontmatter for metadata. The `name` field is the package slug and must match the slug used for publishing.
 
 ```yaml
 # SKILL.md
@@ -100,9 +109,33 @@ metadata:
 ---
 ```
 
+```yaml
+# AGENT.md
+---
+name: mcp-github
+description: "GitHub MCP wrapper agent"
+metadata:
+  strawpot:
+    bin:
+      macos-arm64: bin/mcp-github-darwin-arm64
+      macos-x64: bin/mcp-github-darwin-x64
+      linux-x64: bin/mcp-github-linux-x64
+    params:
+      owner:
+        type: string
+        required: true
+    tools:
+      - list_issues
+      - create_pr
+    env:
+      GITHUB_TOKEN:
+        required: true
+---
+```
+
 ### Namespacing
 
-Skills and roles have **separate slug namespaces**. A skill named `foo` and a role named `foo` can coexist. Slug ownership is enforced per-type — only the original publisher can push new versions.
+Skills, roles, and agents have **separate slug namespaces**. A skill named `foo`, a role named `foo`, and an agent named `foo` can all coexist. Slug ownership is enforced per-type — only the original publisher can push new versions.
 
 ## Data Model
 
@@ -116,9 +149,12 @@ Skills and roles have **separate slug namespaces**. A skill named `foo` and a ro
 | `roles` | Role registry entries (parallel structure to skills) |
 | `roleVersions` | Versioned role bundles with skill + role dependency declarations |
 | `roleEmbeddings` | Vector embeddings for role search |
+| `agents` | Agent registry entries (parallel structure to skills/roles) |
+| `agentVersions` | Versioned agent bundles with binary files |
+| `agentEmbeddings` | Vector embeddings for agent search |
 | `users` | GitHub OAuth profiles: handle, display name, bio, role (admin/moderator/user) |
-| `stars` | Polymorphic favorites (skill or role) |
-| `comments` | User comments on skills/roles |
+| `stars` | Polymorphic favorites (skill, role, or agent) |
+| `comments` | User comments on skills/roles/agents |
 | `reports` | Content moderation reports |
 | `apiTokens` | SHA-256 hashed Bearer tokens for CLI/API auth |
 | `auditLogs` | Moderation action trail |
@@ -181,7 +217,7 @@ Searches both skills and roles simultaneously. Falls back to text scan if embedd
 ### Install (CLI)
 
 ```
-CLI → resolve dependencies → fetch files → extract to ~/.strawpot/{skills,roles}/{slug}-{version}/
+CLI → resolve dependencies → fetch files → extract to ~/.strawpot/{skills,roles,agents}/{slug}-{version}/
 ```
 
 Install state tracked via lockfile at `.strawpot/strawpot.lock`. After installation, declared system tools are checked — missing tools trigger OS-specific install commands (with user confirmation).
@@ -226,6 +262,12 @@ GET    /api/v1/roles/:slug/resolve Resolve dependencies recursively
 POST   /api/v1/roles               Publish role (auth, multipart)
 DELETE /api/v1/roles/:slug         Delete role (admin)
 
+GET    /api/v1/agents              List agents
+GET    /api/v1/agents/:slug        Agent detail
+GET    /api/v1/agents/:slug/file   Raw file content (binary)
+POST   /api/v1/agents              Publish agent (auth, multipart)
+DELETE /api/v1/agents/:slug        Delete agent (admin)
+
 GET    /api/v1/search?q=&kind=     Hybrid search
 GET    /api/v1/whoami              Current user info
 POST   /api/v1/stars/toggle        Toggle star (auth)
@@ -246,6 +288,7 @@ strawhub/
 │   ├── http.ts                 # HTTP route definitions
 │   ├── skills.ts               # Skill queries/mutations
 │   ├── roles.ts                # Role queries/mutations
+│   ├── agents.ts               # Agent queries/mutations
 │   ├── search.ts               # Hybrid search logic
 │   ├── users.ts                # User management
 │   ├── httpApiV1/              # REST API v1 handlers
@@ -284,7 +327,7 @@ strawhub/
 
 **Convex as sole backend** — Database, file storage, auth, HTTP endpoints, and background jobs all run on Convex. No separate server infrastructure to manage or deploy.
 
-**Separate slug namespaces** — Skills and roles can share the same slug. Keeps the content types independent and avoids naming conflicts across different concerns.
+**Separate slug namespaces** — Skills, roles, and agents can share the same slug. Keeps the content types independent and avoids naming conflicts across different concerns.
 
 **SHA-256 token hashing** — API tokens are hashed before storage. Raw token shown once at creation. Prevents token exposure from database breaches.
 

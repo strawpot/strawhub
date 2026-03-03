@@ -3,8 +3,8 @@ import { api, internal } from "../_generated/api";
 import { jsonResponse, errorResponse, resolveTokenToUser, checkHttpRateLimit } from "./shared";
 
 /**
- * POST /api/v1/stars/toggle — toggle star on a skill or role
- * Body: { "slug": "...", "kind": "skill"|"role" }
+ * POST /api/v1/stars/toggle — toggle star on a skill, role, or agent
+ * Body: { "slug": "...", "kind": "skill"|"role"|"agent" }
  */
 export const toggleStar = httpAction(async (ctx, request) => {
   const rateLimited = await checkHttpRateLimit(ctx, request, "write");
@@ -23,14 +23,16 @@ export const toggleStar = httpAction(async (ctx, request) => {
 
   const { slug, kind } = body;
   if (!slug || !kind) return errorResponse("slug and kind are required", 400);
-  if (kind !== "skill" && kind !== "role") {
-    return errorResponse("kind must be 'skill' or 'role'", 400);
+  if (kind !== "skill" && kind !== "role" && kind !== "agent") {
+    return errorResponse("kind must be 'skill', 'role', or 'agent'", 400);
   }
 
   // Look up the target by slug to get its _id
   const target = kind === "skill"
     ? await ctx.runQuery(api.skills.getBySlug, { slug })
-    : await ctx.runQuery(api.roles.getBySlug, { slug });
+    : kind === "role"
+      ? await ctx.runQuery(api.roles.getBySlug, { slug })
+      : await ctx.runQuery(api.agents.getBySlug, { slug });
   if (!target) return errorResponse(`${kind} '${slug}' not found`, 404);
 
   try {

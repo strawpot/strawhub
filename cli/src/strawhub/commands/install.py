@@ -45,7 +45,7 @@ from strawhub.version_spec import (
 )
 @click.pass_context
 def install(ctx, skip_tools, yes):
-    """Install a skill or role with all dependencies.
+    """Install a skill, role, or agent with all dependencies.
 
     When called without a subcommand, installs all dependencies from
     strawpot.toml in the current directory.
@@ -484,6 +484,86 @@ def install_role(slug, is_global, skip_tools, yes, update, recursive, ver, force
     )
 
 
+@install.command("agent")
+@click.argument("slug")
+@click.option(
+    "--global",
+    "is_global",
+    is_flag=True,
+    default=False,
+    help="Install to global directory (~/.strawpot or STRAWPOT_HOME)",
+)
+@click.option(
+    "--skip-tools",
+    is_flag=True,
+    default=False,
+    help="Skip running system tool install commands",
+)
+@click.option(
+    "--yes",
+    "-y",
+    is_flag=True,
+    default=False,
+    help="Automatically confirm tool install commands without prompting",
+)
+@click.option(
+    "--update",
+    is_flag=True,
+    default=False,
+    help="Update to the latest version if already installed",
+)
+@click.option(
+    "--version",
+    "ver",
+    default=None,
+    help="Install a specific version",
+)
+@click.option(
+    "--force",
+    is_flag=True,
+    default=False,
+    help="With --version, force replace an existing installation",
+)
+@click.option(
+    "--save",
+    is_flag=True,
+    default=False,
+    help="Save dependency to strawpot.toml with ^X.Y.Z constraint",
+)
+@click.option(
+    "--save-exact",
+    is_flag=True,
+    default=False,
+    help="Save dependency to strawpot.toml with ==X.Y.Z constraint",
+)
+def install_agent(slug, is_global, skip_tools, yes, update, ver, force, save, save_exact):
+    """Install an agent."""
+    if force and not ver:
+        print_error("--force requires --version")
+        raise SystemExit(1)
+    if update and ver:
+        print_error("--update and --version cannot be used together")
+        raise SystemExit(1)
+    if save and save_exact:
+        print_error("--save and --save-exact cannot be used together")
+        raise SystemExit(1)
+    if (save or save_exact) and is_global:
+        print_error("--save/--save-exact cannot be used with --global")
+        raise SystemExit(1)
+    _install_impl(
+        slug,
+        kind="agent",
+        is_global=is_global,
+        skip_tools=skip_tools,
+        yes=yes,
+        update=update,
+        version=ver,
+        force=force,
+        save=save,
+        save_exact=save_exact,
+    )
+
+
 # ── Dependency resolution ─────────────────────────────────────────────────────
 
 
@@ -496,7 +576,10 @@ def _resolve_deps(
     For skills, resolves client-side by parsing SKILL.md frontmatter.
     Dependencies are just slugs; always resolves to latest version.
     """
-    if kind == "role":
+    if kind == "agent":
+        # Agents are standalone — no transitive dependencies
+        return []
+    elif kind == "role":
         console.print("Resolving dependencies...")
         resolved = client.resolve_role_deps(slug)
         return resolved.get("dependencies", [])
@@ -632,14 +715,18 @@ def _download_package(
 
     for f in lv.get("files", []):
         file_path = f["path"]
-        if kind == "skill":
-            content = client.get_skill_file(slug, path=file_path, version=version)
-        else:
-            content = client.get_role_file(slug, path=file_path, version=version)
-
         out_file = target_dir / file_path
         out_file.parent.mkdir(parents=True, exist_ok=True)
-        out_file.write_text(content, encoding="utf-8")
+
+        if kind == "agent":
+            content_bytes = client.get_agent_file(slug, path=file_path, version=version)
+            out_file.write_bytes(content_bytes)
+        elif kind == "skill":
+            content = client.get_skill_file(slug, path=file_path, version=version)
+            out_file.write_text(content, encoding="utf-8")
+        else:
+            content = client.get_role_file(slug, path=file_path, version=version)
+            out_file.write_text(content, encoding="utf-8")
 
 
 # ── Project file install ─────────────────────────────────────────────────────

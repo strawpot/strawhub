@@ -10,7 +10,7 @@ from strawhub.errors import NotFoundError, StrawHubError
 @click.group(invoke_without_command=True)
 @click.pass_context
 def info(ctx):
-    """Show detailed information about a skill or role."""
+    """Show detailed information about a skill, role, or agent."""
     if ctx.invoked_subcommand is None:
         click.echo(ctx.get_help())
         ctx.exit(1)
@@ -24,9 +24,14 @@ def _info_impl(slug, kind, file_path, as_json):
             if file_path:
                 if kind == "skill":
                     content = client.get_skill_file(slug, path=file_path)
+                    console.print(content)
+                elif kind == "agent":
+                    content = client.get_agent_file(slug, path=file_path)
+                    import sys
+                    sys.stdout.buffer.write(content)
                 else:
                     content = client.get_role_file(slug, path=file_path)
-                console.print(content)
+                    console.print(content)
                 return
 
             if as_json:
@@ -58,3 +63,12 @@ def info_skill(slug, file_path, as_json):
 def info_role(slug, file_path, as_json):
     """Show detailed information about a role."""
     _info_impl(slug, kind="role", file_path=file_path, as_json=as_json)
+
+
+@info.command("agent")
+@click.argument("slug")
+@click.option("--file", "file_path", default=None, help="View raw content of a specific file (e.g. AGENT.md)")
+@click.option("--json", "as_json", is_flag=True, default=False, help="Output as JSON")
+def info_agent(slug, file_path, as_json):
+    """Show detailed information about an agent."""
+    _info_impl(slug, kind="agent", file_path=file_path, as_json=as_json)

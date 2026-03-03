@@ -14,6 +14,11 @@ export const MAX_FILE_SIZE = 512 * 1024; // 512 KB per file
 export const MAX_TOTAL_SIZE = 2 * 1024 * 1024; // 2 MB total
 export const MAX_FILE_COUNT = 20;
 
+// Agent-specific limits (agents include compiled binaries)
+export const AGENT_MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB per file
+export const AGENT_MAX_TOTAL_SIZE = 50 * 1024 * 1024; // 50 MB total
+export const AGENT_MAX_FILE_COUNT = 50;
+
 export function validateSlug(slug: string): void {
   if (!slug || slug.length > MAX_SLUG_LENGTH) {
     throw new Error(`Slug must be 1-${MAX_SLUG_LENGTH} characters`);
@@ -64,6 +69,39 @@ export function validateFiles(
   if (totalSize > MAX_TOTAL_SIZE) {
     throw new Error(
       `Total upload size exceeds ${MAX_TOTAL_SIZE / 1024 / 1024}MB limit`,
+    );
+  }
+}
+
+/**
+ * Validate an agent upload: must include AGENT.md, allows binaries.
+ */
+export function validateAgentFiles(
+  files: Array<{ path: string; size: number }>,
+): void {
+  if (files.length === 0) {
+    throw new Error("At least one file is required");
+  }
+  if (files.length > AGENT_MAX_FILE_COUNT) {
+    throw new Error(`Maximum ${AGENT_MAX_FILE_COUNT} files allowed`);
+  }
+  if (!files.some((f) => f.path === "AGENT.md")) {
+    throw new Error("Agent uploads must include an AGENT.md file");
+  }
+
+  let totalSize = 0;
+  for (const file of files) {
+    if (file.size > AGENT_MAX_FILE_SIZE) {
+      throw new Error(
+        `File '${file.path}' exceeds ${AGENT_MAX_FILE_SIZE / 1024 / 1024}MB limit`,
+      );
+    }
+    totalSize += file.size;
+  }
+
+  if (totalSize > AGENT_MAX_TOTAL_SIZE) {
+    throw new Error(
+      `Total upload size exceeds ${AGENT_MAX_TOTAL_SIZE / 1024 / 1024}MB limit`,
     );
   }
 }

@@ -6,7 +6,7 @@ import { mutation } from "./_generated/server";
  */
 export const trackDownload = mutation({
   args: {
-    targetKind: v.union(v.literal("skill"), v.literal("role")),
+    targetKind: v.union(v.literal("skill"), v.literal("role"), v.literal("agent")),
     slug: v.string(),
     version: v.optional(v.string()),
   },
@@ -35,7 +35,7 @@ export const trackDownload = mutation({
           }
         }
       }
-    } else {
+    } else if (args.targetKind === "role") {
       const role = await ctx.db
         .query("roles")
         .withIndex("by_slug", (q) => q.eq("slug", args.slug))
@@ -49,6 +49,29 @@ export const trackDownload = mutation({
             .query("roleVersions")
             .withIndex("by_role_version", (q) =>
               q.eq("roleId", role._id).eq("version", args.version!),
+            )
+            .first();
+          if (ver) {
+            await ctx.db.patch(ver._id, {
+              downloads: (ver.downloads ?? 0) + 1,
+            });
+          }
+        }
+      }
+    } else {
+      const agent = await ctx.db
+        .query("agents")
+        .withIndex("by_slug", (q) => q.eq("slug", args.slug))
+        .first();
+      if (agent) {
+        await ctx.db.patch(agent._id, {
+          stats: { ...agent.stats, downloads: agent.stats.downloads + 1 },
+        });
+        if (args.version) {
+          const ver = await ctx.db
+            .query("agentVersions")
+            .withIndex("by_agent_version", (q) =>
+              q.eq("agentId", agent._id).eq("version", args.version!),
             )
             .first();
           if (ver) {
