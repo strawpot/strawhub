@@ -109,7 +109,7 @@ function ReportCard({
 }: {
   report: {
     _id: any;
-    targetKind: "skill" | "role";
+    targetKind: "skill" | "role" | "agent";
     targetName: string;
     targetSlug: string | null;
     description: string;
