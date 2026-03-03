@@ -19,11 +19,14 @@ import { Route as ScanQueueRouteImport } from './routes/scan-queue'
 import { Route as RolesRouteImport } from './routes/roles'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as AgentsRouteImport } from './routes/agents'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SkillsIndexRouteImport } from './routes/skills.index'
 import { Route as RolesIndexRouteImport } from './routes/roles.index'
+import { Route as AgentsIndexRouteImport } from './routes/agents.index'
 import { Route as SkillsSlugRouteImport } from './routes/skills.$slug'
 import { Route as RolesSlugRouteImport } from './routes/roles.$slug'
+import { Route as AgentsSlugRouteImport } from './routes/agents.$slug'
 
 const UsersRoute = UsersRouteImport.update({
   id: '/users',
@@ -75,6 +78,11 @@ const DashboardRoute = DashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AgentsRoute = AgentsRouteImport.update({
+  id: '/agents',
+  path: '/agents',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -90,6 +98,11 @@ const RolesIndexRoute = RolesIndexRouteImport.update({
   path: '/',
   getParentRoute: () => RolesRoute,
 } as any)
+const AgentsIndexRoute = AgentsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AgentsRoute,
+} as any)
 const SkillsSlugRoute = SkillsSlugRouteImport.update({
   id: '/$slug',
   path: '/$slug',
@@ -100,9 +113,15 @@ const RolesSlugRoute = RolesSlugRouteImport.update({
   path: '/$slug',
   getParentRoute: () => RolesRoute,
 } as any)
+const AgentsSlugRoute = AgentsSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => AgentsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/agents': typeof AgentsRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/reports': typeof ReportsRoute
   '/roles': typeof RolesRouteWithChildren
@@ -113,8 +132,10 @@ export interface FileRoutesByFullPath {
   '/stars': typeof StarsRoute
   '/upload': typeof UploadRoute
   '/users': typeof UsersRoute
+  '/agents/$slug': typeof AgentsSlugRoute
   '/roles/$slug': typeof RolesSlugRoute
   '/skills/$slug': typeof SkillsSlugRoute
+  '/agents/': typeof AgentsIndexRoute
   '/roles/': typeof RolesIndexRoute
   '/skills/': typeof SkillsIndexRoute
 }
@@ -128,14 +149,17 @@ export interface FileRoutesByTo {
   '/stars': typeof StarsRoute
   '/upload': typeof UploadRoute
   '/users': typeof UsersRoute
+  '/agents/$slug': typeof AgentsSlugRoute
   '/roles/$slug': typeof RolesSlugRoute
   '/skills/$slug': typeof SkillsSlugRoute
+  '/agents': typeof AgentsIndexRoute
   '/roles': typeof RolesIndexRoute
   '/skills': typeof SkillsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/agents': typeof AgentsRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/reports': typeof ReportsRoute
   '/roles': typeof RolesRouteWithChildren
@@ -146,8 +170,10 @@ export interface FileRoutesById {
   '/stars': typeof StarsRoute
   '/upload': typeof UploadRoute
   '/users': typeof UsersRoute
+  '/agents/$slug': typeof AgentsSlugRoute
   '/roles/$slug': typeof RolesSlugRoute
   '/skills/$slug': typeof SkillsSlugRoute
+  '/agents/': typeof AgentsIndexRoute
   '/roles/': typeof RolesIndexRoute
   '/skills/': typeof SkillsIndexRoute
 }
@@ -155,6 +181,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/agents'
     | '/dashboard'
     | '/reports'
     | '/roles'
@@ -165,8 +192,10 @@ export interface FileRouteTypes {
     | '/stars'
     | '/upload'
     | '/users'
+    | '/agents/$slug'
     | '/roles/$slug'
     | '/skills/$slug'
+    | '/agents/'
     | '/roles/'
     | '/skills/'
   fileRoutesByTo: FileRoutesByTo
@@ -180,13 +209,16 @@ export interface FileRouteTypes {
     | '/stars'
     | '/upload'
     | '/users'
+    | '/agents/$slug'
     | '/roles/$slug'
     | '/skills/$slug'
+    | '/agents'
     | '/roles'
     | '/skills'
   id:
     | '__root__'
     | '/'
+    | '/agents'
     | '/dashboard'
     | '/reports'
     | '/roles'
@@ -197,14 +229,17 @@ export interface FileRouteTypes {
     | '/stars'
     | '/upload'
     | '/users'
+    | '/agents/$slug'
     | '/roles/$slug'
     | '/skills/$slug'
+    | '/agents/'
     | '/roles/'
     | '/skills/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AgentsRoute: typeof AgentsRouteWithChildren
   DashboardRoute: typeof DashboardRoute
   ReportsRoute: typeof ReportsRoute
   RolesRoute: typeof RolesRouteWithChildren
@@ -289,6 +324,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/agents': {
+      id: '/agents'
+      path: '/agents'
+      fullPath: '/agents'
+      preLoaderRoute: typeof AgentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -310,6 +352,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RolesIndexRouteImport
       parentRoute: typeof RolesRoute
     }
+    '/agents/': {
+      id: '/agents/'
+      path: '/'
+      fullPath: '/agents/'
+      preLoaderRoute: typeof AgentsIndexRouteImport
+      parentRoute: typeof AgentsRoute
+    }
     '/skills/$slug': {
       id: '/skills/$slug'
       path: '/$slug'
@@ -324,8 +373,28 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RolesSlugRouteImport
       parentRoute: typeof RolesRoute
     }
+    '/agents/$slug': {
+      id: '/agents/$slug'
+      path: '/$slug'
+      fullPath: '/agents/$slug'
+      preLoaderRoute: typeof AgentsSlugRouteImport
+      parentRoute: typeof AgentsRoute
+    }
   }
 }
+
+interface AgentsRouteChildren {
+  AgentsSlugRoute: typeof AgentsSlugRoute
+  AgentsIndexRoute: typeof AgentsIndexRoute
+}
+
+const AgentsRouteChildren: AgentsRouteChildren = {
+  AgentsSlugRoute: AgentsSlugRoute,
+  AgentsIndexRoute: AgentsIndexRoute,
+}
+
+const AgentsRouteWithChildren =
+  AgentsRoute._addFileChildren(AgentsRouteChildren)
 
 interface RolesRouteChildren {
   RolesSlugRoute: typeof RolesSlugRoute
@@ -354,6 +423,7 @@ const SkillsRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AgentsRoute: AgentsRouteWithChildren,
   DashboardRoute: DashboardRoute,
   ReportsRoute: ReportsRoute,
   RolesRoute: RolesRouteWithChildren,

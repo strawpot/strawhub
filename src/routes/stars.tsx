@@ -11,7 +11,7 @@ export const Route = createFileRoute("/stars")({
 function StarsPage() {
   useSEO({
     title: "Stars - StrawHub",
-    description: "Skills and roles you've starred on StrawHub.",
+    description: "Skills, roles, and agents you've starred on StrawHub.",
     url: "/stars",
     noindex: true,
   });
@@ -29,7 +29,7 @@ function StarsPage() {
         <h1 className="text-2xl md:text-3xl font-bold text-white">Stars</h1>
         <div className="rounded-lg border border-gray-800 p-5 md:p-8 text-center">
           <p className="text-gray-400 mb-4">
-            Sign in with GitHub to see skills and roles you've starred.
+            Sign in with GitHub to see skills, roles, and agents you've starred.
           </p>
           <button
             onClick={() => void signIn("github")}
@@ -46,7 +46,7 @@ function StarsPage() {
     <div className="space-y-6">
       <h1 className="text-2xl md:text-3xl font-bold text-white">Stars</h1>
       <p className="text-gray-400">
-        Skills and roles you've starred.
+        Skills, roles, and agents you've starred.
       </p>
       <StarredList />
     </div>
@@ -63,15 +63,16 @@ function StarredList() {
 
   const hasSkills = starred.skills.length > 0;
   const hasRoles = starred.roles.length > 0;
+  const hasAgents = (starred as any).agents?.length > 0;
 
-  if (!hasSkills && !hasRoles) {
+  if (!hasSkills && !hasRoles && !hasAgents) {
     return (
       <div className="rounded-lg border border-gray-800 p-6 md:p-12 text-center">
         <p className="text-lg font-medium text-gray-400 mb-2">
           No starred items yet
         </p>
         <p className="text-sm text-gray-500 mb-6">
-          Star skills and roles to keep track of them here.
+          Star skills, roles, and agents to keep track of them here.
         </p>
         <div className="flex items-center justify-center gap-3">
           <Link
@@ -85,6 +86,12 @@ function StarredList() {
             className="rounded border border-gray-700 px-4 py-2 text-sm text-gray-300 hover:bg-gray-800"
           >
             Browse Roles
+          </Link>
+          <Link
+            to="/agents"
+            className="rounded border border-gray-700 px-4 py-2 text-sm text-gray-300 hover:bg-gray-800"
+          >
+            Browse Agents
           </Link>
         </div>
       </div>
@@ -184,6 +191,63 @@ function StarredList() {
                 </div>
                 <button
                   onClick={() => toggleStar({ targetId: r._id, targetKind: "role" })}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-yellow-500/40 bg-yellow-500/10 px-2.5 py-1 text-sm font-medium text-yellow-400 hover:bg-yellow-500/20 transition-colors shrink-0"
+                >
+                  <svg
+                    className="h-4 w-4"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.562.562 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.562.562 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"
+                    />
+                  </svg>
+                  Unstar
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {hasAgents && (
+        <section className="space-y-3">
+          <h2 className="text-xl font-semibold text-white">
+            Agents
+            <span className="ml-2 font-normal text-gray-500">({(starred as any).agents.length})</span>
+          </h2>
+          <div className="space-y-3">
+            {(starred as any).agents.map((a: any) => (
+              <div
+                key={a._id}
+                className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-lg border border-gray-800 p-4"
+              >
+                <div className="min-w-0 flex-1">
+                  <Link
+                    to="/agents/$slug"
+                    params={{ slug: a.slug }}
+                    className="text-base font-medium text-white hover:text-orange-400"
+                  >
+                    {a.displayName}
+                  </Link>
+                  <p className="text-xs text-gray-500 font-mono">/{a.slug}</p>
+                  {a.summary && (
+                    <p className="mt-1 text-sm text-gray-400 line-clamp-2">
+                      {a.summary}
+                    </p>
+                  )}
+                  <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-gray-500">
+                    <span>{a.stats.downloads} installs</span>
+                    <span>{a.stats.stars} stars</span>
+                    <span>{a.stats.versions} versions</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => toggleStar({ targetId: a._id, targetKind: "agent" })}
                   className="inline-flex items-center gap-1.5 rounded-md border border-yellow-500/40 bg-yellow-500/10 px-2.5 py-1 text-sm font-medium text-yellow-400 hover:bg-yellow-500/20 transition-colors shrink-0"
                 >
                   <svg

@@ -7,12 +7,13 @@ const BASE_URL = "https://strawhub.dev";
  * GET /api/v1/sitemap — returns a full XML sitemap.
  */
 export const serveSitemap = httpAction(async (ctx) => {
-  const { skills, roles } = await ctx.runQuery(api.sitemap.listAllSlugs);
+  const { skills, roles, agents } = await ctx.runQuery(api.sitemap.listAllSlugs);
 
   const staticPages = [
     { loc: "/", priority: "1.0", changefreq: "daily" },
     { loc: "/skills", priority: "0.8", changefreq: "daily" },
     { loc: "/roles", priority: "0.8", changefreq: "daily" },
+    { loc: "/agents", priority: "0.8", changefreq: "daily" },
     { loc: "/search", priority: "0.6", changefreq: "weekly" },
     { loc: "/upload", priority: "0.4", changefreq: "monthly" },
   ];
@@ -42,6 +43,17 @@ export const serveSitemap = httpAction(async (ctx) => {
       `  <url>
     <loc>${BASE_URL}/roles/${role.slug}</loc>
     <lastmod>${new Date(role.updatedAt).toISOString().split("T")[0]}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>`,
+    );
+  }
+
+  for (const agent of agents) {
+    urls.push(
+      `  <url>
+    <loc>${BASE_URL}/agents/${agent.slug}</loc>
+    <lastmod>${new Date(agent.updatedAt).toISOString().split("T")[0]}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>`,

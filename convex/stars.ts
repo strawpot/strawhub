@@ -8,7 +8,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 export const toggle = mutation({
   args: {
     targetId: v.string(),
-    targetKind: v.union(v.literal("skill"), v.literal("role")),
+    targetKind: v.union(v.literal("skill"), v.literal("role"), v.literal("agent")),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -21,7 +21,7 @@ export const toggle = mutation({
       )
       .first();
 
-    const table = args.targetKind === "skill" ? "skills" : "roles";
+    const table = args.targetKind === "skill" ? "skills" : args.targetKind === "role" ? "roles" : "agents";
 
     if (existing) {
       await ctx.db.delete(existing._id);
@@ -67,7 +67,7 @@ export const toggleInternal = internalMutation({
   args: {
     userId: v.id("users"),
     targetId: v.string(),
-    targetKind: v.union(v.literal("skill"), v.literal("role")),
+    targetKind: v.union(v.literal("skill"), v.literal("role"), v.literal("agent")),
   },
   handler: async (ctx, args) => {
     const existing = await ctx.db
@@ -155,29 +155,24 @@ export const listByUser = query({
   args: {},
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) return { skills: [], roles: [] };
+    if (!userId) return { skills: [], roles: [], agents: [] };
 
     const stars = await ctx.db
       .query("stars")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .collect();
 
-    const skills: Array<{
+    type StarredItem = {
       _id: string;
       slug: string;
       displayName: string;
       summary?: string;
       stats: { downloads: number; stars: number; versions: number; comments: number };
       starredAt: number;
-    }> = [];
-    const roles: Array<{
-      _id: string;
-      slug: string;
-      displayName: string;
-      summary?: string;
-      stats: { downloads: number; stars: number; versions: number; comments: number };
-      starredAt: number;
-    }> = [];
+    };
+    const skills: StarredItem[] = [];
+    const roles: StarredItem[] = [];
+    const agents: StarredItem[] = [];
 
     for (const star of stars) {
       const target = await ctx.db.get(star.targetId as any);
@@ -192,11 +187,13 @@ export const listByUser = query({
       };
       if (star.targetKind === "skill") {
         skills.push(item);
-      } else {
+      } else if (star.targetKind === "role") {
         roles.push(item);
+      } else {
+        agents.push(item);
       }
     }
 
-    return { skills, roles };
+    return { skills, roles, agents };
   },
 });

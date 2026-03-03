@@ -9,7 +9,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 export const create = mutation({
   args: {
     targetId: v.string(),
-    targetKind: v.union(v.literal("skill"), v.literal("role")),
+    targetKind: v.union(v.literal("skill"), v.literal("role"), v.literal("agent")),
     description: v.string(),
   },
   handler: async (ctx, args) => {

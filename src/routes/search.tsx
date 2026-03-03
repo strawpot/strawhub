@@ -18,7 +18,7 @@ function SearchPage() {
   });
 
   const [query, setQuery] = useState("");
-  const [kind, setKind] = useState<"all" | "skill" | "role">("all");
+  const [kind, setKind] = useState<"all" | "skill" | "role" | "agent">("all");
   const results = useQuery(
     api.search.search,
     query.length >= 2 ? { query, limit: 100, kind } : "skip",
@@ -66,12 +66,13 @@ function SearchPage() {
         />
         <select
           value={kind}
-          onChange={(e) => setKind(e.target.value as "all" | "skill" | "role")}
+          onChange={(e) => setKind(e.target.value as "all" | "skill" | "role" | "agent")}
           className="rounded border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-gray-300"
         >
           <option value="all">All</option>
           <option value="skill">Skills</option>
           <option value="role">Roles</option>
+          <option value="agent">Agents</option>
         </select>
       </div>
 
@@ -107,7 +108,7 @@ function formatSize(bytes: number): string {
 function SearchResultCard({ result }: { result: any }) {
   return (
     <Link
-      to={result.kind === "skill" ? "/skills/$slug" : "/roles/$slug"}
+      to={result.kind === "skill" ? "/skills/$slug" : result.kind === "role" ? "/roles/$slug" : "/agents/$slug"}
       params={{ slug: result.slug }}
       className="block rounded-lg border border-gray-800 p-4 hover:border-gray-600 transition-colors"
     >

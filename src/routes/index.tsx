@@ -7,7 +7,7 @@ export const Route = createFileRoute("/")({
 
 function HomePage() {
   useSEO({
-    title: "StrawHub - Role & Skill Registry for StrawPot",
+    title: "StrawHub - Role, Skill & Agent Registry for StrawPot",
     url: "/",
   });
 
@@ -16,17 +16,17 @@ function HomePage() {
       <section className="text-center py-8 md:py-16">
         <h1 className="text-3xl md:text-5xl font-bold text-white mb-4">StrawHub</h1>
         <p className="text-lg md:text-xl text-gray-400 mb-8">
-          The role and skill registry for{" "}
+          The role, skill, and agent registry for{" "}
           <span className="text-orange-400">StrawPot</span>
         </p>
         <p className="text-gray-500 max-w-2xl mx-auto">
-          Discover, share, and install reusable roles and skills for your
+          Discover, share, and install reusable roles, skills, and agents for your
           StrawPot agents. Roles define agent behavior with dependent skills
           that are resolved recursively on install.
         </p>
       </section>
 
-      <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <section className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <Link
           to="/roles"
           className="block rounded-lg border border-gray-800 p-5 md:p-8 hover:border-orange-400/50 transition-colors"
@@ -46,6 +46,17 @@ function HomePage() {
           <p className="text-gray-400">
             Markdown instruction modules that agents load into context. Skills
             can depend on other skills for recursive resolution.
+          </p>
+        </Link>
+
+        <Link
+          to="/agents"
+          className="block rounded-lg border border-gray-800 p-5 md:p-8 hover:border-orange-400/50 transition-colors"
+        >
+          <h2 className="text-2xl font-bold text-white mb-2">Agents</h2>
+          <p className="text-gray-400">
+            CLI wrapper binaries that translate StrawPot's protocol into
+            native AI tool interfaces.
           </p>
         </Link>
       </section>

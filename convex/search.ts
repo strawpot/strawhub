@@ -4,13 +4,13 @@ import { generateEmbedding } from "./lib/embeddings";
 
 /**
  * Hybrid search: vector similarity + lexical boost + popularity.
- * Searches both skills and roles.
+ * Searches skills, roles, and agents.
  */
 export const search = query({
   args: {
     query: v.string(),
     limit: v.optional(v.number()),
-    kind: v.optional(v.union(v.literal("skill"), v.literal("role"), v.literal("all"))),
+    kind: v.optional(v.union(v.literal("skill"), v.literal("role"), v.literal("agent"), v.literal("all"))),
   },
   handler: async (ctx, args) => {
     const limit = Math.min(args.limit ?? 20, 100);
@@ -80,6 +80,36 @@ export const search = query({
       }
     }
 
+    // Vector search for agents
+    if (kind === "all" || kind === "agent") {
+      const agentResults = await ctx.db
+        .query("agentEmbeddings")
+        .filter((q) => q.eq(q.field("visibility"), "public"))
+        .take(limit * 2);
+
+      for (const emb of agentResults) {
+        const agent = await ctx.db.get(emb.agentId);
+        if (!agent || agent.softDeletedAt) continue;
+
+        const owner = await ctx.db.get(agent.ownerUserId);
+        const latestVersion = agent.latestVersionId ? await ctx.db.get(agent.latestVersionId) : null;
+        const lexicalBoost = computeLexicalBoost(queryTokens, agent.slug, agent.displayName);
+        const popularityBoost = Math.log(Math.max(agent.stats.downloads, 1)) * 0.08;
+
+        results.push({
+          kind: "agent" as const,
+          slug: agent.slug,
+          displayName: agent.displayName,
+          summary: agent.summary,
+          stats: agent.stats,
+          latestVersionString: latestVersion?.version ?? null,
+          totalSize: latestVersion?.files?.reduce((sum: number, f: { size: number }) => sum + f.size, 0) ?? 0,
+          owner: owner ? { handle: owner.handle, image: owner.image } : null,
+          score: lexicalBoost + popularityBoost,
+        });
+      }
+    }
+
     // Fallback: if no embedding results, do text-based scan
     if (results.length === 0) {
       if (kind === "all" || kind === "skill") {
@@ -135,6 +165,33 @@ export const search = query({
           }
         }
       }
+
+      if (kind === "all" || kind === "agent") {
+        const allAgents = await ctx.db
+          .query("agents")
+          .withIndex("by_updated")
+          .filter((q) => q.eq(q.field("softDeletedAt"), undefined))
+          .take(500);
+
+        for (const agent of allAgents) {
+          const boost = computeLexicalBoost(queryTokens, agent.slug, agent.displayName);
+          if (boost > 0) {
+            const owner = await ctx.db.get(agent.ownerUserId);
+            const latestVersion = agent.latestVersionId ? await ctx.db.get(agent.latestVersionId) : null;
+            results.push({
+              kind: "agent",
+              slug: agent.slug,
+              displayName: agent.displayName,
+              summary: agent.summary,
+              stats: agent.stats,
+              latestVersionString: latestVersion?.version ?? null,
+              totalSize: latestVersion?.files?.reduce((sum: number, f: { size: number }) => sum + f.size, 0) ?? 0,
+              owner: owner ? { handle: owner.handle, image: owner.image } : null,
+              score: boost,
+            });
+          }
+        }
+      }
     }
 
     // Sort by score descending
@@ -146,7 +203,7 @@ export const search = query({
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 interface SearchResult {
-  kind: "skill" | "role";
+  kind: "skill" | "role" | "agent";
   slug: string;
   displayName: string;
   summary?: string;

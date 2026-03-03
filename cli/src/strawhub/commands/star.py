@@ -8,7 +8,7 @@ from strawhub.errors import NotFoundError, StrawHubError
 @click.group(invoke_without_command=True)
 @click.pass_context
 def star(ctx):
-    """Star a skill or role."""
+    """Star a skill, role, or agent."""
     if ctx.invoked_subcommand is None:
         click.echo(ctx.get_help())
         ctx.exit(1)
@@ -49,10 +49,17 @@ def star_role(slug):
     _star_impl(slug, kind="role")
 
 
+@star.command("agent")
+@click.argument("slug")
+def star_agent(slug):
+    """Star an agent."""
+    _star_impl(slug, kind="agent")
+
+
 @click.group(invoke_without_command=True)
 @click.pass_context
 def unstar(ctx):
-    """Remove star from a skill or role."""
+    """Remove star from a skill, role, or agent."""
     if ctx.invoked_subcommand is None:
         click.echo(ctx.get_help())
         ctx.exit(1)
@@ -91,3 +98,10 @@ def unstar_skill(slug):
 def unstar_role(slug):
     """Remove star from a role."""
     _unstar_impl(slug, kind="role")
+
+
+@unstar.command("agent")
+@click.argument("slug")
+def unstar_agent(slug):
+    """Remove star from an agent."""
+    _unstar_impl(slug, kind="agent")

@@ -24,7 +24,7 @@ test.describe("Smoke tests", () => {
   test("homepage renders hero content", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator("h1")).toContainText("StrawHub");
-    await expect(page.locator("text=The role and skill registry for")).toBeVisible();
+    await expect(page.locator("text=The role, skill, and agent registry for")).toBeVisible();
     await expect(page.locator("h2", { hasText: "Roles" })).toBeVisible();
     await expect(page.locator("h2", { hasText: "Skills" })).toBeVisible();
     await expect(page.locator("text=strawhub install role implementer")).toBeVisible();
@@ -61,7 +61,7 @@ test.describe("Smoke tests", () => {
 
   test("stars page requires authentication", async ({ page }) => {
     await page.goto("/stars");
-    await expect(page.locator("text=Sign in with GitHub to see skills and roles you've starred.")).toBeVisible();
+    await expect(page.locator("text=Sign in with GitHub to see skills, roles, and agents you've starred.")).toBeVisible();
   });
 
   test("users page requires authentication", async ({ page }) => {

@@ -5,6 +5,9 @@ import tailwindcss from "@tailwindcss/vite";
 import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
 
 export default defineConfig({
+  server: {
+    port: 4175,
+  },
   test: {
     exclude: ["node_modules", "dist", "e2e"],
   },

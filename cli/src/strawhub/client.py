@@ -136,11 +136,36 @@ class StrawHubClient:
         resp = self._request("GET",f"/api/v1/roles/{slug}/resolve")
         return self._handle_response(resp)
 
+    def list_agents(self, limit: int = 50, sort: str = "updated") -> dict:
+        resp = self._request("GET",
+            "/api/v1/agents", params={"limit": limit, "sort": sort}
+        )
+        return self._handle_response(resp)
+
+    def get_agent(self, slug: str, version: str | None = None) -> dict:
+        params = {}
+        if version:
+            params["version"] = version
+        resp = self._request("GET", f"/api/v1/agents/{slug}", params=params or None)
+        return self._handle_response(resp)
+
+    def get_agent_file(self, slug: str, path: str = "AGENT.md", version: str | None = None) -> bytes:
+        """Get agent file content as bytes (supports binary files)."""
+        params: dict = {"path": path}
+        if version:
+            params["version"] = version
+        resp = self._request("GET", f"/api/v1/agents/{slug}/file", params=params)
+        if resp.status_code >= 400:
+            self._handle_response(resp)
+        return resp.content
+
     def get_info(self, slug: str, kind: str, version: str | None = None) -> tuple[str, dict]:
         """Get info for a slug with explicit kind.
         Returns (kind, detail_dict)."""
         if kind == "skill":
             return ("skill", self.get_skill(slug, version=version))
+        if kind == "agent":
+            return ("agent", self.get_agent(slug, version=version))
         return ("role", self.get_role(slug, version=version))
 
     # ── Publish ────────────────────────────────────────────────────────────────
@@ -151,6 +176,10 @@ class StrawHubClient:
 
     def publish_role(self, form_data: dict, files: list) -> dict:
         resp = self._request("POST", "/api/v1/roles", data=form_data, files=files)
+        return self._handle_response(resp)
+
+    def publish_agent(self, form_data: dict, files: list) -> dict:
+        resp = self._request("POST", "/api/v1/agents", data=form_data, files=files)
         return self._handle_response(resp)
 
     # ── Stars ─────────────────────────────────────────────────────────────────
@@ -171,9 +200,15 @@ class StrawHubClient:
         resp = self._request("DELETE", f"/api/v1/roles/{slug}")
         return self._handle_response(resp)
 
+    def delete_agent(self, slug: str) -> dict:
+        resp = self._request("DELETE", f"/api/v1/agents/{slug}")
+        return self._handle_response(resp)
+
     def delete_package(self, slug: str, kind: str) -> dict:
         if kind == "skill":
             return self.delete_skill(slug)
+        if kind == "agent":
+            return self.delete_agent(slug)
         return self.delete_role(slug)
 
     # ── Admin ─────────────────────────────────────────────────────────────────

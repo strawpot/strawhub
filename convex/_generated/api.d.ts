@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as agents from "../agents.js";
 import type * as apiTokens from "../apiTokens.js";
 import type * as auth from "../auth.js";
 import type * as comments from "../comments.js";
@@ -15,6 +16,7 @@ import type * as downloads from "../downloads.js";
 import type * as files from "../files.js";
 import type * as http from "../http.js";
 import type * as httpApiV1_adminV1 from "../httpApiV1/adminV1.js";
+import type * as httpApiV1_agentsV1 from "../httpApiV1/agentsV1.js";
 import type * as httpApiV1_rolesV1 from "../httpApiV1/rolesV1.js";
 import type * as httpApiV1_searchV1 from "../httpApiV1/searchV1.js";
 import type * as httpApiV1_shared from "../httpApiV1/shared.js";
@@ -49,6 +51,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  agents: typeof agents;
   apiTokens: typeof apiTokens;
   auth: typeof auth;
   comments: typeof comments;
@@ -56,6 +59,7 @@ declare const fullApi: ApiFromModules<{
   files: typeof files;
   http: typeof http;
   "httpApiV1/adminV1": typeof httpApiV1_adminV1;
+  "httpApiV1/agentsV1": typeof httpApiV1_agentsV1;
   "httpApiV1/rolesV1": typeof httpApiV1_rolesV1;
   "httpApiV1/searchV1": typeof httpApiV1_searchV1;
   "httpApiV1/shared": typeof httpApiV1_shared;

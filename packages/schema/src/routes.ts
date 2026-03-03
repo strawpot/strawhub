@@ -99,10 +99,36 @@ export interface RoleResolveResponse {
   dependencies: ResolvedDependency[];
 }
 
+// ─── Agents ─────────────────────────────────────────────────────────────────
+
+export interface AgentSummary {
+  slug: string;
+  displayName: string;
+  summary?: string;
+  stats: Stats;
+  updatedAt: number;
+}
+
+export interface AgentListResponse {
+  items: AgentSummary[];
+  count: number;
+}
+
+export interface AgentDetailResponse {
+  slug: string;
+  displayName: string;
+  summary?: string;
+  owner: OwnerInfo | null;
+  stats: Stats;
+  latestVersion: VersionInfo | null;
+  createdAt: number;
+  updatedAt: number;
+}
+
 // ─── Search ──────────────────────────────────────────────────────────────────
 
 export interface SearchResult {
-  kind: "skill" | "role";
+  kind: "skill" | "role" | "agent";
   slug: string;
   displayName: string;
   summary?: string;

@@ -12,7 +12,7 @@ from strawhub.frontmatter import parse_frontmatter, extract_dependencies, rewrit
 @click.group(invoke_without_command=True)
 @click.pass_context
 def publish(ctx):
-    """Publish a skill or role to the StrawHub registry."""
+    """Publish a skill, role, or agent to the StrawHub registry."""
     if ctx.invoked_subcommand is None:
         click.echo(ctx.get_help())
         ctx.exit(1)
@@ -21,7 +21,7 @@ def publish(ctx):
 def _publish_impl(path, kind, ver, changelog, tags):
     directory = Path(path).resolve()
 
-    main_file = "SKILL.md" if kind == "skill" else "ROLE.md"
+    main_file = "SKILL.md" if kind == "skill" else "ROLE.md" if kind == "role" else "AGENT.md"
     main_path = directory / main_file
     if not main_path.exists():
         print_error(f"{main_file} not found in {directory}")
@@ -104,8 +104,10 @@ def _publish_impl(path, kind, ver, changelog, tags):
         try:
             if kind == "skill":
                 result = client.publish_skill(form_data, files)
-            else:
+            elif kind == "role":
                 result = client.publish_role(form_data, files)
+            else:
+                result = client.publish_agent(form_data, files)
             print_success(
                 f"Published {kind} '{slug}' v{result.get('version', version)}"
             )
@@ -132,6 +134,16 @@ def publish_skill(path, ver, changelog, tags):
 def publish_role(path, ver, changelog, tags):
     """Publish a role to the StrawHub registry."""
     _publish_impl(path, kind="role", ver=ver, changelog=changelog, tags=tags)
+
+
+@publish.command("agent")
+@click.argument("path", type=click.Path(exists=True, file_okay=False, dir_okay=True), default=".")
+@click.option("--version", "ver", default=None, help="Version to publish")
+@click.option("--changelog", default="", help="Changelog for this version")
+@click.option("--tag", "tags", multiple=True, help="Custom tags")
+def publish_agent(path, ver, changelog, tags):
+    """Publish an agent to the StrawHub registry."""
+    _publish_impl(path, kind="agent", ver=ver, changelog=changelog, tags=tags)
 
 
 def _collect_files(directory: Path) -> list[tuple[str, tuple[str, bytes, str]]]:
