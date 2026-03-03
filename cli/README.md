@@ -4,9 +4,9 @@
 [![PyPI](https://img.shields.io/pypi/v/strawhub)](https://pypi.org/project/strawhub/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/strawpot/strawhub/blob/main/LICENSE)
 
-Command-line client for [StrawHub](https://strawhub.dev), the public role and skill registry for [StrawPot](https://strawpot.com) agents.
+Command-line client for [StrawHub](https://strawhub.dev), the public registry for [StrawPot](https://strawpot.com) agents.
 
-Discover, install, publish, and manage reusable **skills** and **roles** — with recursive dependency resolution.
+Discover, install, publish, and manage reusable **skills**, **roles**, and **agents** — with recursive dependency resolution.
 
 ## Installation
 
@@ -17,7 +17,7 @@ pip install strawhub
 ## Quick Start
 
 ```bash
-# Search for skills and roles
+# Search for skills, roles, and agents
 strawhub search "code review"
 
 # Install a skill (dependencies resolved automatically)
@@ -78,10 +78,10 @@ See the [project file documentation](../docs/project-file.md) for full details.
 
 | Command | Description |
 |---------|-------------|
-| `search <query>` | Search for skills and roles |
-| `info skill\|role <slug>` | Show detail for a skill or role |
-| `list` | List all available skills and roles |
-| `star skill\|role <slug>` | Star a skill or role |
+| `search <query>` | Search for skills, roles, and agents |
+| `info skill\|role\|agent <slug>` | Show detail for a skill, role, or agent |
+| `list` | List all available skills, roles, and agents |
+| `star skill\|role\|agent <slug>` | Star a skill, role, or agent |
 | `unstar skill\|role <slug>` | Unstar a skill or role |
 
 ### Publishing

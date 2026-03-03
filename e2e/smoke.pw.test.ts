@@ -18,7 +18,7 @@ test.describe("Smoke tests", () => {
 
   test("upload page requires authentication", async ({ page }) => {
     await page.goto("/upload");
-    await expect(page.locator("text=Sign in with GitHub to publish roles and skills.")).toBeVisible();
+    await expect(page.locator("text=Sign in with GitHub to publish skills, roles, and agents.")).toBeVisible();
   });
 
   test("homepage renders hero content", async ({ page }) => {
@@ -51,7 +51,7 @@ test.describe("Smoke tests", () => {
 
   test("dashboard requires authentication", async ({ page }) => {
     await page.goto("/dashboard");
-    await expect(page.locator("text=Sign in with GitHub to manage your published roles and skills.")).toBeVisible();
+    await expect(page.locator("text=Sign in with GitHub to manage your published skills, roles, and agents.")).toBeVisible();
   });
 
   test("settings requires authentication", async ({ page }) => {
