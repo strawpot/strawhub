@@ -105,7 +105,7 @@ Installs a skill or role from the StrawHub registry. Dependencies are resolved a
 **Dependency resolution:**
 
 - **Skills**: Client-side resolution. Recursively fetches `SKILL.md` frontmatter from the registry, reads `metadata.strawpot.dependencies`, and performs a DFS to build a transitive dependency list (leaves first).
-- **Roles**: Server-side resolution. Calls the `/api/v1/roles/<slug>/resolve` endpoint, which returns a topologically sorted list of all transitive skill and role dependencies.
+- **Roles**: Server-side resolution. Calls the `/api/v1/roles/<slug>/resolve` endpoint, which returns a topologically sorted list of all transitive skill and role dependencies. The `"*"` wildcard in role dependencies is filtered out — it is not a real package slug but a runtime directive expanded by StrawPot.
 
 After installation, system tool requirements declared in `metadata.strawpot.tools` are checked and install commands are run for missing tools (unless `--skip-tools`).
 

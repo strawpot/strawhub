@@ -164,7 +164,13 @@ def _parse_array(
         if not trimmed.startswith("- "):
             break
 
-        result.append(trimmed[2:].strip())
+        val = trimmed[2:].strip()
+        # Strip surrounding quotes (consistent with _parse_scalar)
+        if (val.startswith('"') and val.endswith('"')) or (
+            val.startswith("'") and val.endswith("'")
+        ):
+            val = val[1:-1]
+        result.append(val)
         i += 1
 
     return result, i

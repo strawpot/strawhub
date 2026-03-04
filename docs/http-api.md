@@ -98,7 +98,7 @@ Content-Type: multipart/form-data
 payload: { slug, displayName, version, changelog, dependencies?, customTags?, files[] }
 ```
 
-The `dependencies` field is optional JSON: `{"skills": ["git-workflow>=1.0.0", "code-review"], "roles": ["reviewer"]}`. If omitted, dependencies are read from `metadata.strawpot.dependencies` in the ROLE.md frontmatter.
+The `dependencies` field is optional JSON: `{"skills": ["git-workflow>=1.0.0", "code-review"], "roles": ["reviewer"]}`. If omitted, dependencies are read from `metadata.strawpot.dependencies` in the ROLE.md frontmatter. The `roles` list supports `"*"` as a wildcard meaning "all available roles" — this is stored as-is and expanded at runtime by StrawPot.
 
 Roles must contain exactly one file named `ROLE.md`.
 

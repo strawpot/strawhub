@@ -68,7 +68,10 @@ def make_role(strawpot_dir):
                 dep_section += "".join(f"        - {s}\n" for s in skill_deps)
             if role_deps:
                 dep_section += "      roles:\n"
-                dep_section += "".join(f"        - {r}\n" for r in role_deps)
+                for r in role_deps:
+                    # Quote "*" to avoid YAML alias interpretation
+                    v = f'"{r}"' if r == "*" else r
+                    dep_section += f"        - {v}\n"
 
         (d / "ROLE.md").write_text(
             f"---\nname: {slug}\ndescription: \"{slug} role\"\n{dep_section}---\n\n# {slug}\n"

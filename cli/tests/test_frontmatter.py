@@ -25,6 +25,15 @@ class TestParseFrontmatter:
             "git-workflow",
         ]
 
+    def test_yaml_list_quoted_items(self):
+        text = "---\ntags:\n  - \"quoted-double\"\n  - 'quoted-single'\n  - bare\n---\nBody.\n"
+        result = parse_frontmatter(text)
+        assert result["frontmatter"]["tags"] == [
+            "quoted-double",
+            "quoted-single",
+            "bare",
+        ]
+
     def test_inline_array(self):
         text = "---\ntags: [testing, ci, quality]\n---\nBody.\n"
         result = parse_frontmatter(text)

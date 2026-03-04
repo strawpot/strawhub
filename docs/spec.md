@@ -95,7 +95,7 @@ metadata:
 
 ## Dependencies
 
-Dependencies are declared under `metadata.strawpot.dependencies`. Skills use a flat list of slugs (skills can only depend on other skills). Roles use a structured object with `skills` and `roles` sub-keys.
+Dependencies are declared under `metadata.strawpot.dependencies`. Skills use a flat list of slugs (skills can only depend on other skills). Roles use a structured object with `skills` and `roles` sub-keys. The `roles` list supports `"*"` as a wildcard meaning "all available roles" — this is expanded at runtime by StrawPot and filtered out during install.
 
 ## System Tools
 

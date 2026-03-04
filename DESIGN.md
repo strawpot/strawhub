@@ -109,6 +109,8 @@ metadata:
 ---
 ```
 
+The `roles` list supports `"*"` as a wildcard meaning "all available roles." This is useful for orchestrator roles that can delegate to any installed role. The wildcard is expanded at runtime by StrawPot and filtered out during install (it is not a real package slug).
+
 ```yaml
 # AGENT.md
 ---
@@ -193,7 +195,7 @@ Web UI also supports **GitHub import**: paste a repo URL, files are fetched via 
 
 **Skills** — client-side DFS. The CLI recursively fetches frontmatter for each dependency and builds the transitive list.
 
-**Roles** — server-side topological sort via `GET /api/v1/roles/:slug/resolve`. The server walks both skill and role dependencies, detects cycles, and returns a sorted install order (leaves first).
+**Roles** — server-side topological sort via `GET /api/v1/roles/:slug/resolve`. The server walks both skill and role dependencies, detects cycles, and returns a sorted install order (leaves first). The `"*"` wildcard in the `roles` dependency list is filtered out by the CLI before install — it is not a real dependency but a runtime directive expanded by StrawPot.
 
 ```
 GET /api/v1/roles/implementer/resolve
