@@ -6,7 +6,7 @@ test.describe("Skills listing page", () => {
     await expect(page.locator("h1")).toContainText("Skills");
     await expect(
       page.locator(
-        "text=Markdown instruction modules that agents load into context.",
+        "text=Capabilities that roles load into context. Installed automatically as role dependencies.",
       ),
     ).toBeVisible();
   });
@@ -34,7 +34,7 @@ test.describe("Roles listing page", () => {
     await expect(page.locator("h1")).toContainText("Roles");
     await expect(
       page.locator(
-        "text=Agent behavior definitions with dependent skills that are resolved recursively on install.",
+        "text=AI workers that bundle skills, tools, and model config. Install a role and all required skills come with it.",
       ),
     ).toBeVisible();
   });
@@ -56,7 +56,7 @@ test.describe("Agents listing page", () => {
     await expect(page.locator("h1")).toContainText("Agents");
     await expect(
       page.getByText(
-        /CLI wrapper binaries that translate StrawPot/,
+        /CLI runtimes that execute roles/,
       ),
     ).toBeVisible();
   });
