@@ -4,7 +4,7 @@ test.describe("Search page", () => {
   test("shows prompt when query is too short", async ({ page }) => {
     await page.goto("/search");
     const input = page.locator(
-      'input[placeholder="Search skills and roles..."]',
+      'input[placeholder="Search roles, skills, and agents..."]',
     );
     await input.fill("a");
     await expect(
@@ -18,8 +18,8 @@ test.describe("Search page", () => {
     await expect(select).toBeVisible();
     await expect(select.locator("option")).toHaveText([
       "All",
-      "Skills",
       "Roles",
+      "Skills",
       "Agents",
     ]);
   });

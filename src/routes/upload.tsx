@@ -74,7 +74,7 @@ interface UploadFile {
 function UploadPage() {
   useSEO({
     title: "Publish - StrawHub",
-    description: "Publish or update a skill, role, or agent on StrawHub.",
+    description: "Publish or update a role, skill, or agent on StrawHub.",
     url: "/upload",
   });
 
@@ -83,7 +83,7 @@ function UploadPage() {
   const navigate = useNavigate();
   const { mode, updateSlug, kind: initialKind } = Route.useSearch();
 
-  const [kind, setKind] = useState<"skill" | "role" | "agent">(initialKind ?? "skill");
+  const [kind, setKind] = useState<"skill" | "role" | "agent">(initialKind ?? "role");
   const [slug, setSlug] = useState(updateSlug ?? "");
   const [displayName, setDisplayName] = useState(
     updateSlug
@@ -525,7 +525,7 @@ function UploadPage() {
         <h1 className="text-3xl font-bold text-white">Publish</h1>
         <div className="rounded-lg border border-gray-800 p-8 text-center">
           <p className="text-gray-400 mb-4">
-            Sign in with GitHub to publish skills, roles, and agents.
+            Sign in with GitHub to publish roles, skills, and agents.
           </p>
           <button
             onClick={() => void signIn("github")}
@@ -546,16 +546,6 @@ function UploadPage() {
         {/* Kind Toggle */}
         <div className="flex gap-4">
           <button
-            onClick={() => { setKind("skill"); setFiles([]); setError(null); }}
-            className={`rounded px-4 py-2 text-sm font-medium transition-colors ${
-              kind === "skill"
-                ? "bg-orange-500 text-white"
-                : "bg-gray-800 text-gray-400 hover:text-white"
-            }`}
-          >
-            Skill
-          </button>
-          <button
             onClick={() => { setKind("role"); setFiles([]); setError(null); }}
             className={`rounded px-4 py-2 text-sm font-medium transition-colors ${
               kind === "role"
@@ -564,6 +554,16 @@ function UploadPage() {
             }`}
           >
             Role
+          </button>
+          <button
+            onClick={() => { setKind("skill"); setFiles([]); setError(null); }}
+            className={`rounded px-4 py-2 text-sm font-medium transition-colors ${
+              kind === "skill"
+                ? "bg-orange-500 text-white"
+                : "bg-gray-800 text-gray-400 hover:text-white"
+            }`}
+          >
+            Skill
           </button>
           <button
             onClick={() => { setKind("agent"); setFiles([]); setError(null); }}
@@ -597,7 +597,7 @@ function UploadPage() {
                   type="text"
                   value={githubUrl}
                   onChange={(e) => setGithubUrl(e.target.value)}
-                  placeholder="https://github.com/user/repo/tree/main/skills/my-skill"
+                  placeholder={kind === "role" ? "https://github.com/user/repo/tree/main/roles/my-role" : kind === "agent" ? "https://github.com/user/repo/tree/main/agents/my-agent" : "https://github.com/user/repo/tree/main/skills/my-skill"}
                   className="flex-1 rounded border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-orange-400 focus:outline-none"
                 />
                 <button

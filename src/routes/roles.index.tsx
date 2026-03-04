@@ -13,7 +13,7 @@ const PAGE_SIZE = 20;
 function RolesPage() {
   useSEO({
     title: "Roles - StrawHub",
-    description: "Browse agent role definitions for StrawPot with recursive skill dependencies.",
+    description: "Browse AI workers for StrawPot. Roles bundle skills, tools, and model config with automatic dependency resolution.",
     url: "/roles",
   });
 
@@ -73,8 +73,8 @@ function RolesPage() {
       </div>
 
       <p className="text-gray-400">
-        Agent behavior definitions with dependent skills that are resolved
-        recursively on install.
+        AI workers that bundle skills, tools, and model config. Install a role
+        and all required skills come with it.
       </p>
 
       <input
