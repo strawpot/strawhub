@@ -3,7 +3,7 @@ import { mutation, query, internalMutation } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { parseFrontmatter } from "./lib/frontmatter";
 import { parseVersion, compareVersions } from "./lib/versionSpec";
-import { validateSlug, validateVersion, validateDisplayName, validateChangelog, validateAgentFiles } from "./lib/publishValidation";
+import { validateSlug, validateVersion, validateDisplayName, validateChangelog, validateAgentFiles, validateFrontmatterName } from "./lib/publishValidation";
 
 /** Resolve version: validate if provided, otherwise auto-increment from latest. */
 function resolveVersion(explicit: string | undefined, latestVersion: string | undefined): string {
@@ -189,6 +189,7 @@ export const publishInternal = internalMutation({
       const { frontmatter } = parseFrontmatter(args.agentMdText);
       parsed = { frontmatter, metadata: frontmatter.metadata };
     }
+    validateFrontmatterName(parsed.frontmatter, args.slug);
 
     let agent = await ctx.db
       .query("agents")
@@ -289,6 +290,7 @@ export const publish = mutation({
       const { frontmatter } = parseFrontmatter(args.agentMdText);
       parsed = { frontmatter, metadata: frontmatter.metadata };
     }
+    validateFrontmatterName(parsed.frontmatter, args.slug);
 
     // Find or create agent
     let agent = await ctx.db

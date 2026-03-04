@@ -3,7 +3,7 @@ import { mutation, query, internalMutation } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { parseFrontmatter, extractDependencies } from "./lib/frontmatter";
 import { parseDependencySpec, parseVersion, compareVersions, satisfiesVersion } from "./lib/versionSpec";
-import { validateSlug, validateVersion, validateDisplayName, validateChangelog, validateFiles, validateRoleFiles } from "./lib/publishValidation";
+import { validateSlug, validateVersion, validateDisplayName, validateChangelog, validateFiles, validateRoleFiles, validateFrontmatterName } from "./lib/publishValidation";
 
 /** Resolve version: validate if provided, otherwise auto-increment from latest. */
 function resolveVersion(explicit: string | undefined, latestVersion: string | undefined): string {
@@ -205,6 +205,7 @@ export const publishInternal = internalMutation({
       const { frontmatter } = parseFrontmatter(args.roleMdText);
       parsed = { frontmatter, metadata: frontmatter.metadata };
     }
+    validateFrontmatterName(parsed.frontmatter, args.slug);
 
     let dependencies = args.dependencies;
     if (!dependencies) {
@@ -381,6 +382,7 @@ export const publish = mutation({
       const { frontmatter } = parseFrontmatter(args.roleMdText);
       parsed = { frontmatter, metadata: frontmatter.metadata };
     }
+    validateFrontmatterName(parsed.frontmatter, args.slug);
 
     // Read dependencies from frontmatter if not provided in args
     let dependencies = args.dependencies;

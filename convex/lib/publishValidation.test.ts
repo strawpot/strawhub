@@ -6,6 +6,7 @@ import {
   validateChangelog,
   validateFiles,
   validateRoleFiles,
+  validateFrontmatterName,
   assertRoleFileIsText,
   MAX_SLUG_LENGTH,
   MAX_DISPLAY_NAME_LENGTH,
@@ -190,6 +191,28 @@ describe("validateRoleFiles", () => {
   it("rejects lowercase role.md", () => {
     expect(() => validateRoleFiles([{ path: "role.md", size: 500 }])).toThrow(
       /exactly one file: ROLE.md/,
+    );
+  });
+});
+
+describe("validateFrontmatterName", () => {
+  it("accepts matching name", () => {
+    expect(() => validateFrontmatterName({ name: "my-skill" }, "my-skill")).not.toThrow();
+  });
+
+  it("accepts missing name field", () => {
+    expect(() => validateFrontmatterName({}, "my-skill")).not.toThrow();
+  });
+
+  it("accepts non-string name", () => {
+    expect(() => validateFrontmatterName({ name: 42 }, "my-skill")).not.toThrow();
+    expect(() => validateFrontmatterName({ name: true }, "my-skill")).not.toThrow();
+    expect(() => validateFrontmatterName({ name: null }, "my-skill")).not.toThrow();
+  });
+
+  it("rejects mismatched name", () => {
+    expect(() => validateFrontmatterName({ name: "other-name" }, "my-skill")).toThrow(
+      /Frontmatter name 'other-name' does not match slug 'my-skill'/,
     );
   });
 });
