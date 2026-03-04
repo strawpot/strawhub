@@ -6,7 +6,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="MIT License"></a>
 </p>
 
-StrawHub is the public registry for [StrawPot](https://strawpot.com): discover, publish, and install reusable skills, roles, and agents for StrawPot agents. 
+StrawHub is the AI workforce registry for [StrawPot](https://strawpot.com). Discover, publish, and install job-ready roles, reusable skills, and agent runtimes.
 
 
 Live: [`https://strawhub.dev`](https://strawhub.dev)
@@ -29,7 +29,7 @@ Following the same architecture as [ClawHub](https://clawhub.ai/), it extends th
 - **Admin** — user management (role assignment, block/unblock), content reports
 - **GitHub OAuth** — sign in with GitHub, avatar and @handle shown in nav
 - **API Tokens** — create bearer tokens for CLI / programmatic access
-- **Dependency Resolution** — roles declare skill dependencies resolved recursively on install
+- **Automatic Dependencies** — install a role and every required skill is resolved and installed automatically
 
 ## Tech Stack
 
