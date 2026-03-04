@@ -10,7 +10,7 @@ export interface SEOOptions {
 export const BASE_TITLE = "StrawHub";
 export const BASE_URL = "https://strawhub.dev";
 export const DEFAULT_DESCRIPTION =
-  "Discover, install, and share AI workers for your StrawPot agents. Roles bundle skills, tools, and model config.";
+  "The AI workforce registry for StrawPot. Install job-ready roles that bundle skills, tools, and model config in one command.";
 
 /** Set a <meta> tag by name or property attribute. */
 export function setMeta(attr: "name" | "property", key: string, value: string) {

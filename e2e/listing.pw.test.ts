@@ -6,7 +6,7 @@ test.describe("Skills listing page", () => {
     await expect(page.locator("h1")).toContainText("Skills");
     await expect(
       page.locator(
-        "text=Capabilities that roles load into context. Installed automatically as role dependencies.",
+        "text=Reusable capabilities that power roles. When you install a role, its skills are included automatically.",
       ),
     ).toBeVisible();
   });
@@ -34,7 +34,7 @@ test.describe("Roles listing page", () => {
     await expect(page.locator("h1")).toContainText("Roles");
     await expect(
       page.locator(
-        "text=AI workers that bundle skills, tools, and model config. Install a role and all required skills come with it.",
+        "text=Job-ready AI workers for StrawPot. Each role defines a complete job profile — skills, tools, and model config. Install once, get everything.",
       ),
     ).toBeVisible();
   });

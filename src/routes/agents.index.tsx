@@ -13,7 +13,7 @@ const PAGE_SIZE = 20;
 function AgentsPage() {
   useSEO({
     title: "Agents - StrawHub",
-    description: "Browse CLI runtimes for StrawPot that execute roles and translate protocols into native AI tool interfaces.",
+    description: "Browse CLI runtimes for StrawPot. Agents execute roles and bridge StrawPot to AI platforms like Claude Code, ChatGPT, and Gemini.",
     url: "/agents",
   });
 
@@ -73,8 +73,8 @@ function AgentsPage() {
       </div>
 
       <p className="text-gray-400">
-        CLI runtimes that execute roles. Translate StrawPot's protocol into
-        native AI tool interfaces.
+        CLI runtimes that execute roles on AI platforms. Each agent bridges
+        StrawPot to a specific provider like Claude Code, ChatGPT, or Gemini.
       </p>
 
       <input

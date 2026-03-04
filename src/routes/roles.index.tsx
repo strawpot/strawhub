@@ -13,7 +13,7 @@ const PAGE_SIZE = 20;
 function RolesPage() {
   useSEO({
     title: "Roles - StrawHub",
-    description: "Browse AI workers for StrawPot. Roles bundle skills, tools, and model config with automatic dependency resolution.",
+    description: "Browse job-ready AI workers for StrawPot. Each role bundles skills, tools, and model config. Install one and every dependency resolves automatically.",
     url: "/roles",
   });
 
@@ -73,8 +73,8 @@ function RolesPage() {
       </div>
 
       <p className="text-gray-400">
-        AI workers that bundle skills, tools, and model config. Install a role
-        and all required skills come with it.
+        Job-ready AI workers for StrawPot. Each role defines a complete job
+        profile — skills, tools, and model config. Install once, get everything.
       </p>
 
       <input

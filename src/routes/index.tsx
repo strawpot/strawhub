@@ -20,9 +20,8 @@ function HomePage() {
           <span className="text-orange-400">StrawPot</span>
         </p>
         <p className="text-gray-500 max-w-2xl mx-auto">
-          Discover, install, and share AI workers for your StrawPot agents.
-          Roles define agent behavior and bundle all required skills
-          automatically on install.
+          StrawPot runs AI workers. StrawHub distributes them. Install a role
+          and every skill it needs comes with it.
         </p>
       </section>
 
@@ -33,8 +32,8 @@ function HomePage() {
         >
           <h2 className="text-2xl font-bold text-white mb-2">Roles</h2>
           <p className="text-gray-400">
-            AI workers that bundle skills, tools, and model config. Install a
-            role and get a ready-to-work agent with all required capabilities.
+            Job-ready AI workers. Each role bundles the skills, tools, and model
+            config required for the job. One install, everything included.
           </p>
         </Link>
 
@@ -44,8 +43,9 @@ function HomePage() {
         >
           <h2 className="text-2xl font-bold text-white mb-2">Skills</h2>
           <p className="text-gray-400">
-            Capabilities that roles load into context. Skills are installed
-            automatically as role dependencies.
+            Reusable capabilities that power roles. Skills are installed
+            automatically when you install a role — you rarely need to manage
+            them directly.
           </p>
         </Link>
 
@@ -55,33 +55,34 @@ function HomePage() {
         >
           <h2 className="text-2xl font-bold text-white mb-2">Agents</h2>
           <p className="text-gray-400">
-            CLI runtimes that execute roles. Agents translate StrawPot's
-            protocol into native AI tool interfaces.
+            CLI runtimes that execute roles. Each agent bridges StrawPot to a
+            specific AI platform like Claude Code, ChatGPT, or Gemini.
           </p>
         </Link>
       </section>
 
       <section className="text-center py-8">
         <h3 className="text-lg font-semibold text-gray-300 mb-4">
-          Quick Install
+          Get Started
         </h3>
         <code className="rounded bg-gray-900 px-6 py-3 text-sm text-orange-400 inline-block max-w-full overflow-x-auto">
           strawhub install role implementer
         </code>
         <p className="text-gray-500 text-sm mt-2">
-          Installs the role + all required skills automatically
+          One command installs the role and every skill it needs
         </p>
       </section>
 
       <section className="text-center py-8 border-t border-gray-800">
         <h3 className="text-lg font-semibold text-gray-300 mb-2">
-          Share Your Roles
+          Publish Your Workers
         </h3>
         <p className="text-gray-500 max-w-lg mx-auto mb-4">
-          Built an AI worker? Share it with the community.
+          Built a role? Publish it to the registry and let others install it
+          in one command.
         </p>
         <code className="rounded bg-gray-900 px-6 py-3 text-sm text-orange-400 inline-block max-w-full overflow-x-auto mb-4">
-          strawpot publish role analyst
+          strawhub publish role analyst
         </code>
         <div>
           <Link

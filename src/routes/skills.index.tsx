@@ -13,7 +13,7 @@ const PAGE_SIZE = 20;
 function SkillsPage() {
   useSEO({
     title: "Skills - StrawHub",
-    description: "Browse reusable skill capabilities for StrawPot roles. Skills are installed automatically as role dependencies.",
+    description: "Browse reusable capabilities for StrawPot roles. Skills power roles and are installed automatically — you rarely need to install them directly.",
     url: "/skills",
   });
 
@@ -72,8 +72,8 @@ function SkillsPage() {
       </div>
 
       <p className="text-gray-400">
-        Capabilities that roles load into context. Installed automatically as
-        role dependencies.
+        Reusable capabilities that power roles. When you install a role, its
+        skills are included automatically.
       </p>
 
       <input
