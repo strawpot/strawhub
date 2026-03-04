@@ -18,13 +18,13 @@ test.describe("Smoke tests", () => {
 
   test("upload page requires authentication", async ({ page }) => {
     await page.goto("/upload");
-    await expect(page.locator("text=Sign in with GitHub to publish skills, roles, and agents.")).toBeVisible();
+    await expect(page.locator("text=Sign in with GitHub to publish roles, skills, and agents.")).toBeVisible();
   });
 
   test("homepage renders hero content", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator("h1")).toContainText("StrawHub");
-    await expect(page.locator("text=The role, skill, and agent registry for")).toBeVisible();
+    await expect(page.locator("text=The AI workforce registry for")).toBeVisible();
     await expect(page.locator("h2", { hasText: "Roles" })).toBeVisible();
     await expect(page.locator("h2", { hasText: "Skills" })).toBeVisible();
     await expect(page.locator("text=strawhub install role implementer")).toBeVisible();
@@ -33,7 +33,7 @@ test.describe("Smoke tests", () => {
   test("search page loads with input", async ({ page }) => {
     await page.goto("/search");
     await expect(page.locator("h1")).toContainText("Search");
-    await expect(page.locator('input[placeholder="Search skills and roles..."]')).toBeVisible();
+    await expect(page.locator('input[placeholder="Search roles, skills, and agents..."]')).toBeVisible();
     await expect(page.locator("text=Type at least 2 characters to search.")).toBeVisible();
   });
 
@@ -51,7 +51,7 @@ test.describe("Smoke tests", () => {
 
   test("dashboard requires authentication", async ({ page }) => {
     await page.goto("/dashboard");
-    await expect(page.locator("text=Sign in with GitHub to manage your published skills, roles, and agents.")).toBeVisible();
+    await expect(page.locator("text=Sign in with GitHub to manage your published roles, skills, and agents.")).toBeVisible();
   });
 
   test("settings requires authentication", async ({ page }) => {
@@ -61,7 +61,7 @@ test.describe("Smoke tests", () => {
 
   test("stars page requires authentication", async ({ page }) => {
     await page.goto("/stars");
-    await expect(page.locator("text=Sign in with GitHub to see skills, roles, and agents you've starred.")).toBeVisible();
+    await expect(page.locator("text=Sign in with GitHub to see roles, skills, and agents you've starred.")).toBeVisible();
   });
 
   test("users page requires authentication", async ({ page }) => {

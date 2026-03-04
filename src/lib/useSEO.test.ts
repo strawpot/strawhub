@@ -106,7 +106,7 @@ describe("resetSEO", () => {
     applySEO({ title: "T", url: "/skills/foo" });
     resetSEO();
     expect(getMeta("property", "og:title")).toBe(
-      `${BASE_TITLE} - Skill, Role & Agent Registry for StrawPot`,
+      `${BASE_TITLE} - AI Workforce Registry for StrawPot`,
     );
     expect(getMeta("property", "og:description")).toBe(DEFAULT_DESCRIPTION);
     expect(getMeta("property", "og:url")).toBe(`${BASE_URL}/`);
@@ -116,7 +116,7 @@ describe("resetSEO", () => {
     applySEO({ title: "T" });
     resetSEO();
     expect(getMeta("name", "twitter:title")).toBe(
-      `${BASE_TITLE} - Skill, Role & Agent Registry for StrawPot`,
+      `${BASE_TITLE} - AI Workforce Registry for StrawPot`,
     );
     expect(getMeta("name", "twitter:description")).toBe(DEFAULT_DESCRIPTION);
   });

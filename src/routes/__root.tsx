@@ -26,11 +26,11 @@ function RootLayout() {
           </Link>
 
           {/* Desktop nav links */}
-          <Link to="/skills" className="hidden md:block text-sm text-gray-400 hover:text-white">
-            Skills
-          </Link>
           <Link to="/roles" className="hidden md:block text-sm text-gray-400 hover:text-white">
             Roles
+          </Link>
+          <Link to="/skills" className="hidden md:block text-sm text-gray-400 hover:text-white">
+            Skills
           </Link>
           <Link to="/agents" className="hidden md:block text-sm text-gray-400 hover:text-white">
             Agents
@@ -79,11 +79,11 @@ function RootLayout() {
         {/* Mobile menu dropdown */}
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-gray-800 px-4 py-3 space-y-1">
-            <Link to="/skills" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-sm text-gray-400 hover:text-white">
-              Skills
-            </Link>
             <Link to="/roles" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-sm text-gray-400 hover:text-white">
               Roles
+            </Link>
+            <Link to="/skills" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-sm text-gray-400 hover:text-white">
+              Skills
             </Link>
             <Link to="/agents" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-sm text-gray-400 hover:text-white">
               Agents
@@ -105,7 +105,7 @@ function RootLayout() {
       </main>
       <footer className="border-t border-gray-800 py-6 text-center text-sm text-gray-500">
         <p>
-          StrawHub &middot; A{" "}
+          StrawHub &middot; AI workforce registry &middot; A{" "}
           <a
             href="https://strawpot.com"
             className="underline decoration-gray-700 hover:decoration-gray-400 transition-colors"

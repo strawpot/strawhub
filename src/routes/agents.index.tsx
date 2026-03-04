@@ -13,7 +13,7 @@ const PAGE_SIZE = 20;
 function AgentsPage() {
   useSEO({
     title: "Agents - StrawHub",
-    description: "Browse CLI wrapper agents for StrawPot that translate protocols into native AI tool interfaces.",
+    description: "Browse CLI runtimes for StrawPot that execute roles and translate protocols into native AI tool interfaces.",
     url: "/agents",
   });
 
@@ -73,7 +73,7 @@ function AgentsPage() {
       </div>
 
       <p className="text-gray-400">
-        CLI wrapper binaries that translate StrawPot's protocol into
+        CLI runtimes that execute roles. Translate StrawPot's protocol into
         native AI tool interfaces.
       </p>
 

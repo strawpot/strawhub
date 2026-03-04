@@ -13,7 +13,7 @@ const PAGE_SIZE = 20;
 function SkillsPage() {
   useSEO({
     title: "Skills - StrawHub",
-    description: "Browse reusable skill modules for StrawPot agents.",
+    description: "Browse reusable skill capabilities for StrawPot roles. Skills are installed automatically as role dependencies.",
     url: "/skills",
   });
 
@@ -72,7 +72,8 @@ function SkillsPage() {
       </div>
 
       <p className="text-gray-400">
-        Markdown instruction modules that agents load into context.
+        Capabilities that roles load into context. Installed automatically as
+        role dependencies.
       </p>
 
       <input
