@@ -208,7 +208,7 @@ Instructions for the agent...
 
 ### ROLE.md
 
-Role dependencies are declared under `metadata.strawpot.dependencies` with `skills` and `roles` sub-keys.
+Role dependencies are declared under `metadata.strawpot.dependencies` with `skills` and `roles` sub-keys. Use `"*"` in the `roles` list to depend on all available roles (useful for orchestrator roles that can delegate to any role).
 
 ```yaml
 ---

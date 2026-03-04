@@ -582,7 +582,9 @@ def _resolve_deps(
     elif kind == "role":
         console.print("Resolving dependencies...")
         resolved = client.resolve_role_deps(slug)
-        return resolved.get("dependencies", [])
+        deps = resolved.get("dependencies", [])
+        # Filter "*" wildcard — not a real package slug
+        return [d for d in deps if d.get("slug") != "*"]
     else:
         # Skills: resolve client-side via frontmatter parsing
         dep_list: list[dict] = []

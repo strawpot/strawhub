@@ -84,7 +84,7 @@ Role instructions for the agent...
 | `description` | Yes | One-line summary |
 | `version` | No | Semver version (auto-incremented if omitted) |
 | `metadata.strawpot.dependencies.skills` | No | List of skill slugs |
-| `metadata.strawpot.dependencies.roles` | No | List of role slugs |
+| `metadata.strawpot.dependencies.roles` | No | List of role slugs (use `"*"` for all available roles) |
 | `metadata.strawpot.default_agent` | No | Default agent runtime name |
 
 Roles can depend on both skills and other roles.
