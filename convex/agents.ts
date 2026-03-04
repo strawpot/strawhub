@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query, internalMutation } from "./_generated/server";
+import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { parseFrontmatter } from "./lib/frontmatter";
 import { parseVersion, compareVersions } from "./lib/versionSpec";
@@ -260,6 +261,14 @@ export const publishInternal = internalMutation({
       updatedAt: now,
     });
 
+    // Trigger VirusTotal scan
+    await ctx.scheduler.runAfter(0, internal.virusTotalScanActions.submitAgentScan, {
+      versionId,
+      agentId: agent._id,
+      zipStorageId: args.zipStorageId,
+      zipFileName: `${args.slug}-v${version}.zip`,
+    });
+
     return { agentId: agent._id, versionId };
   },
 });
@@ -375,6 +384,14 @@ export const publish = mutation({
       tags: currentTags,
       stats: { ...agent.stats, versions: agent.stats.versions + 1 },
       updatedAt: now,
+    });
+
+    // Trigger VirusTotal scan
+    await ctx.scheduler.runAfter(0, internal.virusTotalScanActions.submitAgentScan, {
+      versionId,
+      agentId: agent._id,
+      zipStorageId: args.zipStorageId,
+      zipFileName: `${args.slug}-v${version}.zip`,
     });
 
     return { agentId: agent._id, versionId };
