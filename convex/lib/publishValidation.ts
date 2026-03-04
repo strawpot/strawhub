@@ -122,6 +122,21 @@ export function validateRoleFiles(
 }
 
 /**
+ * Validate that the frontmatter `name` field (if present) matches the slug.
+ */
+export function validateFrontmatterName(
+  frontmatter: Record<string, unknown>,
+  slug: string,
+): void {
+  const name = frontmatter.name;
+  if (typeof name === "string" && name !== slug) {
+    throw new Error(
+      `Frontmatter name '${name}' does not match slug '${slug}'`,
+    );
+  }
+}
+
+/**
  * Verify that a ROLE.md file is actually a text file, not a renamed binary.
  * Uses three layers: extension check, magic bytes detection, null byte heuristic.
  */
