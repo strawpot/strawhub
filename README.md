@@ -6,7 +6,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="MIT License"></a>
 </p>
 
-StrawHub is the AI workforce registry for [StrawPot](https://strawpot.com). Discover, publish, and install job-ready roles, reusable skills, and agent runtimes.
+StrawHub is the AI workforce registry for [StrawPot](https://strawpot.com). Discover, publish, and install job-ready roles, reusable skills, and agent runtimes. 
 
 
 Live: [`https://strawhub.dev`](https://strawhub.dev)
