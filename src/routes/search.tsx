@@ -13,7 +13,7 @@ const PAGE_SIZE = 20;
 function SearchPage() {
   useSEO({
     title: "Search - StrawHub",
-    description: "Search for skills, roles, and agents on StrawHub.",
+    description: "Search for roles, skills, and agents on StrawHub.",
     url: "/search",
   });
 
@@ -61,7 +61,7 @@ function SearchPage() {
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search skills and roles..."
+          placeholder="Search roles, skills, and agents..."
           className="flex-1 rounded border border-gray-700 bg-gray-900 px-4 py-2 text-white placeholder-gray-500 focus:border-orange-400 focus:outline-none"
         />
         <select
@@ -70,8 +70,8 @@ function SearchPage() {
           className="rounded border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-gray-300"
         >
           <option value="all">All</option>
-          <option value="skill">Skills</option>
           <option value="role">Roles</option>
+          <option value="skill">Skills</option>
           <option value="agent">Agents</option>
         </select>
       </div>

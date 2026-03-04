@@ -7,7 +7,7 @@ export const Route = createFileRoute("/")({
 
 function HomePage() {
   useSEO({
-    title: "StrawHub - Role, Skill & Agent Registry for StrawPot",
+    title: "StrawHub - AI Workforce Registry for StrawPot",
     url: "/",
   });
 
@@ -16,47 +16,47 @@ function HomePage() {
       <section className="text-center py-8 md:py-16">
         <h1 className="text-3xl md:text-5xl font-bold text-white mb-4">StrawHub</h1>
         <p className="text-lg md:text-xl text-gray-400 mb-8">
-          The role, skill, and agent registry for{" "}
+          The AI workforce registry for{" "}
           <span className="text-orange-400">StrawPot</span>
         </p>
         <p className="text-gray-500 max-w-2xl mx-auto">
-          Discover, share, and install reusable roles, skills, and agents for your
-          StrawPot agents. Roles define agent behavior with dependent skills
-          that are resolved recursively on install.
+          Discover, install, and share AI workers for your StrawPot agents.
+          Roles define agent behavior and bundle all required skills
+          automatically on install.
         </p>
       </section>
 
       <section className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <Link
           to="/roles"
-          className="block rounded-lg border border-gray-800 p-5 md:p-8 hover:border-orange-400/50 transition-colors"
+          className="block rounded-lg border border-orange-400/30 bg-orange-400/5 p-5 md:p-8 hover:border-orange-400/50 transition-colors"
         >
           <h2 className="text-2xl font-bold text-white mb-2">Roles</h2>
           <p className="text-gray-400">
-            Agent behavior definitions with default tools, model config, and
-            skill dependencies. Install a role and all its skills come with it.
+            AI workers that bundle skills, tools, and model config. Install a
+            role and get a ready-to-work agent with all required capabilities.
           </p>
         </Link>
 
         <Link
           to="/skills"
-          className="block rounded-lg border border-gray-800 p-5 md:p-8 hover:border-orange-400/50 transition-colors"
+          className="block rounded-lg border border-gray-800 p-5 md:p-8 hover:border-gray-600 transition-colors"
         >
           <h2 className="text-2xl font-bold text-white mb-2">Skills</h2>
           <p className="text-gray-400">
-            Markdown instruction modules that agents load into context. Skills
-            can depend on other skills for recursive resolution.
+            Capabilities that roles load into context. Skills are installed
+            automatically as role dependencies.
           </p>
         </Link>
 
         <Link
           to="/agents"
-          className="block rounded-lg border border-gray-800 p-5 md:p-8 hover:border-orange-400/50 transition-colors"
+          className="block rounded-lg border border-gray-800 p-5 md:p-8 hover:border-gray-600 transition-colors"
         >
           <h2 className="text-2xl font-bold text-white mb-2">Agents</h2>
           <p className="text-gray-400">
-            CLI wrapper binaries that translate StrawPot's protocol into
-            native AI tool interfaces.
+            CLI runtimes that execute roles. Agents translate StrawPot's
+            protocol into native AI tool interfaces.
           </p>
         </Link>
       </section>
@@ -69,8 +69,29 @@ function HomePage() {
           strawhub install role implementer
         </code>
         <p className="text-gray-500 text-sm mt-2">
-          Installs the role + all dependent skills recursively
+          Installs the role + all required skills automatically
         </p>
+      </section>
+
+      <section className="text-center py-8 border-t border-gray-800">
+        <h3 className="text-lg font-semibold text-gray-300 mb-2">
+          Share Your Roles
+        </h3>
+        <p className="text-gray-500 max-w-lg mx-auto mb-4">
+          Built an AI worker? Share it with the community.
+        </p>
+        <code className="rounded bg-gray-900 px-6 py-3 text-sm text-orange-400 inline-block max-w-full overflow-x-auto mb-4">
+          strawpot publish role analyst
+        </code>
+        <div>
+          <Link
+            to="/upload"
+            search={{ kind: "role" }}
+            className="inline-block rounded bg-orange-500 px-6 py-2 text-sm font-medium text-white hover:bg-orange-600"
+          >
+            Publish a Role
+          </Link>
+        </div>
       </section>
     </div>
   );
