@@ -6,18 +6,42 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="MIT License"></a>
 </p>
 
-StrawHub is the AI workforce registry for [StrawPot](https://strawpot.com). Discover, publish, and install job-ready roles, reusable skills, and agent runtimes. 
+StrawHub is the AI workforce registry for [StrawPot](https://strawpot.com).
 
+Discover, publish, and install **job-ready roles** and **reusable skills** that power AI teams running in StrawPot.
 
 Live: [`https://strawhub.dev`](https://strawhub.dev)
 
-Following the same architecture as [ClawHub](https://clawhub.ai/), it extends the pattern to manage **skills**, **roles**, and **agents** with recursive dependency resolution.
+## StrawPot Ecosystem
 
-- **Skills** are markdown instruction modules that agents load into context — based on the [Agent Skills](https://agentskills.io/) open spec, extended with `metadata.strawpot` for dependencies and configuration
-- **Roles** define agent behavior, default tools, model config, and dependent skills — follow the same markdown-with-frontmatter pattern, extended for agent configuration
-- Skills can depend on other skills; roles depend on both skills and other roles
-- Dependencies are declared under `metadata.strawpot.dependencies` in frontmatter
-- Dependencies are resolved recursively on install
+StrawPot runs AI workers. StrawHub distributes them.
+
+```
+    User task
+        ↓
+ StrawPot runtime
+        ↓
+ Roles (AI workers)
+        ↓
+Skills (capabilities)
+```
+
+Following the same architecture as [ClawHub](https://clawhub.ai/), it extends the pattern to manage **skills**, **roles**, **agents**, and **memories** with recursive dependency resolution.
+
+## Concepts
+
+### Role
+A **job definition** for an AI worker. Bundles required skills and a default agent.
+
+Examples: `implementer` · `reviewer` · `analyst` · `planner`
+
+### Skill
+Reusable **instruction modules** loaded into an agent's context. Skills can depend on other skills.
+
+Examples: `git-workflow` · `code-review` · `debugging`
+
+### Dependencies
+Roles and skills declare dependencies under `metadata.strawpot.dependencies`. Dependencies are resolved automatically on install.
 
 ## Features
 
@@ -30,6 +54,15 @@ Following the same architecture as [ClawHub](https://clawhub.ai/), it extends th
 - **GitHub OAuth** — sign in with GitHub, avatar and @handle shown in nav
 - **API Tokens** — create bearer tokens for CLI / programmatic access
 - **Automatic Dependencies** — install a role and every required skill is resolved and installed automatically
+
+## Quick Start
+
+```bash
+pip install strawhub
+strawhub install role implementer
+```
+
+StrawHub resolves all required skills automatically.
 
 ## Tech Stack
 
@@ -231,7 +264,7 @@ metadata:
 Role instructions for the agent...
 ```
 
-## TODO
+## Roadmap
 
 - [ ] Add support for agents
 - [ ] Add support for memory
