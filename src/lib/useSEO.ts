@@ -10,7 +10,7 @@ export interface SEOOptions {
 export const BASE_TITLE = "StrawHub";
 export const BASE_URL = "https://strawhub.dev";
 export const DEFAULT_DESCRIPTION =
-  "The AI workforce registry for StrawPot. Install job-ready roles that bundle skills, tools, and model config in one command.";
+  "Install AI workers for your StrawPot team. Each role bundles the skills, tools, and model config needed for the job.";
 
 /** Set a <meta> tag by name or property attribute. */
 export function setMeta(attr: "name" | "property", key: string, value: string) {
@@ -68,10 +68,10 @@ export function applySEO({ title, description, url, noindex }: SEOOptions) {
 export function resetSEO() {
   document.title = BASE_TITLE;
   setMeta("name", "description", DEFAULT_DESCRIPTION);
-  setMeta("property", "og:title", `${BASE_TITLE} - AI Workforce Registry for StrawPot`);
+  setMeta("property", "og:title", `${BASE_TITLE} - Install AI Workers for StrawPot`);
   setMeta("property", "og:description", DEFAULT_DESCRIPTION);
   setMeta("property", "og:url", `${BASE_URL}/`);
-  setMeta("name", "twitter:title", `${BASE_TITLE} - AI Workforce Registry for StrawPot`);
+  setMeta("name", "twitter:title", `${BASE_TITLE} - Install AI Workers for StrawPot`);
   setMeta("name", "twitter:description", DEFAULT_DESCRIPTION);
   setCanonical(`${BASE_URL}/`);
   const robotsEl = document.querySelector<HTMLMetaElement>(

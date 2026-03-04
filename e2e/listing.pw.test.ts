@@ -6,7 +6,7 @@ test.describe("Skills listing page", () => {
     await expect(page.locator("h1")).toContainText("Skills");
     await expect(
       page.locator(
-        "text=Reusable capabilities that power roles. When you install a role, its skills are included automatically.",
+        "text=Capabilities that roles depend on. When you install a role, its skills are included automatically.",
       ),
     ).toBeVisible();
   });

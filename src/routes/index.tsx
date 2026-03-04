@@ -7,7 +7,7 @@ export const Route = createFileRoute("/")({
 
 function HomePage() {
   useSEO({
-    title: "StrawHub - AI Workforce Registry for StrawPot",
+    title: "StrawHub - Install AI Workers for StrawPot",
     url: "/",
   });
 
@@ -15,13 +15,13 @@ function HomePage() {
     <div className="space-y-12">
       <section className="text-center py-8 md:py-16">
         <h1 className="text-3xl md:text-5xl font-bold text-white mb-4">StrawHub</h1>
-        <p className="text-lg md:text-xl text-gray-400 mb-8">
-          The AI workforce registry for{" "}
-          <span className="text-orange-400">StrawPot</span>
+        <p className="text-lg md:text-xl text-gray-400 mb-4">
+          Install AI workers for your{" "}
+          <span className="text-orange-400">StrawPot</span> team
         </p>
         <p className="text-gray-500 max-w-2xl mx-auto">
-          StrawPot runs AI workers. StrawHub distributes them. Install a role
-          and every skill it needs comes with it.
+          Each role bundles the skills needed for the job. One command to
+          install, nothing to configure.
         </p>
       </section>
 
@@ -43,9 +43,8 @@ function HomePage() {
         >
           <h2 className="text-2xl font-bold text-white mb-2">Skills</h2>
           <p className="text-gray-400">
-            Reusable capabilities that power roles. Skills are installed
-            automatically when you install a role — you rarely need to manage
-            them directly.
+            Capabilities that roles depend on. Installed automatically when you
+            install a role — you never manage them directly.
           </p>
         </Link>
 
