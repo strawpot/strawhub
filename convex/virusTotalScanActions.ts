@@ -135,6 +135,96 @@ export const submitScan = internalAction({
 });
 
 /**
+ * Submit an agent version's zip archive to VirusTotal for scanning.
+ * Skips the scan when every file is detected as text.
+ * Marks as rate_limited if VT quota is exhausted.
+ */
+export const submitAgentScan = internalAction({
+  args: {
+    versionId: v.id("agentVersions"),
+    agentId: v.id("agents"),
+    zipStorageId: v.optional(v.id("_storage")),
+    zipFileName: v.string(),
+  },
+  handler: async (ctx, args) => {
+    if (!args.zipStorageId) {
+      await ctx.runMutation(internal.virusTotalScan.setAgentScanStatus, {
+        versionId: args.versionId,
+        scanStatus: "error",
+        scanResult: { errorMessage: "No zip archive available for scanning" },
+      });
+      return;
+    }
+
+    // ── Text-file detection: skip scan if all files are text ──
+    const files = await ctx.runQuery(internal.virusTotalScan.getAgentVersionFiles, {
+      versionId: args.versionId,
+    });
+
+    if (files && files.length > 0 && await areAllFilesText(ctx, files)) {
+      await ctx.runMutation(internal.virusTotalScan.setAgentScanStatus, {
+        versionId: args.versionId,
+        scanStatus: "skipped",
+        scanResult: {
+          errorMessage: "All files are text-based; VirusTotal scan skipped",
+        },
+      });
+      return;
+    }
+
+    if (!process.env.VIRUSTOTAL_API_KEY) {
+      await ctx.runMutation(internal.virusTotalScan.setAgentScanStatus, {
+        versionId: args.versionId,
+        scanStatus: "rate_limited",
+        scanResult: { errorMessage: "VIRUSTOTAL_API_KEY not configured" },
+      });
+      return;
+    }
+
+    const zipBlob = await ctx.storage.get(args.zipStorageId);
+    if (!zipBlob) {
+      await ctx.runMutation(internal.virusTotalScan.setAgentScanStatus, {
+        versionId: args.versionId,
+        scanStatus: "error",
+        scanResult: { errorMessage: "Zip file not found in storage" },
+      });
+      return;
+    }
+
+    try {
+      const { analysisId } = await submitFileToVT(zipBlob, args.zipFileName);
+
+      await ctx.runMutation(internal.virusTotalScan.setAgentScanStatus, {
+        versionId: args.versionId,
+        scanStatus: "scanning",
+        scanResult: { analysisId },
+      });
+
+      await ctx.scheduler.runAfter(60_000, internal.virusTotalScanActions.pollAgentResult, {
+        versionId: args.versionId,
+        agentId: args.agentId,
+        analysisId,
+        attemptNumber: 0,
+      });
+    } catch (error: any) {
+      if (error instanceof VTRateLimitError) {
+        await ctx.runMutation(internal.virusTotalScan.setAgentScanStatus, {
+          versionId: args.versionId,
+          scanStatus: "rate_limited",
+          scanResult: { errorMessage: "VirusTotal API rate limit exceeded" },
+        });
+      } else {
+        await ctx.runMutation(internal.virusTotalScan.setAgentScanStatus, {
+          versionId: args.versionId,
+          scanStatus: "error",
+          scanResult: { errorMessage: error.message ?? "Unknown submission error" },
+        });
+      }
+    }
+  },
+});
+
+/**
  * Poll VirusTotal for analysis results. Reschedules itself if not yet done.
  */
 export const pollResult = internalAction({
@@ -207,6 +297,89 @@ export const pollResult = internalAction({
         );
       } else {
         await ctx.runMutation(internal.virusTotalScan.setScanStatus, {
+          versionId: args.versionId,
+          scanStatus: "error",
+          scanResult: {
+            analysisId: args.analysisId,
+            errorMessage: error.message ?? "Poll error after max retries",
+          },
+        });
+      }
+    }
+  },
+});
+
+/**
+ * Poll VirusTotal for agent version analysis results.
+ */
+export const pollAgentResult = internalAction({
+  args: {
+    versionId: v.id("agentVersions"),
+    agentId: v.id("agents"),
+    analysisId: v.string(),
+    attemptNumber: v.number(),
+  },
+  handler: async (ctx, args) => {
+    if (args.attemptNumber >= MAX_POLL_ATTEMPTS) {
+      await ctx.runMutation(internal.virusTotalScan.setAgentScanStatus, {
+        versionId: args.versionId,
+        scanStatus: "error",
+        scanResult: {
+          analysisId: args.analysisId,
+          errorMessage: "Scan timed out after maximum poll attempts",
+        },
+      });
+      return;
+    }
+
+    try {
+      const result = await getVTAnalysis(args.analysisId);
+
+      if (result.status === "queued") {
+        const delay = Math.min(60_000 * 1.5 ** args.attemptNumber, 300_000);
+        await ctx.scheduler.runAfter(delay, internal.virusTotalScanActions.pollAgentResult, {
+          ...args,
+          attemptNumber: args.attemptNumber + 1,
+        });
+        return;
+      }
+
+      const positives =
+        (result.stats?.malicious ?? 0) + (result.stats?.suspicious ?? 0);
+      const total = result.stats
+        ? Object.values(result.stats).reduce((a, b) => a + b, 0)
+        : 0;
+
+      const scanResult = {
+        analysisId: args.analysisId,
+        positives,
+        total,
+        scanDate: Date.now(),
+        permalink: result.permalink,
+      };
+
+      if (positives > 0) {
+        await ctx.runMutation(internal.virusTotalScan.flagAgent, {
+          agentId: args.agentId,
+          versionId: args.versionId,
+          scanResult,
+        });
+      } else {
+        await ctx.runMutation(internal.virusTotalScan.setAgentScanStatus, {
+          versionId: args.versionId,
+          scanStatus: "clean",
+          scanResult,
+        });
+      }
+    } catch (error: any) {
+      if (args.attemptNumber < MAX_POLL_ATTEMPTS - 1) {
+        await ctx.scheduler.runAfter(
+          60_000,
+          internal.virusTotalScanActions.pollAgentResult,
+          { ...args, attemptNumber: args.attemptNumber + 1 },
+        );
+      } else {
+        await ctx.runMutation(internal.virusTotalScan.setAgentScanStatus, {
           versionId: args.versionId,
           scanStatus: "error",
           scanResult: {

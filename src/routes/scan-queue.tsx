@@ -18,6 +18,7 @@ function ScanQueuePage() {
   const currentUser = useQuery(api.users.me);
   const items = useQuery(api.virusTotalScan.listPendingScans);
   const retriggerScan = useMutation(api.virusTotalScan.retriggerScan);
+  const retriggerAgentScan = useMutation(api.virusTotalScan.retriggerAgentScan);
 
   if (isLoading) {
     return <p className="text-gray-400">Loading...</p>;
@@ -54,7 +55,7 @@ function ScanQueuePage() {
       <div>
         <h1 className="text-2xl md:text-3xl font-bold text-white">Scan Queue</h1>
         <p className="text-sm text-gray-500 mt-1">
-          Skill versions that need VirusTotal scanning. High priority = latest version.
+          Skill and agent versions that need VirusTotal scanning. High priority = latest version.
         </p>
       </div>
 
@@ -69,7 +70,11 @@ function ScanQueuePage() {
               key={item._id}
               item={item}
               onRetrigger={async () => {
-                await retriggerScan({ versionId: item._id });
+                if (item.kind === "agent") {
+                  await retriggerAgentScan({ versionId: item._id as any });
+                } else {
+                  await retriggerScan({ versionId: item._id as any });
+                }
               }}
             />
           ))}
@@ -85,6 +90,7 @@ function ScanQueueCard({
 }: {
   item: {
     _id: any;
+    kind: "skill" | "agent";
     slug: string;
     displayName: string;
     version: string;
@@ -121,8 +127,11 @@ function ScanQueueCard({
             >
               {item.priority}
             </span>
+            <span className="rounded px-1.5 py-0.5 text-[10px] font-medium uppercase bg-gray-700/50 text-gray-400">
+              {item.kind}
+            </span>
             <Link
-              to="/skills/$slug"
+              to={item.kind === "agent" ? "/agents/$slug" : "/skills/$slug"}
               params={{ slug: item.slug }}
               className="text-sm font-medium text-orange-400 hover:text-orange-300 truncate"
             >
