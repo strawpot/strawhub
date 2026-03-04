@@ -32,8 +32,8 @@ function HomePage() {
         >
           <h2 className="text-2xl font-bold text-white mb-2">Roles</h2>
           <p className="text-gray-400">
-            Job-ready AI workers. Each role bundles the skills, tools, and model
-            config required for the job. One install, everything included.
+            Job-ready AI workers. Each role bundles skills and a default agent
+            for the job. One install, everything included.
           </p>
         </Link>
 
@@ -58,6 +58,45 @@ function HomePage() {
             specific AI platform like Claude Code, ChatGPT, or Gemini.
           </p>
         </Link>
+      </section>
+
+      <section className="grid grid-cols-1 md:grid-cols-2 gap-8 py-8">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-300 mb-4">
+            Example Workers
+          </h3>
+          <div className="space-y-3">
+            {[
+              ["implementer", "Write code to implement features and fix bugs"],
+              ["reviewer", "Review pull requests and suggest improvements"],
+              ["analyst", "Research information and produce structured reports"],
+              ["support-agent", "Triage issues and respond to user questions"],
+              ["product-manager", "Define requirements and prioritize work"],
+            ].map(([name, desc]) => (
+              <div key={name} className="flex gap-3 items-baseline">
+                <code className="text-orange-400 text-sm shrink-0">{name}</code>
+                <span className="text-gray-500 text-sm">{desc}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-lg font-semibold text-gray-300 mb-4">
+            What a Role Bundles
+          </h3>
+          <pre className="text-sm text-gray-400 leading-relaxed"><code>{`role: analyst
+ ├─ skills
+ │   ├─ web-search
+ │   ├─ summarize-documents
+ │   ├─ extract-data
+ │   └─ report-writing
+ └─ default_agent
+     └─ claude_code`}</code></pre>
+          <p className="text-gray-500 text-sm mt-3">
+            One install resolves everything.
+          </p>
+        </div>
       </section>
 
       <section className="text-center py-8">
