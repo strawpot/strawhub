@@ -11,7 +11,7 @@ export const MAX_SLUG_LENGTH = 64;
 export const MAX_DISPLAY_NAME_LENGTH = 128;
 export const MAX_CHANGELOG_LENGTH = 10_000;
 export const MAX_FILE_SIZE = 512 * 1024; // 512 KB per file
-export const MAX_TOTAL_SIZE = 2 * 1024 * 1024; // 2 MB total
+export const MAX_TOTAL_SIZE = 50 * 1024 * 1024; // 50 MB total
 export const MAX_FILE_COUNT = 20;
 
 // Agent-specific limits (agents include compiled binaries)
@@ -51,6 +51,9 @@ export function validateFiles(
 ): void {
   if (files.length === 0) {
     throw new Error("At least one file is required");
+  }
+  if (!files.some((f) => f.path === "SKILL.md")) {
+    throw new Error("Skill uploads must include a SKILL.md file");
   }
   if (files.length > MAX_FILE_COUNT) {
     throw new Error(`Maximum ${MAX_FILE_COUNT} files allowed`);

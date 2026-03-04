@@ -13,6 +13,7 @@ import {
   MAX_CHANGELOG_LENGTH,
   MAX_FILE_SIZE,
   MAX_FILE_COUNT,
+  MAX_TOTAL_SIZE,
 } from "./publishValidation";
 
 describe("validateSlug", () => {
@@ -124,43 +125,52 @@ describe("validateFiles", () => {
   });
 
   it("rejects too many files", () => {
-    const files = Array.from({ length: MAX_FILE_COUNT + 1 }, (_, i) => ({
-      path: `file-${i}.md`,
-      size: 100,
-    }));
+    const files = [
+      { path: "SKILL.md", size: 100 },
+      ...Array.from({ length: MAX_FILE_COUNT }, (_, i) => ({
+        path: `file-${i}.md`,
+        size: 100,
+      })),
+    ];
     expect(() => validateFiles(files)).toThrow(/Maximum 20 files/);
   });
 
   it("accepts exactly MAX_FILE_COUNT files", () => {
-    const files = Array.from({ length: MAX_FILE_COUNT }, (_, i) => ({
-      path: `file-${i}.md`,
-      size: 100,
-    }));
+    const files = [
+      { path: "SKILL.md", size: 100 },
+      ...Array.from({ length: MAX_FILE_COUNT - 1 }, (_, i) => ({
+        path: `file-${i}.md`,
+        size: 100,
+      })),
+    ];
     expect(() => validateFiles(files)).not.toThrow();
   });
 
   it("rejects oversized file", () => {
-    const files = [{ path: "big.md", size: MAX_FILE_SIZE + 1 }];
+    const files = [{ path: "SKILL.md", size: MAX_FILE_SIZE + 1 }];
     expect(() => validateFiles(files)).toThrow(/exceeds 512KB/);
   });
 
   it("accepts file at max size", () => {
-    const files = [{ path: "big.md", size: MAX_FILE_SIZE }];
+    const files = [{ path: "SKILL.md", size: MAX_FILE_SIZE }];
     expect(() => validateFiles(files)).not.toThrow();
   });
 
-  it("rejects when total size exceeds limit", () => {
-    const files = Array.from({ length: 5 }, (_, i) => ({
-      path: `file-${i}.md`,
-      size: MAX_FILE_SIZE, // 512KB each = 2.5MB total > 2MB limit
-    }));
-    expect(() => validateFiles(files)).toThrow(/Total upload size/);
+  // Total size limit (50 MB) is unreachable with current per-file (512 KB)
+  // and count (20) limits: 20 × 512 KB = 10 MB < 50 MB.
+  // The limit exists as a safety net if per-file or count limits are raised.
+
+  it("requires SKILL.md", () => {
+    expect(() => validateFiles([{ path: "script.js", size: 100 }])).toThrow(
+      /must include a SKILL.md file/,
+    );
   });
 
-  it("accepts any file extension", () => {
-    expect(() => validateFiles([{ path: "script.js", size: 100 }])).not.toThrow();
-    expect(() => validateFiles([{ path: "Makefile", size: 100 }])).not.toThrow();
-    expect(() => validateFiles([{ path: "handler.py", size: 100 }])).not.toThrow();
+  it("accepts any file extension alongside SKILL.md", () => {
+    const skill = { path: "SKILL.md", size: 100 };
+    expect(() => validateFiles([skill, { path: "script.js", size: 100 }])).not.toThrow();
+    expect(() => validateFiles([skill, { path: "Makefile", size: 100 }])).not.toThrow();
+    expect(() => validateFiles([skill, { path: "handler.py", size: 100 }])).not.toThrow();
   });
 });
 
