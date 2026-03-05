@@ -1,6 +1,9 @@
 /**
  * Parse YAML frontmatter from a markdown string.
- * Client-side port of convex/lib/frontmatter.ts.
+ * Supports arbitrary nesting depth via recursive descent.
+ *
+ * Client-side copy of convex/lib/frontmatter.ts (parseFrontmatter only).
+ * Keep these two files in sync when modifying the parser logic.
  */
 export function parseFrontmatter(text: string): {
   frontmatter: Record<string, unknown>;
@@ -13,75 +16,143 @@ export function parseFrontmatter(text: string): {
 
   const yamlStr = match[1];
   const body = match[2];
-
-  const frontmatter: Record<string, unknown> = {};
   const lines = yamlStr.split("\n");
-  let currentKey = "";
-  let currentArray: string[] | null = null;
 
-  for (const line of lines) {
+  const { result } = parseBlock(lines, 0, 0);
+  return { frontmatter: result, body };
+}
+
+function getIndent(line: string): number {
+  return line.search(/\S/);
+}
+
+function skipBlanks(lines: string[], from: number): number {
+  let i = from;
+  while (i < lines.length && !lines[i].trim()) i++;
+  return i;
+}
+
+function parseScalar(raw: string): unknown {
+  if (
+    (raw.startsWith('"') && raw.endsWith('"')) ||
+    (raw.startsWith("'") && raw.endsWith("'"))
+  ) {
+    return raw.slice(1, -1);
+  }
+
+  if (raw === "true") return true;
+  if (raw === "false") return false;
+
+  if (/^\d+(\.\d+)?$/.test(raw)) {
+    return parseFloat(raw);
+  }
+
+  return raw;
+}
+
+function parseInlineValue(raw: string): unknown {
+  if (raw.startsWith("[") && raw.endsWith("]")) {
+    return raw
+      .slice(1, -1)
+      .split(",")
+      .map((s) => s.trim().replace(/^["']|["']$/g, ""))
+      .filter(Boolean);
+  }
+
+  return parseScalar(raw);
+}
+
+function parseBlock(
+  lines: string[],
+  startIdx: number,
+  baseIndent: number,
+): { result: Record<string, unknown>; nextIdx: number } {
+  const result: Record<string, unknown> = {};
+  let i = startIdx;
+
+  while (i < lines.length) {
+    const line = lines[i];
     const trimmed = line.trim();
-    if (!trimmed) continue;
 
-    if (trimmed.startsWith("- ") && currentArray !== null) {
-      currentArray.push(trimmed.slice(2).trim());
+    if (!trimmed) {
+      i++;
       continue;
     }
 
-    if (currentArray !== null) {
-      frontmatter[currentKey] = currentArray;
-      currentArray = null;
-    }
+    const indent = getIndent(line);
+    if (indent < baseIndent) break;
 
     const kvMatch = trimmed.match(/^(\w[\w-]*):\s*(.*)$/);
-    if (kvMatch) {
-      const [, key, rawValue] = kvMatch;
-      const value = rawValue.trim();
+    if (!kvMatch) {
+      i++;
+      continue;
+    }
 
-      if (!value) {
-        currentKey = key;
-        currentArray = [];
-        continue;
-      }
+    const [, key, rawValue] = kvMatch;
+    const value = rawValue.trim();
+    i++;
 
-      if (value.startsWith("[") && value.endsWith("]")) {
-        frontmatter[key] = value
-          .slice(1, -1)
-          .split(",")
-          .map((s) => s.trim().replace(/^["']|["']$/g, ""))
-          .filter(Boolean);
-        continue;
-      }
+    if (value) {
+      result[key] = parseInlineValue(value);
+      continue;
+    }
 
-      if (
-        (value.startsWith('"') && value.endsWith('"')) ||
-        (value.startsWith("'") && value.endsWith("'"))
-      ) {
-        frontmatter[key] = value.slice(1, -1);
-        continue;
-      }
+    // Empty value — peek to determine array vs nested object
+    const peekIdx = skipBlanks(lines, i);
 
-      if (value === "true") {
-        frontmatter[key] = true;
-        continue;
-      }
-      if (value === "false") {
-        frontmatter[key] = false;
-        continue;
-      }
+    if (peekIdx >= lines.length) {
+      result[key] = "";
+      continue;
+    }
 
-      if (/^\d+(\.\d+)?$/.test(value)) {
-        frontmatter[key] = parseFloat(value);
-        continue;
-      }
+    const peekIndent = getIndent(lines[peekIdx]);
+    if (peekIndent <= indent) {
+      result[key] = "";
+      continue;
+    }
 
-      frontmatter[key] = value;
+    const peekTrimmed = lines[peekIdx].trim();
+
+    if (peekTrimmed.startsWith("- ")) {
+      const parsed = parseArray(lines, peekIdx, peekIndent);
+      result[key] = parsed.result;
+      i = parsed.nextIdx;
+    } else if (peekTrimmed.match(/^(\w[\w-]*):\s*(.*)$/)) {
+      const parsed = parseBlock(lines, peekIdx, peekIndent);
+      result[key] = parsed.result;
+      i = parsed.nextIdx;
+    } else {
+      i = peekIdx + 1;
     }
   }
 
-  if (currentArray !== null) {
-    frontmatter[currentKey] = currentArray;
+  return { result, nextIdx: i };
+}
+
+function parseArray(
+  lines: string[],
+  startIdx: number,
+  baseIndent: number,
+): { result: string[]; nextIdx: number } {
+  const result: string[] = [];
+  let i = startIdx;
+
+  while (i < lines.length) {
+    const line = lines[i];
+    const trimmed = line.trim();
+
+    if (!trimmed) {
+      i++;
+      continue;
+    }
+
+    const indent = getIndent(line);
+    if (indent < baseIndent) break;
+    if (!trimmed.startsWith("- ")) break;
+
+    result.push(trimmed.slice(2).trim());
+    i++;
   }
 
-  return { frontmatter, body };
+  return { result, nextIdx: i };
 }
