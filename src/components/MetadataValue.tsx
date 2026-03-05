@@ -33,23 +33,28 @@ export function MetadataValue({ value }: { value: unknown }) {
   }
 
   // Try to detect and format JSON strings
-  if (typeof value === "string" && value.startsWith("{")) {
-    try {
-      const parsed = JSON.parse(value);
-      if (typeof parsed === "object" && parsed !== null) {
-        return (
-          <pre
-            className="text-xs font-mono text-gray-300"
-            style={{ whiteSpace: "pre-wrap" }}
-          >
-            {JSON.stringify(parsed, null, 2)}
-          </pre>
-        );
-      }
-    } catch {
-      // Not valid JSON, fall through to plain text
-    }
+  const jsonObj = tryParseJson(value);
+  if (jsonObj !== undefined) {
+    return (
+      <pre
+        className="text-xs font-mono text-gray-300"
+        style={{ whiteSpace: "pre-wrap" }}
+      >
+        {JSON.stringify(jsonObj, null, 2)}
+      </pre>
+    );
   }
 
   return <span className="font-mono">{String(value)}</span>;
+}
+
+function tryParseJson(value: unknown): object | undefined {
+  if (typeof value !== "string" || !value.startsWith("{")) return undefined;
+  try {
+    const parsed = JSON.parse(value);
+    if (typeof parsed === "object" && parsed !== null) return parsed;
+  } catch {
+    // Not valid JSON
+  }
+  return undefined;
 }
