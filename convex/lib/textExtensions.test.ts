@@ -19,6 +19,26 @@ describe("isTextFile", () => {
     expect(isTextFile("package-lock.lock")).toBe(true);
   });
 
+  it("recognizes extensions from clawhub allowlist", () => {
+    expect(isTextFile("doc.mdx")).toBe(true);
+    expect(isTextFile("config.json5")).toBe(true);
+    expect(isTextFile("module.cjs")).toBe(true);
+    expect(isTextFile("module.mjs")).toBe(true);
+    expect(isTextFile("main.go")).toBe(true);
+    expect(isTextFile("lib.rs")).toBe(true);
+    expect(isTextFile("App.swift")).toBe(true);
+    expect(isTextFile("Main.kt")).toBe(true);
+    expect(isTextFile("Main.java")).toBe(true);
+    expect(isTextFile("Program.cs")).toBe(true);
+    expect(isTextFile("main.cpp")).toBe(true);
+    expect(isTextFile("main.c")).toBe(true);
+    expect(isTextFile("header.h")).toBe(true);
+    expect(isTextFile("header.hpp")).toBe(true);
+    expect(isTextFile("query.sql")).toBe(true);
+    expect(isTextFile("style.scss")).toBe(true);
+    expect(isTextFile("style.sass")).toBe(true);
+  });
+
   it("is case-insensitive for extensions", () => {
     expect(isTextFile("FILE.MD")).toBe(true);
     expect(isTextFile("FILE.Json")).toBe(true);

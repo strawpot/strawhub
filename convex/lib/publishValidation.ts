@@ -14,7 +14,7 @@ export const MAX_FILE_SIZE = 512 * 1024; // 512 KB per file
 export const MAX_TOTAL_SIZE = 50 * 1024 * 1024; // 50 MB total
 export const MAX_FILE_COUNT = 20;
 
-// Agent-specific limits (agents include compiled binaries)
+// Agent-specific limits (agents may include compiled binaries)
 export const AGENT_MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB per file
 export const AGENT_MAX_TOTAL_SIZE = 50 * 1024 * 1024; // 50 MB total
 export const AGENT_MAX_FILE_COUNT = 50;
@@ -140,10 +140,10 @@ export function validateFrontmatterName(
 }
 
 /**
- * Verify that a ROLE.md file is actually a text file, not a renamed binary.
+ * Verify that a file is actually a text file, not a renamed binary.
  * Uses three layers: extension check, magic bytes detection, null byte heuristic.
  */
-export function assertRoleFileIsText(
+export function assertFileIsText(
   filePath: string,
   buffer: Uint8Array,
 ): void {
@@ -168,3 +168,6 @@ export function assertRoleFileIsText(
     );
   }
 }
+
+/** @deprecated Use assertFileIsText instead */
+export const assertRoleFileIsText = assertFileIsText;

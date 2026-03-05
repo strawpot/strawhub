@@ -365,16 +365,19 @@ function UploadPage() {
       return;
     }
 
-    // Verify ROLE.md is actually a text file, not a renamed binary
-    if (kind === "role") {
-      const buf = new Uint8Array(await files[0].file.arrayBuffer());
-      if (isBinaryByMagicBytes(buf)) {
-        setError("ROLE.md appears to be a binary file (detected binary file signature). Only text files are allowed.");
-        return;
-      }
-      if (containsNullBytes(buf, 8192)) {
-        setError("ROLE.md appears to be a binary file (contains null bytes). Only text files are allowed.");
-        return;
+    // Verify primary .md files are actually text, not renamed binaries
+    if (kind === "role" || kind === "skill" || kind === "agent") {
+      const mdFile = files.find((f) => f.path === primaryFile);
+      if (mdFile) {
+        const buf = new Uint8Array(await mdFile.file.arrayBuffer());
+        if (isBinaryByMagicBytes(buf)) {
+          setError(`${primaryFile} appears to be a binary file (detected binary file signature). Only text files are allowed.`);
+          return;
+        }
+        if (containsNullBytes(buf, 8192)) {
+          setError(`${primaryFile} appears to be a binary file (contains null bytes). Only text files are allowed.`);
+          return;
+        }
       }
     }
 
