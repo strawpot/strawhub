@@ -2,7 +2,7 @@ import { httpAction } from "../_generated/server";
 import { api, internal } from "../_generated/api";
 import { jsonResponse, errorResponse, getSearchParams, resolveTokenToUser, checkHttpRateLimit } from "./shared";
 import { parseDependencySpec, satisfiesVersion } from "../lib/versionSpec";
-import { validateSlug, validateVersion, validateDisplayName, validateChangelog, validateRoleFiles, assertRoleFileIsText, MAX_FILE_SIZE } from "../lib/publishValidation";
+import { validateSlug, validateVersion, validateDisplayName, validateChangelog, validateRoleFiles, assertFileIsText, MAX_FILE_SIZE } from "../lib/publishValidation";
 import { parseFrontmatter, extractName } from "../lib/frontmatter";
 import { createZipBlob } from "../lib/zip";
 
@@ -282,7 +282,7 @@ export const publishRole = httpAction(async (ctx, request) => {
 
         // Reject binary files — roles only allow text
         try {
-          assertRoleFileIsText(filePath, new Uint8Array(buffer));
+          assertFileIsText(filePath, new Uint8Array(buffer));
         } catch (e: any) {
           return errorResponse(e.message, 400);
         }

@@ -4,10 +4,28 @@
  * - Frontend binary detection heuristic
  */
 export const TEXT_EXTENSIONS = new Set([
-  ".md", ".txt", ".json", ".yaml", ".yml", ".toml", ".xml", ".html", ".css",
-  ".js", ".ts", ".jsx", ".tsx", ".py", ".rb", ".sh", ".bash", ".zsh",
-  ".env", ".gitignore", ".editorconfig", ".prettierrc", ".eslintrc",
-  ".cfg", ".ini", ".conf", ".csv", ".svg", ".lock", ".log",
+  // Markdown / plain text
+  ".md", ".mdx", ".txt",
+  // Data / config
+  ".json", ".json5", ".yaml", ".yml", ".toml", ".xml", ".ini", ".cfg",
+  ".env", ".csv", ".conf",
+  // JavaScript / TypeScript
+  ".js", ".cjs", ".mjs", ".ts", ".tsx", ".jsx",
+  // Python / Ruby / Shell
+  ".py", ".rb", ".sh", ".bash", ".zsh",
+  // Compiled languages
+  ".go", ".rs", ".swift", ".kt", ".java", ".cs",
+  ".cpp", ".c", ".h", ".hpp",
+  // SQL
+  ".sql",
+  // Web
+  ".html", ".css", ".scss", ".sass",
+  // SVG
+  ".svg",
+  // Dotfiles / tooling
+  ".gitignore", ".editorconfig", ".prettierrc", ".eslintrc",
+  // Misc
+  ".lock", ".log",
 ]);
 
 export function isTextFile(filePath: string): boolean {

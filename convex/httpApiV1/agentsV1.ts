@@ -1,7 +1,7 @@
 import { httpAction } from "../_generated/server";
 import { api, internal } from "../_generated/api";
 import { jsonResponse, errorResponse, getSearchParams, resolveTokenToUser, checkHttpRateLimit } from "./shared";
-import { validateSlug, validateVersion, validateDisplayName, validateChangelog, validateAgentFiles, AGENT_MAX_FILE_SIZE } from "../lib/publishValidation";
+import { validateSlug, validateVersion, validateDisplayName, validateChangelog, validateAgentFiles, assertFileIsText, AGENT_MAX_FILE_SIZE } from "../lib/publishValidation";
 import { parseFrontmatter, extractName } from "../lib/frontmatter";
 import { createZipBlob } from "../lib/zip";
 
@@ -69,7 +69,6 @@ export async function handleGetAgentFile(ctx: any, request: Request): Promise<Re
   const blob = await ctx.storage.get(file.storageId);
   if (!blob) return errorResponse("File content unavailable", 500);
 
-  // Agents can contain binary files — serve with appropriate content type
   const buffer = await blob.arrayBuffer();
   return new Response(buffer, {
     headers: {
@@ -140,14 +139,21 @@ export const publishAgent = httpAction(async (ctx, request) => {
         const buffer = await file.arrayBuffer();
         const filePath = file.name || "AGENT.md";
 
+        // Validate AGENT.md is a real text file, not a renamed binary
+        if (filePath === "AGENT.md") {
+          try {
+            assertFileIsText(filePath, new Uint8Array(buffer));
+          } catch (e: any) {
+            return errorResponse(e.message, 400);
+          }
+          agentMdText = new TextDecoder().decode(buffer);
+        }
+
         const storageId = await ctx.storage.store(file);
         const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
         const sha256 = Array.from(new Uint8Array(hashBuffer))
           .map((b) => b.toString(16).padStart(2, "0"))
           .join("");
-        if (filePath === "AGENT.md") {
-          agentMdText = new TextDecoder().decode(buffer);
-        }
         zipEntries.push({ path: filePath, buffer });
         fileEntries.push({
           path: filePath,
