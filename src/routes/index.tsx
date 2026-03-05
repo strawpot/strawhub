@@ -7,7 +7,7 @@ export const Route = createFileRoute("/")({
 
 function HomePage() {
   useSEO({
-    title: "StrawHub - Install AI Workers for StrawPot",
+    title: "StrawHub - The Registry for StrawPot",
     url: "/",
   });
 
@@ -16,12 +16,13 @@ function HomePage() {
       <section className="text-center py-8 md:py-16">
         <h1 className="text-3xl md:text-5xl font-bold text-white mb-4">StrawHub</h1>
         <p className="text-lg md:text-xl text-gray-400 mb-4">
-          Install AI workers for your{" "}
-          <span className="text-orange-400">StrawPot</span> team
+          The registry for{" "}
+          <span className="text-orange-400">StrawPot</span> — where AI agents
+          get the job done
         </p>
         <p className="text-gray-500 max-w-2xl mx-auto">
-          Each role bundles the skills needed for the job. One command to
-          install, nothing to configure.
+          Install roles like Implementer, Reviewer, or Analyst. StrawPot
+          automatically resolves the skills needed for the job.
         </p>
       </section>
 
@@ -32,8 +33,8 @@ function HomePage() {
         >
           <h2 className="text-2xl font-bold text-white mb-2">Roles</h2>
           <p className="text-gray-400">
-            Job-ready AI workers. Each role bundles skills and a default agent
-            for the job. One install, everything included.
+            Job definitions that bundle the skills needed for the work. Install
+            a role and every dependency resolves automatically.
           </p>
         </Link>
 
@@ -43,8 +44,8 @@ function HomePage() {
         >
           <h2 className="text-2xl font-bold text-white mb-2">Skills</h2>
           <p className="text-gray-400">
-            Capabilities that roles depend on. Installed automatically when you
-            install a role — you never manage them directly.
+            Atomic capabilities like writing code, running tests, or searching
+            documents. Installed automatically with roles.
           </p>
         </Link>
 

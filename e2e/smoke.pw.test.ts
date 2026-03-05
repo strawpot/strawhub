@@ -24,7 +24,7 @@ test.describe("Smoke tests", () => {
   test("homepage renders hero content", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator("h1")).toContainText("StrawHub");
-    await expect(page.locator("text=Install AI workers for your")).toBeVisible();
+    await expect(page.locator("text=The registry for")).toBeVisible();
     await expect(page.locator("h2", { hasText: "Roles" })).toBeVisible();
     await expect(page.locator("h2", { hasText: "Skills" })).toBeVisible();
     await expect(page.locator("text=strawhub install role implementer")).toBeVisible();
