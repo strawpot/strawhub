@@ -7,6 +7,7 @@ import { useSEO } from "../lib/useSEO";
 import { buildJsonLd } from "../lib/buildJsonLd";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { MetadataValue } from "../components/MetadataValue";
 
 export const Route = createFileRoute("/agents/$slug")({
   component: AgentDetailPage,
@@ -396,24 +397,7 @@ function AgentMdViewer({
                         {key}
                       </td>
                       <td className="px-4 py-2 text-gray-200">
-                        {Array.isArray(value) ? (
-                          <div className="flex flex-wrap gap-1.5">
-                            {value.map((v, i) => (
-                              <span
-                                key={i}
-                                className="rounded bg-gray-800 px-2 py-0.5 text-xs font-mono text-gray-300"
-                              >
-                                {String(v)}
-                              </span>
-                            ))}
-                          </div>
-                        ) : typeof value === "object" && value !== null ? (
-                          <pre className="text-xs font-mono text-gray-300">
-                            {JSON.stringify(value, null, 2)}
-                          </pre>
-                        ) : (
-                          <span className="font-mono">{String(value)}</span>
-                        )}
+                        <MetadataValue value={value} />
                       </td>
                     </tr>
                   ))}
