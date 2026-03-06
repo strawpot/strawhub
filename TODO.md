@@ -23,3 +23,7 @@ Add a periodic reconciliation job that recounts stars and comments from source t
 Run hourly or daily via cron.
 
 Reference: ClawHub's `reconcileSkillStarCounts` mutation.
+
+## Revision All SKILL.md
+
+Review and improve all uploaded `SKILL.md` files using the skill-creator tool from Anthropic.
