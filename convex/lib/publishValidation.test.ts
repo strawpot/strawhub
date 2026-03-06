@@ -208,14 +208,14 @@ describe("validateFrontmatterName", () => {
     expect(() => validateFrontmatterName({ name: "my-skill" }, "my-skill")).not.toThrow();
   });
 
-  it("accepts missing name field", () => {
-    expect(() => validateFrontmatterName({}, "my-skill")).not.toThrow();
+  it("rejects missing name field", () => {
+    expect(() => validateFrontmatterName({}, "my-skill")).toThrow(/missing the required 'name' field/);
   });
 
-  it("accepts non-string name", () => {
-    expect(() => validateFrontmatterName({ name: 42 }, "my-skill")).not.toThrow();
-    expect(() => validateFrontmatterName({ name: true }, "my-skill")).not.toThrow();
-    expect(() => validateFrontmatterName({ name: null }, "my-skill")).not.toThrow();
+  it("rejects non-string name", () => {
+    expect(() => validateFrontmatterName({ name: 42 }, "my-skill")).toThrow(/missing the required 'name' field/);
+    expect(() => validateFrontmatterName({ name: true }, "my-skill")).toThrow(/missing the required 'name' field/);
+    expect(() => validateFrontmatterName({ name: null }, "my-skill")).toThrow(/missing the required 'name' field/);
   });
 
   it("rejects mismatched name", () => {

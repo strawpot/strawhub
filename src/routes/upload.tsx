@@ -462,9 +462,28 @@ function UploadPage() {
         ? (existing?.displayName ?? displayName.trim())
         : displayName.trim();
 
+      // Ensure the primary markdown file has the correct `name` field in frontmatter
+      const ensureFrontmatterName = (text: string | undefined, slugValue: string): string | undefined => {
+        if (!text) return text;
+        const { frontmatter } = parseFrontmatter(text);
+        if (frontmatter.name === slugValue) return text;
+        const fmMatch = text.match(/^---\s*\n([\s\S]*?\n)---\s*\n/);
+        if (fmMatch) {
+          const yamlBlock = fmMatch[1];
+          // Replace existing name line or prepend
+          if (/^name\s*:/m.test(yamlBlock)) {
+            const updated = yamlBlock.replace(/^name\s*:.*$/m, `name: ${slugValue}`);
+            return text.replace(fmMatch[1], updated);
+          }
+          return text.replace(/^---\s*\n/, `---\nname: ${slugValue}\n`);
+        }
+        return `---\nname: ${slugValue}\n---\n${text}`;
+      };
+
       if (kind === "skill") {
         const skillMdFile = files.find((f) => f.path === "SKILL.md");
-        const skillMdText = skillMdFile ? await skillMdFile.file.text() : undefined;
+        const rawText = skillMdFile ? await skillMdFile.file.text() : undefined;
+        const skillMdText = ensureFrontmatterName(rawText, slug.trim());
         await publishSkill({
           slug: slug.trim(),
           displayName: resolvedDisplayName,
@@ -476,7 +495,8 @@ function UploadPage() {
         });
       } else if (kind === "role") {
         const roleMdFile = files.find((f) => f.path === "ROLE.md");
-        const roleMdText = roleMdFile ? await roleMdFile.file.text() : undefined;
+        const rawText = roleMdFile ? await roleMdFile.file.text() : undefined;
+        const roleMdText = ensureFrontmatterName(rawText, slug.trim());
         await publishRole({
           slug: slug.trim(),
           displayName: resolvedDisplayName,
@@ -488,7 +508,8 @@ function UploadPage() {
         });
       } else {
         const agentMdFile = files.find((f) => f.path === "AGENT.md");
-        const agentMdText = agentMdFile ? await agentMdFile.file.text() : undefined;
+        const rawText = agentMdFile ? await agentMdFile.file.text() : undefined;
+        const agentMdText = ensureFrontmatterName(rawText, slug.trim());
         await publishAgent({
           slug: slug.trim(),
           displayName: resolvedDisplayName,

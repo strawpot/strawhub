@@ -201,11 +201,17 @@ export const publishSkill = httpAction(async (ctx, request) => {
     return errorResponse(e.message, 400);
   }
 
-  // Validate frontmatter name matches slug
+  // Validate frontmatter name is present and matches slug
   if (skillMdText) {
     const { frontmatter } = parseFrontmatter(skillMdText);
     const fmName = extractName(frontmatter);
-    if (fmName && fmName !== slug) {
+    if (!fmName) {
+      return errorResponse(
+        "Frontmatter is missing the required 'name' field",
+        400,
+      );
+    }
+    if (fmName !== slug) {
       return errorResponse(
         `Frontmatter name '${fmName}' does not match slug '${slug}'`,
         400,
