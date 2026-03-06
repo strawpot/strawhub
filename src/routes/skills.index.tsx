@@ -62,7 +62,7 @@ function SkillsPage() {
         <h1 className="text-2xl md:text-3xl font-bold text-white">
           Skills
           {counts?.skills != null && (
-            <span className="ml-2 text-base font-normal text-gray-500">({counts.skills.toLocaleString()})</span>
+            <span className="ml-2 font-normal text-gray-500">({counts.skills.toLocaleString()})</span>
           )}
         </h1>
         <Link
