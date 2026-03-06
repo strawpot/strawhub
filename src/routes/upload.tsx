@@ -462,14 +462,19 @@ function UploadPage() {
         ? (existing?.displayName ?? displayName.trim())
         : displayName.trim();
 
-      // Ensure the primary markdown file has a `name` field in frontmatter
+      // Ensure the primary markdown file has the correct `name` field in frontmatter
       const ensureFrontmatterName = (text: string | undefined, slugValue: string): string | undefined => {
         if (!text) return text;
         const { frontmatter } = parseFrontmatter(text);
-        if (typeof frontmatter.name === "string" && frontmatter.name) return text;
-        // Inject name into existing frontmatter or add frontmatter block
+        if (frontmatter.name === slugValue) return text;
         const fmMatch = text.match(/^---\s*\n([\s\S]*?\n)---\s*\n/);
         if (fmMatch) {
+          const yamlBlock = fmMatch[1];
+          // Replace existing name line or prepend
+          if (/^name\s*:/m.test(yamlBlock)) {
+            const updated = yamlBlock.replace(/^name\s*:.*$/m, `name: ${slugValue}`);
+            return text.replace(fmMatch[1], updated);
+          }
           return text.replace(/^---\s*\n/, `---\nname: ${slugValue}\n`);
         }
         return `---\nname: ${slugValue}\n---\n${text}`;
