@@ -198,7 +198,7 @@ function SkillDetailPage() {
               (original author: @{skill.importSource.originalOwnerHandle})
             </span>
           )}
-          {currentUser && !isOwner && (
+          {currentUser && !isOwner && currentUser.handle === skill.importSource.originalOwnerHandle && (
             <button
               onClick={async () => {
                 setClaiming(true);
@@ -206,7 +206,12 @@ function SkillDetailPage() {
                 try {
                   await claimSkill({ slug: skill.slug });
                 } catch (e: any) {
-                  setClaimError(e.message || "Claim failed");
+                  const raw = e.message || "Claim failed";
+                  const cleaned = raw
+                    .replace(/^\[CONVEX [^\]]*\]\s*(\[Request ID: [^\]]*\]\s*)?Server Error\s*Uncaught Error:\s*/i, "")
+                    .replace(/[\s\n]+at\s+\S+\s*\(.*$/s, "")
+                    .trim();
+                  setClaimError(cleaned);
                 } finally {
                   setClaiming(false);
                 }
