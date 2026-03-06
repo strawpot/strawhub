@@ -393,4 +393,11 @@ export default defineSchema({
     count: v.number(),
     windowStart: v.number(),
   }).index("by_key_bucket", ["key", "bucket"]),
+
+  // ── Counters ───────────────────────────────────────────────────────────
+
+  counters: defineTable({
+    name: v.string(), // "skills", "roles", "agents"
+    count: v.number(),
+  }).index("by_name", ["name"]),
 });

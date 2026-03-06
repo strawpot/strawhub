@@ -242,6 +242,9 @@ export const publishInternal = internalMutation({
         updatedAt: now,
       });
       agent = (await ctx.db.get(agentId))!;
+      const counter = await ctx.db.query("counters").withIndex("by_name", (q) => q.eq("name", "agents")).first();
+      if (counter) { await ctx.db.patch(counter._id, { count: counter.count + 1 }); }
+      else { await ctx.db.insert("counters", { name: "agents", count: 1 }); }
     }
 
     // Resolve version: use provided, or auto-increment from latest
@@ -358,6 +361,9 @@ export const publish = mutation({
         updatedAt: now,
       });
       agent = (await ctx.db.get(agentId))!;
+      const counter = await ctx.db.query("counters").withIndex("by_name", (q) => q.eq("name", "agents")).first();
+      if (counter) { await ctx.db.patch(counter._id, { count: counter.count + 1 }); }
+      else { await ctx.db.insert("counters", { name: "agents", count: 1 }); }
     }
 
     // Resolve version: use provided, or auto-increment from latest
@@ -450,6 +456,10 @@ export const softDeleteInternal = internalMutation({
       .first();
     if (!agent) throw new Error("Agent not found");
 
+    if (!agent.softDeletedAt) {
+      const counter = await ctx.db.query("counters").withIndex("by_name", (q) => q.eq("name", "agents")).first();
+      if (counter && counter.count > 0) { await ctx.db.patch(counter._id, { count: counter.count - 1 }); }
+    }
     await ctx.db.patch(agent._id, { softDeletedAt: Date.now() });
     return { ok: true };
   },
@@ -474,6 +484,10 @@ export const softDelete = mutation({
       .first();
     if (!agent) throw new Error("Agent not found");
 
+    if (!agent.softDeletedAt) {
+      const counter = await ctx.db.query("counters").withIndex("by_name", (q) => q.eq("name", "agents")).first();
+      if (counter && counter.count > 0) { await ctx.db.patch(counter._id, { count: counter.count - 1 }); }
+    }
     await ctx.db.patch(agent._id, { softDeletedAt: Date.now() });
   },
 });
