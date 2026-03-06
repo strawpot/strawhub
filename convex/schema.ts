@@ -93,6 +93,9 @@ export default defineSchema({
     .index("by_updated", ["updatedAt"])
     .index("by_stats_downloads", ["stats.downloads"])
     .index("by_stats_stars", ["stats.stars"])
+    .index("by_active_updated", ["softDeletedAt", "updatedAt"])
+    .index("by_active_stats_downloads", ["softDeletedAt", "stats.downloads"])
+    .index("by_active_stats_stars", ["softDeletedAt", "stats.stars"])
     .searchIndex("search", {
       searchField: "displayName",
       filterFields: ["softDeletedAt"],
@@ -184,6 +187,9 @@ export default defineSchema({
     .index("by_updated", ["updatedAt"])
     .index("by_stats_downloads", ["stats.downloads"])
     .index("by_stats_stars", ["stats.stars"])
+    .index("by_active_updated", ["softDeletedAt", "updatedAt"])
+    .index("by_active_stats_downloads", ["softDeletedAt", "stats.downloads"])
+    .index("by_active_stats_stars", ["softDeletedAt", "stats.stars"])
     .searchIndex("search", {
       searchField: "displayName",
       filterFields: ["softDeletedAt"],
@@ -254,6 +260,9 @@ export default defineSchema({
     .index("by_updated", ["updatedAt"])
     .index("by_stats_downloads", ["stats.downloads"])
     .index("by_stats_stars", ["stats.stars"])
+    .index("by_active_updated", ["softDeletedAt", "updatedAt"])
+    .index("by_active_stats_downloads", ["softDeletedAt", "stats.downloads"])
+    .index("by_active_stats_stars", ["softDeletedAt", "stats.stars"])
     .searchIndex("search", {
       searchField: "displayName",
       filterFields: ["softDeletedAt"],
@@ -393,6 +402,16 @@ export default defineSchema({
     count: v.number(),
     windowStart: v.number(),
   }).index("by_key_bucket", ["key", "bucket"]),
+
+  // ── Stat Events (event-sourced download tracking) ──────────────────────
+
+  statEvents: defineTable({
+    targetKind: v.union(v.literal("skill"), v.literal("role"), v.literal("agent")),
+    targetId: v.string(),
+    event: v.union(v.literal("download")),
+    versionId: v.optional(v.string()),
+    createdAt: v.number(),
+  }).index("by_createdAt", ["createdAt"]),
 
   // ── Counters ───────────────────────────────────────────────────────────
 

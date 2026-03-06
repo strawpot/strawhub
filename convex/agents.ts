@@ -5,6 +5,7 @@ import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { parseFrontmatter } from "./lib/frontmatter";
 import { parseVersion, compareVersions } from "./lib/versionSpec";
+import { paginateWithRecovery } from "./lib/pagination";
 import { validateSlug, validateVersion, validateDisplayName, validateChangelog, validateAgentFiles, validateFrontmatterName } from "./lib/publishValidation";
 
 /** Resolve version: validate if provided, otherwise auto-increment from latest. */
@@ -36,9 +37,9 @@ export const list = query({
   },
   handler: async (ctx, args) => {
     const sort = args.sort ?? "updated";
-    const indexName = sort === "downloads" ? "by_stats_downloads"
-      : sort === "stars" ? "by_stats_stars"
-      : "by_updated";
+    const indexName = sort === "downloads" ? "by_active_stats_downloads"
+      : sort === "stars" ? "by_active_stats_stars"
+      : "by_active_updated";
 
     const q = args.query?.toLowerCase();
 
@@ -57,17 +58,24 @@ export const list = query({
         continueCursor: "" as any,
       };
     } else {
-      paginatedResult = await ctx.db
-        .query("agents")
-        .withIndex(indexName)
-        .filter((f) => f.eq(f.field("softDeletedAt"), undefined))
-        .order("desc")
-        .paginate(args.paginationOpts);
+      paginatedResult = await paginateWithRecovery(
+        (opts) => ctx.db
+          .query("agents")
+          .withIndex(indexName, (q) => q.eq("softDeletedAt", undefined))
+          .order("desc")
+          .paginate(opts),
+        args.paginationOpts,
+      );
     }
+
+    // Batch-fetch unique owners to avoid redundant reads
+    const ownerIds = [...new Set(paginatedResult.page.map((a) => a.ownerUserId))];
+    const ownerDocs = await Promise.all(ownerIds.map((id) => ctx.db.get(id)));
+    const ownerMap = new Map(ownerIds.map((id, i) => [id, ownerDocs[i]]));
 
     const enriched = await Promise.all(
       paginatedResult.page.map(async (agent) => {
-        const owner = await ctx.db.get(agent.ownerUserId);
+        const owner = ownerMap.get(agent.ownerUserId);
         const latestVersion = agent.latestVersionId
           ? await ctx.db.get(agent.latestVersionId)
           : null;
