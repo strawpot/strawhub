@@ -2,7 +2,10 @@ import { v } from "convex/values";
 import { mutation } from "./_generated/server";
 
 /**
- * Track a download and increment both total stats and per-version counter.
+ * Track a download by inserting a lightweight stat event.
+ * A cron job (every 15 min) flushes accumulated events into the target
+ * document's stats, preventing thundering-herd query invalidation on
+ * popular items.
  */
 export const trackDownload = mutation({
   args: {
@@ -11,76 +14,51 @@ export const trackDownload = mutation({
     version: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    if (args.targetKind === "skill") {
-      const skill = await ctx.db
-        .query("skills")
-        .withIndex("by_slug", (q) => q.eq("slug", args.slug))
-        .first();
-      if (skill) {
-        await ctx.db.patch(skill._id, {
-          stats: { ...skill.stats, downloads: skill.stats.downloads + 1 },
-        });
-        // Increment per-version download count
-        if (args.version) {
-          const ver = await ctx.db
-            .query("skillVersions")
-            .withIndex("by_skill_version", (q) =>
-              q.eq("skillId", skill._id).eq("version", args.version!),
-            )
-            .first();
-          if (ver) {
-            await ctx.db.patch(ver._id, {
-              downloads: (ver.downloads ?? 0) + 1,
-            });
-          }
-        }
-      }
-    } else if (args.targetKind === "role") {
-      const role = await ctx.db
-        .query("roles")
-        .withIndex("by_slug", (q) => q.eq("slug", args.slug))
-        .first();
-      if (role) {
-        await ctx.db.patch(role._id, {
-          stats: { ...role.stats, downloads: role.stats.downloads + 1 },
-        });
-        if (args.version) {
-          const ver = await ctx.db
-            .query("roleVersions")
-            .withIndex("by_role_version", (q) =>
-              q.eq("roleId", role._id).eq("version", args.version!),
-            )
-            .first();
-          if (ver) {
-            await ctx.db.patch(ver._id, {
-              downloads: (ver.downloads ?? 0) + 1,
-            });
-          }
-        }
-      }
-    } else {
-      const agent = await ctx.db
-        .query("agents")
-        .withIndex("by_slug", (q) => q.eq("slug", args.slug))
-        .first();
-      if (agent) {
-        await ctx.db.patch(agent._id, {
-          stats: { ...agent.stats, downloads: agent.stats.downloads + 1 },
-        });
-        if (args.version) {
-          const ver = await ctx.db
-            .query("agentVersions")
-            .withIndex("by_agent_version", (q) =>
-              q.eq("agentId", agent._id).eq("version", args.version!),
-            )
-            .first();
-          if (ver) {
-            await ctx.db.patch(ver._id, {
-              downloads: (ver.downloads ?? 0) + 1,
-            });
-          }
-        }
+    const table = args.targetKind === "skill" ? "skills"
+      : args.targetKind === "role" ? "roles"
+      : "agents";
+    const target = await ctx.db
+      .query(table)
+      .withIndex("by_slug", (q: any) => q.eq("slug", args.slug))
+      .first();
+    if (!target) return;
+
+    // Resolve version ID if provided
+    let versionId: string | undefined;
+    if (args.version) {
+      if (args.targetKind === "skill") {
+        const ver = await ctx.db
+          .query("skillVersions")
+          .withIndex("by_skill_version", (q) =>
+            q.eq("skillId", target._id as any).eq("version", args.version!),
+          )
+          .first();
+        versionId = ver?._id;
+      } else if (args.targetKind === "role") {
+        const ver = await ctx.db
+          .query("roleVersions")
+          .withIndex("by_role_version", (q) =>
+            q.eq("roleId", target._id as any).eq("version", args.version!),
+          )
+          .first();
+        versionId = ver?._id;
+      } else {
+        const ver = await ctx.db
+          .query("agentVersions")
+          .withIndex("by_agent_version", (q) =>
+            q.eq("agentId", target._id as any).eq("version", args.version!),
+          )
+          .first();
+        versionId = ver?._id;
       }
     }
+
+    await ctx.db.insert("statEvents", {
+      targetKind: args.targetKind,
+      targetId: target._id,
+      event: "download",
+      versionId,
+      createdAt: Date.now(),
+    });
   },
 });
