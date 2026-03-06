@@ -313,11 +313,17 @@ export const publishRole = httpAction(async (ctx, request) => {
     return errorResponse("At least one file is required", 400);
   }
 
-  // Validate frontmatter name matches slug
+  // Validate frontmatter name is present and matches slug
   if (roleMdText) {
     const { frontmatter } = parseFrontmatter(roleMdText);
     const fmName = extractName(frontmatter);
-    if (fmName && fmName !== slug) {
+    if (!fmName) {
+      return errorResponse(
+        "Frontmatter is missing the required 'name' field",
+        400,
+      );
+    }
+    if (fmName !== slug) {
       return errorResponse(
         `Frontmatter name '${fmName}' does not match slug '${slug}'`,
         400,

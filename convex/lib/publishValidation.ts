@@ -125,14 +125,19 @@ export function validateRoleFiles(
 }
 
 /**
- * Validate that the frontmatter `name` field (if present) matches the slug.
+ * Validate that the frontmatter `name` field is present and matches the slug.
  */
 export function validateFrontmatterName(
   frontmatter: Record<string, unknown>,
   slug: string,
 ): void {
   const name = frontmatter.name;
-  if (typeof name === "string" && name !== slug) {
+  if (typeof name !== "string" || !name) {
+    throw new Error(
+      "Frontmatter is missing the required 'name' field",
+    );
+  }
+  if (name !== slug) {
     throw new Error(
       `Frontmatter name '${name}' does not match slug '${slug}'`,
     );
