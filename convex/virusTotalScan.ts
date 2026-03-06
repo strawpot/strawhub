@@ -154,84 +154,81 @@ export const listPendingScans = query({
       throw new Error("Not authorized");
     }
 
-    // Collect rate_limited and error skill versions
+    // Collect rate_limited and error skill versions using index
     const skillRateLimited = await ctx.db
       .query("skillVersions")
-      .filter((q) => q.eq(q.field("scanStatus"), "rate_limited"))
-      .collect();
+      .withIndex("by_scanStatus", (q) => q.eq("scanStatus", "rate_limited"))
+      .take(20);
 
     const skillErrored = await ctx.db
       .query("skillVersions")
-      .filter((q) => q.eq(q.field("scanStatus"), "error"))
-      .collect();
+      .withIndex("by_scanStatus", (q) => q.eq("scanStatus", "error"))
+      .take(20);
 
-    const skillVersions = [...skillRateLimited, ...skillErrored];
+    const skillVersions = [...skillRateLimited, ...skillErrored]
+      .filter((ver) => !ver.softDeletedAt);
 
-    // Enrich with skill info and priority
-    const skillItems = await Promise.all(
-      skillVersions
-        .filter((ver) => !ver.softDeletedAt)
-        .map(async (ver) => {
-          const skill = await ctx.db.get(ver.skillId);
-          if (!skill || skill.softDeletedAt) return null;
-
-          const isLatest = skill.latestVersionId === ver._id;
-          const owner = await ctx.db.get(skill.ownerUserId);
-
-          return {
-            _id: ver._id,
-            kind: "skill" as const,
-            parentId: ver.skillId,
-            slug: skill.slug,
-            displayName: skill.displayName,
-            version: ver.version,
-            scanStatus: ver.scanStatus as string,
-            scanResult: ver.scanResult,
-            priority: isLatest ? ("high" as const) : ("low" as const),
-            owner: owner ? { handle: owner.handle, image: owner.image } : null,
-            createdAt: ver.createdAt,
-          };
-        }),
+    // Batch-fetch parent skills to avoid N+1
+    const skillDocs = await Promise.all(
+      skillVersions.map((ver) => ctx.db.get(ver.skillId)),
     );
 
-    // Collect rate_limited and error agent versions
+    const skillItems = skillVersions.map((ver, i) => {
+      const skill = skillDocs[i];
+      if (!skill || skill.softDeletedAt) return null;
+
+      const isLatest = skill.latestVersionId === ver._id;
+      return {
+        _id: ver._id,
+        kind: "skill" as const,
+        parentId: ver.skillId,
+        slug: skill.slug,
+        displayName: skill.displayName,
+        version: ver.version,
+        scanStatus: ver.scanStatus as string,
+        scanResult: ver.scanResult,
+        priority: isLatest ? ("high" as const) : ("low" as const),
+        createdAt: ver.createdAt,
+      };
+    });
+
+    // Collect rate_limited and error agent versions using index
     const agentRateLimited = await ctx.db
       .query("agentVersions")
-      .filter((q) => q.eq(q.field("scanStatus"), "rate_limited"))
-      .collect();
+      .withIndex("by_scanStatus", (q) => q.eq("scanStatus", "rate_limited"))
+      .take(20);
 
     const agentErrored = await ctx.db
       .query("agentVersions")
-      .filter((q) => q.eq(q.field("scanStatus"), "error"))
-      .collect();
+      .withIndex("by_scanStatus", (q) => q.eq("scanStatus", "error"))
+      .take(20);
 
-    const agentVersions = [...agentRateLimited, ...agentErrored];
+    const agentVersions = [...agentRateLimited, ...agentErrored]
+      .filter((ver) => !ver.softDeletedAt);
 
-    const agentItems = await Promise.all(
-      agentVersions
-        .filter((ver) => !ver.softDeletedAt)
-        .map(async (ver) => {
-          const agent = await ctx.db.get(ver.agentId);
-          if (!agent || agent.softDeletedAt) return null;
-
-          const isLatest = agent.latestVersionId === ver._id;
-          const owner = await ctx.db.get(agent.ownerUserId);
-
-          return {
-            _id: ver._id,
-            kind: "agent" as const,
-            parentId: ver.agentId,
-            slug: agent.slug,
-            displayName: agent.displayName,
-            version: ver.version,
-            scanStatus: ver.scanStatus as string,
-            scanResult: ver.scanResult,
-            priority: isLatest ? ("high" as const) : ("low" as const),
-            owner: owner ? { handle: owner.handle, image: owner.image } : null,
-            createdAt: ver.createdAt,
-          };
-        }),
+    // Batch-fetch parent agents to avoid N+1
+    const agentDocs = await Promise.all(
+      agentVersions.map((ver) => ctx.db.get(ver.agentId)),
     );
+
+    const agentItems = agentVersions.map((ver, i) => {
+      const agent = agentDocs[i];
+      if (!agent || agent.softDeletedAt) return null;
+
+      const isLatest = agent.latestVersionId === ver._id;
+      return {
+        _id: ver._id,
+        kind: "agent" as const,
+        parentId: ver.agentId,
+        slug: agent.slug,
+        displayName: agent.displayName,
+        version: ver.version,
+        scanStatus: ver.scanStatus as string,
+        scanResult: ver.scanResult,
+        priority: isLatest ? ("high" as const) : ("low" as const),
+        createdAt: ver.createdAt,
+      };
+    });
 
     const items = [...skillItems, ...agentItems];
 

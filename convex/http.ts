@@ -1,12 +1,12 @@
 import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
 import { auth } from "./auth";
-import { listSkills, handleGetSkill, handleGetSkillFile, publishSkill, handleDeleteSkill, handleClaimSkill } from "./httpApiV1/skillsV1";
+import { listSkills, handleGetSkill, handleGetSkillFile, handleResolveSkillDeps, publishSkill, handleDeleteSkill, handleClaimSkill } from "./httpApiV1/skillsV1";
 import { listRoles, handleGetRole, handleGetRoleFile, handleResolveRoleDeps, publishRole, handleDeleteRole } from "./httpApiV1/rolesV1";
 import { listAgents, handleGetAgent, handleGetAgentFile, publishAgent, handleDeleteAgent } from "./httpApiV1/agentsV1";
 import { searchAll } from "./httpApiV1/searchV1";
 import { whoami } from "./httpApiV1/whoamiV1";
-import { serveSitemap } from "./httpApiV1/sitemapV1";
+
 import { toggleStar } from "./httpApiV1/starsV1";
 import { setUserRole, banUser } from "./httpApiV1/adminV1";
 import { corsResponse } from "./httpApiV1/shared";
@@ -24,10 +24,11 @@ http.route({ path: "/api/v1/skills", method: "GET", handler: listSkills });
 http.route({ path: "/api/v1/skills", method: "POST", handler: publishSkill });
 http.route({ path: "/api/v1/skills", method: "OPTIONS", handler: corsHandler });
 
-// Dynamic slug routes: /api/v1/skills/:slug, /api/v1/skills/:slug/file, /api/v1/skills/:slug/claim
+// Dynamic slug routes: /api/v1/skills/:slug, /api/v1/skills/:slug/file, /api/v1/skills/:slug/resolve, /api/v1/skills/:slug/claim
 const skillSlugDispatcher = httpAction(async (ctx, request) => {
   const parts = new URL(request.url).pathname.split("/");
   if (parts[5] === "file") return handleGetSkillFile(ctx, request);
+  if (parts[5] === "resolve") return handleResolveSkillDeps(ctx, request);
   return handleGetSkill(ctx, request);
 });
 const skillSlugPostDispatcher = httpAction(async (ctx, request) => {
@@ -94,8 +95,5 @@ http.route({ path: "/api/v1/admin/set-role", method: "POST", handler: setUserRol
 http.route({ path: "/api/v1/admin/set-role", method: "OPTIONS", handler: corsHandler });
 http.route({ path: "/api/v1/admin/ban-user", method: "POST", handler: banUser });
 http.route({ path: "/api/v1/admin/ban-user", method: "OPTIONS", handler: corsHandler });
-
-// ── Sitemap ─────────────────────────────────────────────────────────────
-http.route({ path: "/api/v1/sitemap", method: "GET", handler: serveSitemap });
 
 export default http;

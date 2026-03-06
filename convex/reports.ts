@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { paginationOptsValidator } from "convex/server";
 import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
@@ -83,6 +84,7 @@ export const hasReported = query({
  */
 export const list = query({
   args: {
+    paginationOpts: paginationOptsValidator,
     status: v.optional(
       v.union(v.literal("pending"), v.literal("resolved"), v.literal("dismissed")),
     ),
@@ -97,26 +99,36 @@ export const list = query({
     }
 
     const status = args.status ?? "pending";
-    const reports = await ctx.db
+    const paginatedResult = await ctx.db
       .query("reports")
       .withIndex("by_status", (q) => q.eq("status", status))
       .order("desc")
-      .take(100);
+      .paginate(args.paginationOpts);
 
-    return Promise.all(
-      reports.map(async (report) => {
-        const reporter = await ctx.db.get(report.userId);
-        const target = await ctx.db.get(report.targetId as any);
-        return {
-          ...report,
-          reporter: reporter
-            ? { handle: reporter.handle, displayName: reporter.displayName }
-            : null,
-          targetName: target ? (target as any).displayName : "Unknown",
-          targetSlug: target ? (target as any).slug : null,
-        };
-      }),
-    );
+    // Batch-fetch unique users and targets to avoid N+1
+    const userIds = [...new Set(paginatedResult.page.map((r) => r.userId))];
+    const targetIds = [...new Set(paginatedResult.page.map((r) => r.targetId))];
+    const [userDocs, targetDocs] = await Promise.all([
+      Promise.all(userIds.map((id) => ctx.db.get(id))),
+      Promise.all(targetIds.map((id) => ctx.db.get(id as any))),
+    ]);
+    const userMap = new Map(userIds.map((id, i) => [id, userDocs[i]]));
+    const targetMap = new Map(targetIds.map((id, i) => [id, targetDocs[i]]));
+
+    const enriched = paginatedResult.page.map((report) => {
+      const reporter = userMap.get(report.userId);
+      const target = targetMap.get(report.targetId);
+      return {
+        ...report,
+        reporter: reporter
+          ? { handle: reporter.handle, displayName: reporter.displayName }
+          : null,
+        targetName: target ? (target as any).displayName : "Unknown",
+        targetSlug: target ? (target as any).slug : null,
+      };
+    });
+
+    return { ...paginatedResult, page: enriched };
   },
 });
 

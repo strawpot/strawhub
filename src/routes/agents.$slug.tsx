@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
+import { usePaginatedQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { parseFrontmatter } from "../lib/parseFrontmatter";
 import { useSEO } from "../lib/useSEO";
@@ -22,9 +23,10 @@ function AgentDetailPage() {
     description: agent?.summary || undefined,
     url: `/agents/${slug}`,
   });
-  const versions = useQuery(
+  const { results: versions, status: versionsStatus, loadMore: loadMoreVersions } = usePaginatedQuery(
     api.agents.getVersions,
     agent ? { agentId: agent._id } : "skip",
+    { initialNumItems: 20 },
   );
   const trackDownload = useMutation(api.downloads.trackDownload);
   const toggleStar = useMutation(api.stars.toggle);
@@ -317,6 +319,8 @@ function AgentDetailPage() {
       <AgentDetailTabs
         files={agent.filesWithUrls}
         versions={versions ?? []}
+        versionsStatus={versionsStatus}
+        loadMoreVersions={loadMoreVersions}
         latestVersionId={agent.latestVersionId}
         slug={agent.slug}
         trackDownload={trackDownload}
@@ -419,6 +423,8 @@ function AgentMdViewer({
 function AgentDetailTabs({
   files,
   versions,
+  versionsStatus,
+  loadMoreVersions,
   latestVersionId,
   slug,
   trackDownload,
@@ -431,6 +437,8 @@ function AgentDetailTabs({
     createdAt: number;
     zipUrl: string | null;
   }>;
+  versionsStatus: string;
+  loadMoreVersions: (numItems: number) => void;
   latestVersionId: string | undefined;
   slug: string;
   trackDownload: (args: { targetKind: "skill" | "role" | "agent"; slug: string; version?: string }) => void;
@@ -611,6 +619,19 @@ function AgentDetailTabs({
               )}
             </div>
           ))}
+          {versionsStatus === "CanLoadMore" && (
+            <div className="px-4 py-3">
+              <button
+                onClick={() => loadMoreVersions(20)}
+                className="w-full text-center text-sm text-gray-500 hover:text-gray-300 py-2 transition-colors"
+              >
+                Load more versions
+              </button>
+            </div>
+          )}
+          {versionsStatus === "LoadingMore" && (
+            <p className="text-center text-sm text-gray-500 py-3">Loading more...</p>
+          )}
         </div>
       )}
     </div>
@@ -628,7 +649,11 @@ function CommentsSection({
   commentCount: number;
   currentUser: { _id: string } | null | undefined;
 }) {
-  const comments = useQuery(api.comments.list, { targetId });
+  const { results: comments, status: commentsStatus, loadMore: loadMoreComments } = usePaginatedQuery(
+    api.comments.list,
+    { targetId },
+    { initialNumItems: 20 },
+  );
   const createComment = useMutation(api.comments.create);
   const removeComment = useMutation(api.comments.remove);
 
@@ -680,7 +705,7 @@ function CommentsSection({
         </div>
       )}
 
-      {comments === undefined ? (
+      {commentsStatus === "LoadingFirstPage" ? (
         <p className="text-gray-500 text-sm">Loading comments...</p>
       ) : comments.length === 0 ? (
         <p className="text-gray-500 text-sm">No comments yet.</p>
@@ -738,6 +763,17 @@ function CommentsSection({
               )}
             </div>
           ))}
+          {commentsStatus === "CanLoadMore" && (
+            <button
+              onClick={() => loadMoreComments(20)}
+              className="w-full text-center text-sm text-gray-500 hover:text-gray-300 py-2 transition-colors"
+            >
+              Load more comments
+            </button>
+          )}
+          {commentsStatus === "LoadingMore" && (
+            <p className="text-center text-sm text-gray-500 py-2">Loading more...</p>
+          )}
         </div>
       )}
     </div>

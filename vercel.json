@@ -1,9 +1,5 @@
 {
   "rewrites": [
-    {
-      "source": "/sitemap.xml",
-      "destination": "https://descriptive-crab-211.convex.cloud/api/v1/sitemap"
-    },
-    { "source": "/(.*)", "destination": "/" }
+{ "source": "/(.*)", "destination": "/" }
   ]
 }

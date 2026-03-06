@@ -99,12 +99,6 @@ function SearchPage() {
   );
 }
 
-function formatSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
 function SearchResultCard({ result }: { result: any }) {
   return (
     <Link
@@ -126,25 +120,10 @@ function SearchResultCard({ result }: { result: any }) {
           )}
         </div>
         <div className="flex gap-4 text-xs text-gray-500 shrink-0">
-          {result.totalSize > 0 && <span>{formatSize(result.totalSize)}</span>}
-          {result.latestVersionString && <span>v{result.latestVersionString}</span>}
           <span>{result.stats.downloads} downloads</span>
           <span>{result.stats.stars} stars</span>
         </div>
       </div>
-      {result.owner && (
-        <div className="flex items-center gap-2 mt-3">
-          <span className="text-xs text-gray-500">by</span>
-          {result.owner.image ? (
-            <img src={result.owner.image} alt="" className="h-5 w-5 rounded-full" />
-          ) : (
-            <div className="h-5 w-5 rounded-full bg-gray-700" />
-          )}
-          {result.owner.handle && (
-            <span className="text-xs text-gray-500">@{result.owner.handle}</span>
-          )}
-        </div>
-      )}
     </Link>
   );
 }

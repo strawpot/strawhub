@@ -32,3 +32,17 @@ class TestResolveDepsWildcard:
         result = _resolve_deps(client, "role", "lead", {})
         assert len(result) == 1
         assert result[0]["slug"] == "reviewer"
+
+    def test_skill_uses_server_resolve(self):
+        """Skills use server-side /resolve endpoint."""
+        client = MagicMock()
+        client.resolve_skill_deps.return_value = {
+            "dependencies": [
+                {"slug": "git-workflow", "kind": "skill", "version": "1.0.0"},
+                {"slug": "code-review", "kind": "skill", "version": "2.0.0"},
+            ],
+        }
+        result = _resolve_deps(client, "skill", "my-skill", {})
+        client.resolve_skill_deps.assert_called_once_with("my-skill")
+        assert len(result) == 2
+        assert result[0]["slug"] == "git-workflow"

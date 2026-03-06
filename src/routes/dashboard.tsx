@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
+import { usePaginatedQuery } from "convex/react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { api } from "../../convex/_generated/api";
 import { useSEO } from "../lib/useSEO";
@@ -62,14 +63,26 @@ function DashboardPage() {
 }
 
 function UserContent({ userId }: { userId: string; handle?: string }) {
-  const skills = useQuery(api.skills.listByOwner, { userId: userId as any });
-  const roles = useQuery(api.roles.listByOwner, { userId: userId as any });
-  const agents = useQuery(api.agents.listByOwner, { userId: userId as any });
+  const { results: skills, status: skillsStatus, loadMore: loadMoreSkills } = usePaginatedQuery(
+    api.skills.listByOwner,
+    { userId: userId as any },
+    { initialNumItems: 50 },
+  );
+  const { results: roles, status: rolesStatus, loadMore: loadMoreRoles } = usePaginatedQuery(
+    api.roles.listByOwner,
+    { userId: userId as any },
+    { initialNumItems: 50 },
+  );
+  const { results: agents, status: agentsStatus, loadMore: loadMoreAgents } = usePaginatedQuery(
+    api.agents.listByOwner,
+    { userId: userId as any },
+    { initialNumItems: 50 },
+  );
 
-  const hasSkills = skills && skills.length > 0;
-  const hasRoles = roles && roles.length > 0;
-  const hasAgents = agents && agents.length > 0;
-  const loading = skills === undefined || roles === undefined || agents === undefined;
+  const hasSkills = skills.length > 0;
+  const hasRoles = roles.length > 0;
+  const hasAgents = agents.length > 0;
+  const loading = skillsStatus === "LoadingFirstPage" || rolesStatus === "LoadingFirstPage" || agentsStatus === "LoadingFirstPage";
   const empty = !loading && !hasSkills && !hasRoles && !hasAgents;
 
   if (loading) {
@@ -145,6 +158,17 @@ function UserContent({ userId }: { userId: string; handle?: string }) {
                 </div>
               </div>
             ))}
+            {rolesStatus === "CanLoadMore" && (
+              <button
+                onClick={() => loadMoreRoles(50)}
+                className="w-full text-center text-sm text-gray-500 hover:text-gray-300 py-2 transition-colors"
+              >
+                Load more roles
+              </button>
+            )}
+            {rolesStatus === "LoadingMore" && (
+              <p className="text-center text-sm text-gray-500 py-2">Loading more...</p>
+            )}
           </div>
         </section>
       )}
@@ -197,6 +221,17 @@ function UserContent({ userId }: { userId: string; handle?: string }) {
                 </div>
               </div>
             ))}
+            {skillsStatus === "CanLoadMore" && (
+              <button
+                onClick={() => loadMoreSkills(50)}
+                className="w-full text-center text-sm text-gray-500 hover:text-gray-300 py-2 transition-colors"
+              >
+                Load more skills
+              </button>
+            )}
+            {skillsStatus === "LoadingMore" && (
+              <p className="text-center text-sm text-gray-500 py-2">Loading more...</p>
+            )}
           </div>
         </section>
       )}
@@ -249,6 +284,17 @@ function UserContent({ userId }: { userId: string; handle?: string }) {
                 </div>
               </div>
             ))}
+            {agentsStatus === "CanLoadMore" && (
+              <button
+                onClick={() => loadMoreAgents(50)}
+                className="w-full text-center text-sm text-gray-500 hover:text-gray-300 py-2 transition-colors"
+              >
+                Load more agents
+              </button>
+            )}
+            {agentsStatus === "LoadingMore" && (
+              <p className="text-center text-sm text-gray-500 py-2">Loading more...</p>
+            )}
           </div>
         </section>
       )}
@@ -257,16 +303,24 @@ function UserContent({ userId }: { userId: string; handle?: string }) {
 }
 
 function StarredContent() {
-  const starred = useQuery(api.stars.listByUser);
+  const { results: starred, status: starredStatus, loadMore: loadMoreStarred } = usePaginatedQuery(
+    api.stars.listByUser,
+    {},
+    { initialNumItems: 100 },
+  );
   const toggleStar = useMutation(api.stars.toggle);
 
-  if (starred === undefined) {
+  if (starredStatus === "LoadingFirstPage") {
     return <p className="text-gray-500 text-sm">Loading starred...</p>;
   }
 
-  const hasSkills = starred.skills.length > 0;
-  const hasRoles = starred.roles.length > 0;
-  const hasAgents = (starred as any).agents?.length > 0;
+  const starredRoles = starred.filter((s) => s.kind === "role");
+  const starredSkills = starred.filter((s) => s.kind === "skill");
+  const starredAgents = starred.filter((s) => s.kind === "agent");
+
+  const hasSkills = starredSkills.length > 0;
+  const hasRoles = starredRoles.length > 0;
+  const hasAgents = starredAgents.length > 0;
 
   if (!hasSkills && !hasRoles && !hasAgents) return null;
 
@@ -278,7 +332,7 @@ function StarredContent() {
         <section className="space-y-3">
           <h3 className="text-sm font-medium text-gray-400">Roles</h3>
           <div className="space-y-3">
-            {starred.roles.map((r) => (
+            {starredRoles.map((r) => (
               <div
                 key={r._id}
                 className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-lg border border-gray-800 p-4"
@@ -327,7 +381,7 @@ function StarredContent() {
         <section className="space-y-3">
           <h3 className="text-sm font-medium text-gray-400">Skills</h3>
           <div className="space-y-3">
-            {starred.skills.map((s) => (
+            {starredSkills.map((s) => (
               <div
                 key={s._id}
                 className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-lg border border-gray-800 p-4"
@@ -376,7 +430,7 @@ function StarredContent() {
         <section className="space-y-3">
           <h3 className="text-sm font-medium text-gray-400">Agents</h3>
           <div className="space-y-3">
-            {(starred as any).agents.map((a: any) => (
+            {starredAgents.map((a) => (
               <div
                 key={a._id}
                 className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-lg border border-gray-800 p-4"
@@ -419,6 +473,18 @@ function StarredContent() {
             ))}
           </div>
         </section>
+      )}
+
+      {starredStatus === "CanLoadMore" && (
+        <button
+          onClick={() => loadMoreStarred(100)}
+          className="w-full text-center text-sm text-gray-500 hover:text-gray-300 py-2 transition-colors"
+        >
+          Load more starred items
+        </button>
+      )}
+      {starredStatus === "LoadingMore" && (
+        <p className="text-center text-sm text-gray-500 py-2">Loading more...</p>
       )}
     </div>
   );

@@ -49,23 +49,19 @@ export const list = query({
     if (!userId) throw new Error("Not authenticated");
     if (!(await isAdmin(ctx, userId))) throw new Error("Not authorized");
 
-    const search = args.search?.trim().toLowerCase();
+    const search = args.search?.trim();
 
     if (!search) {
       return await ctx.db.query("users").order("desc").paginate(args.paginationOpts);
     }
 
-    // With search: collect, filter, return as a single complete page.
-    const all = await ctx.db.query("users").order("desc").collect();
-    const filtered = all.filter(
-      (u) =>
-        u.name?.toLowerCase().includes(search) ||
-        u.handle?.toLowerCase().includes(search) ||
-        u.displayName?.toLowerCase().includes(search) ||
-        u.email?.toLowerCase().includes(search),
-    );
+    // Use search index on name field, then filter remaining fields client-side
+    const matched = await ctx.db
+      .query("users")
+      .withSearchIndex("search", (q) => q.search("name", search))
+      .take(50);
     return {
-      page: filtered,
+      page: matched,
       isDone: true,
       continueCursor: "" as any,
     };

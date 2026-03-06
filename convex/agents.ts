@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { paginationOptsValidator } from "convex/server";
 import { mutation, query, internalMutation } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
@@ -20,10 +21,12 @@ function resolveVersion(explicit: string | undefined, latestVersion: string | un
 // ─── Queries ─────────────────────────────────────────────────────────────────
 
 /**
- * List agents with pagination.
+ * List agents with cursor-based pagination, sorted by updatedAt/downloads/stars.
+ * When a text query is provided, falls back to .take() with a single-page result.
  */
 export const list = query({
   args: {
+    paginationOpts: paginationOptsValidator,
     query: v.optional(v.string()),
     sort: v.optional(v.union(
       v.literal("updated"),
@@ -32,35 +35,61 @@ export const list = query({
     )),
   },
   handler: async (ctx, args) => {
-    const all = await ctx.db
-      .query("agents")
-      .withIndex("by_updated")
-      .filter((q) => q.eq(q.field("softDeletedAt"), undefined))
-      .order("desc")
-      .collect();
+    const sort = args.sort ?? "updated";
+    const indexName = sort === "downloads" ? "by_stats_downloads"
+      : sort === "stars" ? "by_stats_stars"
+      : "by_updated";
+
     const q = args.query?.toLowerCase();
-    const matched = q
-      ? all.filter(
-          (a) =>
-            a.displayName.toLowerCase().includes(q) ||
-            a.slug.toLowerCase().includes(q) ||
-            (a.summary ?? "").toLowerCase().includes(q),
+
+    let paginatedResult;
+    if (q) {
+      // Use Convex search index for text search
+      const matched = await ctx.db
+        .query("agents")
+        .withSearchIndex("search", (search) =>
+          search.search("displayName", q).eq("softDeletedAt", undefined),
         )
-      : all;
-    return Promise.all(
-      matched.map(async (agent) => {
+        .take(args.paginationOpts.numItems);
+      paginatedResult = {
+        page: matched,
+        isDone: true,
+        continueCursor: "" as any,
+      };
+    } else {
+      paginatedResult = await ctx.db
+        .query("agents")
+        .withIndex(indexName)
+        .filter((f) => f.eq(f.field("softDeletedAt"), undefined))
+        .order("desc")
+        .paginate(args.paginationOpts);
+    }
+
+    const enriched = await Promise.all(
+      paginatedResult.page.map(async (agent) => {
         const owner = await ctx.db.get(agent.ownerUserId);
         const latestVersion = agent.latestVersionId
           ? await ctx.db.get(agent.latestVersionId)
           : null;
         return {
-          ...agent,
+          _id: agent._id,
+          slug: agent.slug,
+          displayName: agent.displayName,
+          summary: agent.summary,
+          stats: agent.stats,
+          badges: agent.badges,
+          updatedAt: agent.updatedAt,
           latestVersionString: latestVersion?.version ?? null,
           totalSize: latestVersion?.files?.reduce((sum: number, f: { size: number }) => sum + f.size, 0) ?? 0,
           owner: owner ? { handle: owner.handle, image: owner.image } : null,
         };
       }),
     );
+
+    return {
+      ...paginatedResult,
+      page: enriched,
+    };
   },
 });
 
@@ -114,22 +143,23 @@ export const getBySlug = query({
  * Get all versions of an agent.
  */
 export const getVersions = query({
-  args: { agentId: v.id("agents") },
+  args: { agentId: v.id("agents"), paginationOpts: paginationOptsValidator },
   handler: async (ctx, args) => {
-    const versions = await ctx.db
+    const result = await ctx.db
       .query("agentVersions")
       .withIndex("by_agent", (q) => q.eq("agentId", args.agentId))
       .filter((q) => q.eq(q.field("softDeletedAt"), undefined))
       .order("desc")
-      .collect();
-    return Promise.all(
-      versions.map(async (ver) => ({
+      .paginate(args.paginationOpts);
+    const enriched = await Promise.all(
+      result.page.map(async (ver) => ({
         ...ver,
         zipUrl: ver.zipStorageId
           ? await ctx.storage.getUrl(ver.zipStorageId)
           : null,
       })),
     );
+    return { ...result, page: enriched };
   },
 });
 
@@ -137,13 +167,13 @@ export const getVersions = query({
  * List agents owned by a user.
  */
 export const listByOwner = query({
-  args: { userId: v.id("users") },
+  args: { userId: v.id("users"), paginationOpts: paginationOptsValidator },
   handler: async (ctx, args) => {
     return await ctx.db
       .query("agents")
       .withIndex("by_owner", (q) => q.eq("ownerUserId", args.userId))
       .filter((q) => q.eq(q.field("softDeletedAt"), undefined))
-      .collect();
+      .paginate(args.paginationOpts);
   },
 });
 

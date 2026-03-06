@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { paginationOptsValidator } from "convex/server";
 import { mutation, query, internalMutation } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
@@ -133,67 +134,67 @@ export const isStarred = query({
 
 /**
  * Get list of targetIds the current user has starred (for list page lookups).
+ * Uses cursor-based pagination. Frontend should use a large initialNumItems
+ * since this returns just IDs (tiny payload) and needs all results for .includes() checks.
  */
 export const listStarredIds = query({
-  args: {},
-  handler: async (ctx) => {
+  args: { paginationOpts: paginationOptsValidator },
+  handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) return [];
+    if (!userId) {
+      return { page: [] as string[], isDone: true, continueCursor: "" as any };
+    }
 
-    const stars = await ctx.db
+    const result = await ctx.db
       .query("stars")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
-    return stars.map((s) => s.targetId);
+      .paginate(args.paginationOpts);
+
+    return {
+      ...result,
+      page: result.page.map((s) => s.targetId),
+    };
   },
 });
 
 /**
  * Get the current user's starred items with resolved details.
+ * Returns a flat paginated list; frontend groups by kind.
  */
 export const listByUser = query({
-  args: {},
-  handler: async (ctx) => {
+  args: { paginationOpts: paginationOptsValidator },
+  handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) return { skills: [], roles: [], agents: [] };
-
-    const stars = await ctx.db
-      .query("stars")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
-
-    type StarredItem = {
-      _id: string;
-      slug: string;
-      displayName: string;
-      summary?: string;
-      stats: { downloads: number; stars: number; versions: number; comments: number };
-      starredAt: number;
-    };
-    const skills: StarredItem[] = [];
-    const roles: StarredItem[] = [];
-    const agents: StarredItem[] = [];
-
-    for (const star of stars) {
-      const target = await ctx.db.get(star.targetId as any);
-      if (!target || (target as any).softDeletedAt) continue;
-      const item = {
-        _id: target._id,
-        slug: (target as any).slug,
-        displayName: (target as any).displayName,
-        summary: (target as any).summary,
-        stats: (target as any).stats,
-        starredAt: star.createdAt,
-      };
-      if (star.targetKind === "skill") {
-        skills.push(item);
-      } else if (star.targetKind === "role") {
-        roles.push(item);
-      } else {
-        agents.push(item);
-      }
+    if (!userId) {
+      return { page: [] as any[], isDone: true, continueCursor: "" as any };
     }
 
-    return { skills, roles, agents };
+    const result = await ctx.db
+      .query("stars")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .paginate(args.paginationOpts);
+
+    // Batch-fetch all targets in parallel to avoid N+1
+    const targets = await Promise.all(
+      result.page.map((star) => ctx.db.get(star.targetId as any)),
+    );
+
+    const enriched = result.page
+      .map((star, i) => {
+        const target = targets[i];
+        if (!target || (target as any).softDeletedAt) return null;
+        return {
+          _id: target._id,
+          kind: star.targetKind,
+          slug: (target as any).slug,
+          displayName: (target as any).displayName,
+          summary: (target as any).summary,
+          stats: (target as any).stats,
+          starredAt: star.createdAt,
+        };
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== null);
+
+    return { ...result, page: enriched };
   },
 });

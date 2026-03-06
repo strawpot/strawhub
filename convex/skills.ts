@@ -1,9 +1,10 @@
 import { v } from "convex/values";
+import { paginationOptsValidator } from "convex/server";
 import { mutation, query, internalMutation } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { parseFrontmatter, extractDependencies } from "./lib/frontmatter";
-import { parseDependencySpec, parseVersion, compareVersions, satisfiesVersion } from "./lib/versionSpec";
+import { parseDependencySpec, parseVersion, compareVersions } from "./lib/versionSpec";
 import { validateSlug, validateVersion, validateDisplayName, validateChangelog, validateFiles, validateFrontmatterName } from "./lib/publishValidation";
 
 /** Resolve version: validate if provided, otherwise auto-increment from latest. */
@@ -20,10 +21,12 @@ function resolveVersion(explicit: string | undefined, latestVersion: string | un
 // ─── Queries ─────────────────────────────────────────────────────────────────
 
 /**
- * List skills with pagination, sorted by updatedAt.
+ * List skills with cursor-based pagination, sorted by updatedAt/downloads/stars.
+ * When a text query is provided, falls back to .take() with a single-page result.
  */
 export const list = query({
   args: {
+    paginationOpts: paginationOptsValidator,
     query: v.optional(v.string()),
     sort: v.optional(v.union(
       v.literal("updated"),
@@ -32,35 +35,61 @@ export const list = query({
     )),
   },
   handler: async (ctx, args) => {
-    const all = await ctx.db
-      .query("skills")
-      .withIndex("by_updated")
-      .filter((q) => q.eq(q.field("softDeletedAt"), undefined))
-      .order("desc")
-      .collect();
+    const sort = args.sort ?? "updated";
+    const indexName = sort === "downloads" ? "by_stats_downloads"
+      : sort === "stars" ? "by_stats_stars"
+      : "by_updated";
+
     const q = args.query?.toLowerCase();
-    const matched = q
-      ? all.filter(
-          (s) =>
-            s.displayName.toLowerCase().includes(q) ||
-            s.slug.toLowerCase().includes(q) ||
-            (s.summary ?? "").toLowerCase().includes(q),
+
+    let paginatedResult;
+    if (q) {
+      // Use Convex search index for text search
+      const matched = await ctx.db
+        .query("skills")
+        .withSearchIndex("search", (search) =>
+          search.search("displayName", q).eq("softDeletedAt", undefined),
         )
-      : all;
-    return Promise.all(
-      matched.map(async (skill) => {
+        .take(args.paginationOpts.numItems);
+      paginatedResult = {
+        page: matched,
+        isDone: true,
+        continueCursor: "" as any,
+      };
+    } else {
+      paginatedResult = await ctx.db
+        .query("skills")
+        .withIndex(indexName)
+        .filter((f) => f.eq(f.field("softDeletedAt"), undefined))
+        .order("desc")
+        .paginate(args.paginationOpts);
+    }
+
+    const enriched = await Promise.all(
+      paginatedResult.page.map(async (skill) => {
         const owner = await ctx.db.get(skill.ownerUserId);
         const latestVersion = skill.latestVersionId
           ? await ctx.db.get(skill.latestVersionId)
           : null;
         return {
-          ...skill,
+          _id: skill._id,
+          slug: skill.slug,
+          displayName: skill.displayName,
+          summary: skill.summary,
+          stats: skill.stats,
+          badges: skill.badges,
+          updatedAt: skill.updatedAt,
           latestVersionString: latestVersion?.version ?? null,
           totalSize: latestVersion?.files?.reduce((sum: number, f: { size: number }) => sum + f.size, 0) ?? 0,
           owner: owner ? { handle: owner.handle, image: owner.image } : null,
         };
       }),
     );
+
+    return {
+      ...paginatedResult,
+      page: enriched,
+    };
   },
 });
 
@@ -122,22 +151,23 @@ export const getBySlug = query({
  * Get all versions of a skill.
  */
 export const getVersions = query({
-  args: { skillId: v.id("skills") },
+  args: { skillId: v.id("skills"), paginationOpts: paginationOptsValidator },
   handler: async (ctx, args) => {
-    const versions = await ctx.db
+    const result = await ctx.db
       .query("skillVersions")
       .withIndex("by_skill", (q) => q.eq("skillId", args.skillId))
       .filter((q) => q.eq(q.field("softDeletedAt"), undefined))
       .order("desc")
-      .collect();
-    return Promise.all(
-      versions.map(async (ver) => ({
+      .paginate(args.paginationOpts);
+    const enriched = await Promise.all(
+      result.page.map(async (ver) => ({
         ...ver,
         zipUrl: ver.zipStorageId
           ? await ctx.storage.getUrl(ver.zipStorageId)
           : null,
       })),
     );
+    return { ...result, page: enriched };
   },
 });
 
@@ -163,13 +193,13 @@ export const getVersion = query({
  * List skills owned by a user.
  */
 export const listByOwner = query({
-  args: { userId: v.id("users") },
+  args: { userId: v.id("users"), paginationOpts: paginationOptsValidator },
   handler: async (ctx, args) => {
     return await ctx.db
       .query("skills")
       .withIndex("by_owner", (q) => q.eq("ownerUserId", args.userId))
       .filter((q) => q.eq(q.field("softDeletedAt"), undefined))
-      .collect();
+      .paginate(args.paginationOpts);
   },
 });
 
@@ -257,14 +287,15 @@ export const publishInternal = internalMutation({
           continue;
         }
 
-        if (spec.operator !== "latest" && spec.version) {
-          const versions = await ctx.db
+        if (spec.operator === "==" && spec.version) {
+          const exactMatch = await ctx.db
             .query("skillVersions")
-            .withIndex("by_skill", (q) => q.eq("skillId", depSkill._id))
-            .filter((q) => q.eq(q.field("softDeletedAt"), undefined))
-            .collect();
-          if (!versions.some((v) => satisfiesVersion(v.version, spec))) {
-            versionMismatch.push(`${spec.slug} (${spec.operator}${spec.version})`);
+            .withIndex("by_skill_version", (q) =>
+              q.eq("skillId", depSkill._id).eq("version", spec.version!),
+            )
+            .first();
+          if (!exactMatch || exactMatch.softDeletedAt) {
+            versionMismatch.push(`${spec.slug} (==${spec.version})`);
           }
         }
       }
@@ -427,14 +458,15 @@ export const publish = mutation({
           continue;
         }
 
-        if (spec.operator !== "latest" && spec.version) {
-          const versions = await ctx.db
+        if (spec.operator === "==" && spec.version) {
+          const exactMatch = await ctx.db
             .query("skillVersions")
-            .withIndex("by_skill", (q) => q.eq("skillId", depSkill._id))
-            .filter((q) => q.eq(q.field("softDeletedAt"), undefined))
-            .collect();
-          if (!versions.some((v) => satisfiesVersion(v.version, spec))) {
-            versionMismatch.push(`${spec.slug} (${spec.operator}${spec.version})`);
+            .withIndex("by_skill_version", (q) =>
+              q.eq("skillId", depSkill._id).eq("version", spec.version!),
+            )
+            .first();
+          if (!exactMatch || exactMatch.softDeletedAt) {
+            versionMismatch.push(`${spec.slug} (==${spec.version})`);
           }
         }
       }

@@ -265,7 +265,7 @@ def _install_impl(
                 pf = ProjectFile.load(get_project_file_path())
                 pf.add_dependency(kind, slug, target_version, exact=save_exact)
                 pf.save()
-                constraint = f"=={target_version}" if save_exact else f"^{target_version}"
+                constraint = f"=={target_version}" if save_exact else "*"
                 console.print(
                     f"Saved {kind} '{slug}' ({constraint}) to strawpot.toml"
                 )
@@ -572,8 +572,7 @@ def _resolve_deps(
 ) -> list[dict]:
     """Resolve all transitive dependencies for a package.
 
-    For roles, uses the server-side /resolve endpoint.
-    For skills, resolves client-side by parsing SKILL.md frontmatter.
+    Uses the server-side /resolve endpoint for both skills and roles.
     Dependencies are just slugs; always resolves to latest version.
     """
     if kind == "agent":
@@ -586,55 +585,10 @@ def _resolve_deps(
         # Filter "*" wildcard — not a real package slug
         return [d for d in deps if d.get("slug") != "*"]
     else:
-        # Skills: resolve client-side via frontmatter parsing
-        dep_list: list[dict] = []
-        visited: set[str] = set()
-        _resolve_skill_deps(client, slug, visited, dep_list)
-        # Remove the root skill itself from the dep list
-        dep_list = [d for d in dep_list if d["slug"] != slug]
-        if dep_list:
-            console.print("Resolving dependencies...")
-        return dep_list
-
-
-def _resolve_skill_deps(
-    client: StrawHubClient,
-    slug: str,
-    visited: set[str],
-    dep_list: list[dict],
-) -> None:
-    """Recursively resolve skill dependencies by fetching info and parsing deps."""
-    if slug in visited:
-        return
-    visited.add(slug)
-
-    try:
-        _, detail = client.get_info(slug, kind="skill")
-    except NotFoundError:
-        raise DependencyError(f"Dependency skill '{slug}' not found in registry")
-
-    lv = detail.get("latestVersion")
-    if not lv:
-        raise DependencyError(f"Dependency skill '{slug}' has no published versions")
-
-    # Get dependency slugs
-    deps = detail.get("dependencies", {})
-    skill_deps = deps.get("skills", [])
-
-    # Also check latestVersion.dependencies if top-level is empty
-    if not skill_deps and lv.get("dependencies"):
-        skill_deps = lv["dependencies"].get("skills", [])
-
-    # Recurse into transitive deps first (DFS, leaves first)
-    for dep_slug_raw in skill_deps:
-        dep_slug = extract_slug(dep_slug_raw)
-        _resolve_skill_deps(client, dep_slug, visited, dep_list)
-
-    dep_list.append({
-        "kind": "skill",
-        "slug": slug,
-        "version": lv["version"],
-    })
+        console.print("Resolving dependencies...")
+        resolved = client.resolve_skill_deps(slug)
+        deps = resolved.get("dependencies", [])
+        return [d for d in deps if d.get("slug") != "*"]
 
 
 # ── Slug-based installation helpers ───────────────────────────────────────────

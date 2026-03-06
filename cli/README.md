@@ -42,16 +42,16 @@ Declare your project's skill and role dependencies in a `strawpot.toml` file at 
 
 ```toml
 [skills]
-git-workflow = "^1.0.0"
+git-workflow = "*"
 code-review = "==2.1.0"
 
 [roles]
-implementer = "^1.0.0"
+implementer = "*"
 ```
 
 Run `strawhub install` to install everything. Teammates can clone the repo and run the same command to get an identical setup.
 
-Version constraints: `"*"` (latest), `"^X.Y.Z"` (compatible), `"==X.Y.Z"` (exact), `">=X.Y.Z"` (minimum).
+Version constraints: `"*"` (latest), `"==X.Y.Z"` (exact).
 
 See the [project file documentation](../docs/project-file.md) for full details.
 
@@ -63,7 +63,7 @@ See the [project file documentation](../docs/project-file.md) for full details.
 |---------|-------------|
 | `install` | Install all dependencies from `strawpot.toml` |
 | `install skill\|role <slug>` | Install a specific skill or role |
-| `install skill\|role <slug> --save` | Install and save to `strawpot.toml` (`^X.Y.Z`) |
+| `install skill\|role <slug> --save` | Install and save to `strawpot.toml` (`*`) |
 | `install skill\|role <slug> --save-exact` | Install and save to `strawpot.toml` (`==X.Y.Z`) |
 | `install skill\|role <slug> --version X.Y.Z` | Install a specific version |
 | `uninstall skill\|role <slug>` | Uninstall a skill or role |
@@ -117,7 +117,7 @@ The `install` command supports several flags for controlling behavior:
 | `--force` | Force replace existing installation (requires `--version`) |
 | `--update` | Update to latest if already installed |
 | `--recursive` | Also update dependencies (requires `--update`) |
-| `--save` | Save to `strawpot.toml` with `^X.Y.Z` |
+| `--save` | Save to `strawpot.toml` with `*` |
 | `--save-exact` | Save to `strawpot.toml` with `==X.Y.Z` |
 | `--skip-tools` | Skip system tool installation |
 | `--yes`, `-y` | Auto-confirm tool install prompts |

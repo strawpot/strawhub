@@ -17,24 +17,24 @@ class TestProjectFileLoad:
 
     def test_load_if_exists_returns_pf(self, tmp_path):
         path = tmp_path / "strawpot.toml"
-        path.write_text('[skills]\ngit-workflow = "^1.0.0"\n')
+        path.write_text('[skills]\ngit-workflow = "*"\n')
         pf = ProjectFile.load_if_exists(path)
         assert pf is not None
-        assert pf.skills == {"git-workflow": "^1.0.0"}
+        assert pf.skills == {"git-workflow": "*"}
 
     def test_load_skills_and_roles(self, tmp_path):
         path = tmp_path / "strawpot.toml"
         path.write_text(
             '[skills]\n'
-            'git-workflow = "^1.0.0"\n'
+            'git-workflow = "*"\n'
             'code-review = "==2.1.0"\n'
             '\n'
             '[roles]\n'
-            'implementer = "^1.0.0"\n'
+            'implementer = "*"\n'
         )
         pf = ProjectFile.load(path)
-        assert pf.skills == {"git-workflow": "^1.0.0", "code-review": "==2.1.0"}
-        assert pf.roles == {"implementer": "^1.0.0"}
+        assert pf.skills == {"git-workflow": "*", "code-review": "==2.1.0"}
+        assert pf.roles == {"implementer": "*"}
 
     def test_load_star_constraint(self, tmp_path):
         path = tmp_path / "strawpot.toml"
@@ -50,9 +50,9 @@ class TestProjectFileLoad:
 
     def test_load_skills_only(self, tmp_path):
         path = tmp_path / "strawpot.toml"
-        path.write_text('[skills]\nfoo = "^1.0.0"\n')
+        path.write_text('[skills]\nfoo = "*"\n')
         pf = ProjectFile.load(path)
-        assert pf.skills == {"foo": "^1.0.0"}
+        assert pf.skills == {"foo": "*"}
         assert pf.roles == {}
 
 
@@ -60,8 +60,8 @@ class TestProjectFileSave:
     def test_save_and_reload(self, tmp_path):
         path = tmp_path / "strawpot.toml"
         pf = ProjectFile(path)
-        pf.skills = {"git-workflow": "^1.0.0", "code-review": "==2.1.0"}
-        pf.roles = {"implementer": "^1.0.0"}
+        pf.skills = {"git-workflow": "*", "code-review": "==2.1.0"}
+        pf.roles = {"implementer": "*"}
         pf.save()
 
         pf2 = ProjectFile.load(path)
@@ -71,8 +71,8 @@ class TestProjectFileSave:
     def test_save_format(self, tmp_path):
         path = tmp_path / "strawpot.toml"
         pf = ProjectFile(path)
-        pf.skills = {"b-skill": "^2.0.0", "a-skill": "==1.0.0"}
-        pf.roles = {"my-role": ">=3.0.0"}
+        pf.skills = {"b-skill": "*", "a-skill": "==1.0.0"}
+        pf.roles = {"my-role": "==3.0.0"}
         pf.save()
 
         content = path.read_text()
@@ -92,10 +92,10 @@ class TestProjectFileSave:
 
 
 class TestProjectFileDependencies:
-    def test_add_dependency_caret(self, tmp_path):
+    def test_add_dependency_latest(self, tmp_path):
         pf = ProjectFile(tmp_path / "strawpot.toml")
         pf.add_dependency("skill", "git-workflow", "1.0.0")
-        assert pf.skills == {"git-workflow": "^1.0.0"}
+        assert pf.skills == {"git-workflow": "*"}
 
     def test_add_dependency_exact(self, tmp_path):
         pf = ProjectFile(tmp_path / "strawpot.toml")
@@ -105,7 +105,7 @@ class TestProjectFileDependencies:
     def test_add_dependency_role(self, tmp_path):
         pf = ProjectFile(tmp_path / "strawpot.toml")
         pf.add_dependency("role", "implementer", "2.0.0")
-        assert pf.roles == {"implementer": "^2.0.0"}
+        assert pf.roles == {"implementer": "*"}
 
     def test_overwrite_existing(self, tmp_path):
         pf = ProjectFile(tmp_path / "strawpot.toml")
@@ -115,7 +115,7 @@ class TestProjectFileDependencies:
 
     def test_remove_dependency(self, tmp_path):
         pf = ProjectFile(tmp_path / "strawpot.toml")
-        pf.skills = {"foo": "^1.0.0", "bar": "==2.0.0"}
+        pf.skills = {"foo": "*", "bar": "==2.0.0"}
         assert pf.remove_dependency("skill", "foo") is True
         assert pf.skills == {"bar": "==2.0.0"}
 
@@ -125,19 +125,19 @@ class TestProjectFileDependencies:
 
     def test_has_dependency(self, tmp_path):
         pf = ProjectFile(tmp_path / "strawpot.toml")
-        pf.skills = {"foo": "^1.0.0"}
+        pf.skills = {"foo": "*"}
         assert pf.has_dependency("skill", "foo") is True
         assert pf.has_dependency("skill", "bar") is False
         assert pf.has_dependency("role", "foo") is False
 
     def test_get_all_dependencies(self, tmp_path):
         pf = ProjectFile(tmp_path / "strawpot.toml")
-        pf.skills = {"a": "^1.0.0", "b": "==2.0.0"}
-        pf.roles = {"r": ">=3.0.0"}
+        pf.skills = {"a": "*", "b": "==2.0.0"}
+        pf.roles = {"r": "==3.0.0"}
         deps = pf.get_all_dependencies()
-        assert ("skill", "a", "^1.0.0") in deps
+        assert ("skill", "a", "*") in deps
         assert ("skill", "b", "==2.0.0") in deps
-        assert ("role", "r", ">=3.0.0") in deps
+        assert ("role", "r", "==3.0.0") in deps
         assert len(deps) == 3
 
     def test_is_empty(self, tmp_path):
@@ -146,23 +146,11 @@ class TestProjectFileDependencies:
         pf.add_dependency("skill", "foo", "1.0.0")
         assert pf.is_empty is False
 
-    def test_update_dependency_caret(self, tmp_path):
-        pf = ProjectFile(tmp_path / "strawpot.toml")
-        pf.skills = {"foo": "^1.0.0"}
-        assert pf.update_dependency("skill", "foo", "1.3.0") is True
-        assert pf.skills == {"foo": "^1.3.0"}
-
     def test_update_dependency_exact(self, tmp_path):
         pf = ProjectFile(tmp_path / "strawpot.toml")
         pf.skills = {"foo": "==1.0.0"}
         assert pf.update_dependency("skill", "foo", "2.0.0") is True
         assert pf.skills == {"foo": "==2.0.0"}
-
-    def test_update_dependency_gte(self, tmp_path):
-        pf = ProjectFile(tmp_path / "strawpot.toml")
-        pf.roles = {"bar": ">=1.0.0"}
-        assert pf.update_dependency("role", "bar", "1.5.0") is True
-        assert pf.roles == {"bar": ">=1.5.0"}
 
     def test_update_dependency_star_unchanged(self, tmp_path):
         pf = ProjectFile(tmp_path / "strawpot.toml")
@@ -176,7 +164,7 @@ class TestProjectFileDependencies:
 
     def test_get_constraint(self, tmp_path):
         pf = ProjectFile(tmp_path / "strawpot.toml")
-        pf.skills = {"foo": "^1.0.0"}
-        assert pf.get_constraint("skill", "foo") == "^1.0.0"
+        pf.skills = {"foo": "*"}
+        assert pf.get_constraint("skill", "foo") == "*"
         assert pf.get_constraint("skill", "bar") is None
         assert pf.get_constraint("role", "foo") is None

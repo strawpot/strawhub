@@ -1,12 +1,13 @@
 import { httpAction } from "../_generated/server";
 import { api, internal } from "../_generated/api";
 import { jsonResponse, errorResponse, getSearchParams, resolveTokenToUser, hashToken, checkHttpRateLimit } from "./shared";
+import { parseDependencySpec } from "../lib/versionSpec";
 import { validateSlug, validateVersion, validateDisplayName, validateChangelog, validateFiles, assertFileIsText, MAX_FILE_SIZE } from "../lib/publishValidation";
 import { parseFrontmatter, extractName } from "../lib/frontmatter";
 import { createZipBlob } from "../lib/zip";
 
 /**
- * GET /api/v1/skills — list skills
+ * GET /api/v1/skills — list skills (cursor-based pagination)
  */
 export const listSkills = httpAction(async (ctx, request) => {
   const rateLimited = await checkHttpRateLimit(ctx, request, "read");
@@ -15,16 +16,20 @@ export const listSkills = httpAction(async (ctx, request) => {
   const params = getSearchParams(request);
   const sort = params.get("sort") ?? "updated";
   const query = params.get("query") ?? undefined;
+  const numItems = Math.min(parseInt(params.get("numItems") ?? params.get("limit") ?? "50", 10) || 50, 200);
+  const cursor = params.get("cursor") ?? null;
 
-  const skills = await ctx.runQuery(api.skills.list, {
+  const result = await ctx.runQuery(api.skills.list, {
+    paginationOpts: { numItems, cursor },
     sort: sort as "updated" | "downloads" | "stars",
     query,
   });
 
   return jsonResponse({
-    items: skills.map(formatSkill),
-    count: skills.length,
-  });
+    items: result.page.map(formatSkill),
+    continueCursor: result.continueCursor,
+    isDone: result.isDone,
+  }, 200, { "Cache-Control": "public, max-age=60, stale-while-revalidate=300" });
 });
 
 /**
@@ -79,6 +84,81 @@ export async function handleGetSkillFile(ctx: any, request: Request): Promise<Re
   });
 }
 export const getSkillFile = httpAction(handleGetSkillFile);
+
+/**
+ * GET /api/v1/skills/:slug/resolve — resolve dependencies recursively
+ */
+export async function handleResolveSkillDeps(ctx: any, request: Request): Promise<Response> {
+  const rateLimited = await checkHttpRateLimit(ctx, request, "read");
+  if (rateLimited) return rateLimited;
+
+  const url = new URL(request.url);
+  const parts = url.pathname.split("/");
+  const slug = parts[parts.length - 2];
+
+  const skill = await ctx.runQuery(api.skills.getBySlug, { slug });
+  if (!skill) return errorResponse("Skill not found", 404);
+
+  // Resolve transitive dependencies (skills only)
+  const MAX_DEPTH = 100;
+  const resolved: Array<{ kind: "skill"; slug: string; version: string }> = [];
+  const resolvedKeys = new Set<string>();
+  const visiting = new Set<string>();
+
+  async function resolveSkill(depSpec: string, depth: number) {
+    if (depth > MAX_DEPTH) {
+      throw new Error(`Dependency tree too deep (>${MAX_DEPTH} levels)`);
+    }
+    const spec = parseDependencySpec(depSpec);
+    const key = `skill:${spec.slug}`;
+    if (resolvedKeys.has(key)) return;
+    if (visiting.has(key)) {
+      throw new Error(`Circular dependency: ${spec.slug}`);
+    }
+    visiting.add(key);
+
+    const depSkill = await ctx.runQuery(api.skills.getBySlug, { slug: spec.slug });
+    if (!depSkill) throw new Error(`Dependency skill '${spec.slug}' not found`);
+
+    let resolvedVersion: string | null = null;
+    if (spec.operator === "latest") {
+      if (depSkill.latestVersion) {
+        resolvedVersion = depSkill.latestVersion.version;
+      }
+    } else if (spec.operator === "==" && spec.version) {
+      resolvedVersion = spec.version;
+    }
+
+    if (!resolvedVersion) {
+      throw new Error(
+        `No version of skill '${spec.slug}' satisfies '${spec.operator}${spec.version ?? ""}'`,
+      );
+    }
+
+    // Recurse into transitive skill deps
+    for (const dep of depSkill.dependencies?.skills ?? []) {
+      await resolveSkill(dep, depth + 1);
+    }
+
+    visiting.delete(key);
+    resolvedKeys.add(key);
+    resolved.push({ kind: "skill", slug: spec.slug, version: resolvedVersion });
+  }
+
+  try {
+    for (const dep of skill.dependencies?.skills ?? []) {
+      await resolveSkill(dep, 0);
+    }
+  } catch (e: any) {
+    return errorResponse(e.message, 400);
+  }
+
+  return jsonResponse({
+    skill: slug,
+    dependencies: resolved,
+  });
+}
+export const resolveSkillDeps = httpAction(handleResolveSkillDeps);
 
 /**
  * POST /api/v1/skills — publish a skill via API (Bearer token auth, multipart form data)
