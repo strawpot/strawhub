@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useConvexAuth, useMutation } from "convex/react";
+import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { usePaginatedQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useSEO } from "../lib/useSEO";
@@ -33,6 +33,7 @@ function RolesPage() {
     { initialNumItems: 1000 },
   );
   const toggleStar = useMutation(api.stars.toggle);
+  const counts = useQuery(api.counters.getCounts, {});
 
   const canLoadMore = status === "CanLoadMore";
   const isLoading = status === "LoadingFirstPage";
@@ -60,6 +61,9 @@ function RolesPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl md:text-3xl font-bold text-white">
           Roles
+          {counts?.roles != null && (
+            <span className="ml-2 text-base font-normal text-gray-500">({counts.roles.toLocaleString()})</span>
+          )}
         </h1>
         <Link
           to="/upload"

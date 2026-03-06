@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { query, internalMutation } from "./_generated/server";
+import { query, internalMutation, mutation } from "./_generated/server";
 
 /**
  * Increment or decrement a named counter.
@@ -25,6 +25,29 @@ export const adjust = internalMutation({
         count: Math.max(0, args.delta),
       });
     }
+  },
+});
+
+export const backfill = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const tables = ["skills", "roles", "agents"] as const;
+    const results: Record<string, number> = {};
+    for (const table of tables) {
+      const rows = await ctx.db.query(table).collect();
+      const count = rows.filter((r: any) => !r.softDeletedAt).length;
+      const existing = await ctx.db
+        .query("counters")
+        .withIndex("by_name", (q) => q.eq("name", table))
+        .first();
+      if (existing) {
+        await ctx.db.patch(existing._id, { count });
+      } else {
+        await ctx.db.insert("counters", { name: table, count });
+      }
+      results[table] = count;
+    }
+    return results;
   },
 });
 
