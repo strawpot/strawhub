@@ -1,7 +1,7 @@
 import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
 import { auth } from "./auth";
-import { listSkills, handleGetSkill, handleGetSkillFile, publishSkill, handleDeleteSkill } from "./httpApiV1/skillsV1";
+import { listSkills, handleGetSkill, handleGetSkillFile, publishSkill, handleDeleteSkill, handleClaimSkill } from "./httpApiV1/skillsV1";
 import { listRoles, handleGetRole, handleGetRoleFile, handleResolveRoleDeps, publishRole, handleDeleteRole } from "./httpApiV1/rolesV1";
 import { listAgents, handleGetAgent, handleGetAgentFile, publishAgent, handleDeleteAgent } from "./httpApiV1/agentsV1";
 import { searchAll } from "./httpApiV1/searchV1";
@@ -24,16 +24,22 @@ http.route({ path: "/api/v1/skills", method: "GET", handler: listSkills });
 http.route({ path: "/api/v1/skills", method: "POST", handler: publishSkill });
 http.route({ path: "/api/v1/skills", method: "OPTIONS", handler: corsHandler });
 
-// Dynamic slug routes: /api/v1/skills/:slug and /api/v1/skills/:slug/file
+// Dynamic slug routes: /api/v1/skills/:slug, /api/v1/skills/:slug/file, /api/v1/skills/:slug/claim
 const skillSlugDispatcher = httpAction(async (ctx, request) => {
   const parts = new URL(request.url).pathname.split("/");
   if (parts[5] === "file") return handleGetSkillFile(ctx, request);
   return handleGetSkill(ctx, request);
 });
+const skillSlugPostDispatcher = httpAction(async (ctx, request) => {
+  const parts = new URL(request.url).pathname.split("/");
+  if (parts[5] === "claim") return handleClaimSkill(ctx, request);
+  return new Response("Not Found", { status: 404 });
+});
 const skillSlugDeleteDispatcher = httpAction(async (ctx, request) => {
   return handleDeleteSkill(ctx, request);
 });
 http.route({ pathPrefix: "/api/v1/skills/", method: "GET", handler: skillSlugDispatcher });
+http.route({ pathPrefix: "/api/v1/skills/", method: "POST", handler: skillSlugPostDispatcher });
 http.route({ pathPrefix: "/api/v1/skills/", method: "DELETE", handler: skillSlugDeleteDispatcher });
 http.route({ pathPrefix: "/api/v1/skills/", method: "OPTIONS", handler: corsHandler });
 

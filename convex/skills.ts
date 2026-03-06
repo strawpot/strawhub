@@ -194,6 +194,13 @@ const publishArgs = {
       skills: v.optional(v.array(v.string())),
     }),
   ),
+  importSource: v.optional(
+    v.object({
+      source: v.string(),
+      originalOwnerHandle: v.string(),
+      originalOwnerGithubId: v.string(),
+    }),
+  ),
   customTags: v.optional(v.array(v.string())),
   skillMdText: v.optional(v.string()),
   zipStorageId: v.optional(v.id("_storage")),
@@ -290,6 +297,7 @@ export const publishInternal = internalMutation({
           : undefined,
         ownerUserId: user._id,
         tags: {},
+        importSource: user.role === "admin" ? args.importSource : undefined,
         stats: { downloads: 0, stars: 0, versions: 0, comments: 0 },
         createdAt: now,
         updatedAt: now,
@@ -580,5 +588,94 @@ export const restore = mutation({
     if (!skill) throw new Error("Skill not found");
 
     await ctx.db.patch(skill._id, { softDeletedAt: undefined });
+  },
+});
+
+/**
+ * Claim ownership of an imported skill.
+ * Verifies the caller's GitHub identity matches the original ClawHub owner.
+ */
+export const claimSkill = mutation({
+  args: { slug: v.string() },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const user = await ctx.db.get(userId);
+    if (!user) throw new Error("User not found");
+    if (user.deactivatedAt) throw new Error("Account is deactivated");
+
+    const skill = await ctx.db
+      .query("skills")
+      .withIndex("by_slug", (q) => q.eq("slug", args.slug))
+      .first();
+    if (!skill) throw new Error("Skill not found");
+    if (!skill.importSource) throw new Error("This skill was not imported and cannot be claimed");
+
+    // Look up the caller's GitHub account ID from authAccounts
+    const authAccount = await ctx.db
+      .query("authAccounts")
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("userId"), userId),
+          q.eq(q.field("provider"), "github"),
+        ),
+      )
+      .first();
+    if (!authAccount) throw new Error("No linked GitHub account found");
+
+    if (authAccount.providerAccountId !== skill.importSource.originalOwnerGithubId) {
+      throw new Error("Your GitHub identity does not match the original skill owner");
+    }
+
+    await ctx.db.patch(skill._id, {
+      ownerUserId: userId,
+      importSource: undefined,
+      updatedAt: Date.now(),
+    });
+
+    return { ok: true, slug: args.slug };
+  },
+});
+
+/**
+ * Internal claim — accepts an explicit userId (used by HTTP endpoint).
+ */
+export const claimSkillInternal = internalMutation({
+  args: { slug: v.string(), userId: v.id("users") },
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
+    if (!user) throw new Error("User not found");
+    if (user.deactivatedAt) throw new Error("Account is deactivated");
+
+    const skill = await ctx.db
+      .query("skills")
+      .withIndex("by_slug", (q) => q.eq("slug", args.slug))
+      .first();
+    if (!skill) throw new Error("Skill not found");
+    if (!skill.importSource) throw new Error("This skill was not imported and cannot be claimed");
+
+    const authAccount = await ctx.db
+      .query("authAccounts")
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("userId"), args.userId),
+          q.eq(q.field("provider"), "github"),
+        ),
+      )
+      .first();
+    if (!authAccount) throw new Error("No linked GitHub account found");
+
+    if (authAccount.providerAccountId !== skill.importSource.originalOwnerGithubId) {
+      throw new Error("Your GitHub identity does not match the original skill owner");
+    }
+
+    await ctx.db.patch(skill._id, {
+      ownerUserId: args.userId,
+      importSource: undefined,
+      updatedAt: Date.now(),
+    });
+
+    return { ok: true, slug: args.slug };
   },
 });

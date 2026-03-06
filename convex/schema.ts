@@ -69,6 +69,13 @@ export default defineSchema({
     latestVersionId: v.optional(v.id("skillVersions")),
     tags: v.any(), // Record<string, Id<"skillVersions">>
     badges,
+    importSource: v.optional(
+      v.object({
+        source: v.string(),
+        originalOwnerHandle: v.string(),
+        originalOwnerGithubId: v.string(),
+      }),
+    ),
     softDeletedAt: v.optional(v.number()),
     moderationStatus: v.optional(
       v.union(v.literal("active"), v.literal("hidden"), v.literal("removed")),

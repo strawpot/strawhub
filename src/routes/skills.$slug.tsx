@@ -40,8 +40,11 @@ function SkillDetailPage() {
     api.reports.hasReported,
     skill ? { targetId: skill._id } : "skip",
   );
+  const claimSkill = useMutation(api.skills.claimSkill);
   const navigate = useNavigate();
   const isOwner = !!(currentUser && skill && skill.ownerUserId === currentUser._id);
+  const [claiming, setClaiming] = useState(false);
+  const [claimError, setClaimError] = useState("");
   const [showReportForm, setShowReportForm] = useState(false);
   const [reportDescription, setReportDescription] = useState("");
   const [reportSubmitting, setReportSubmitting] = useState(false);
@@ -181,6 +184,42 @@ function SkillDetailPage() {
               <span className="text-gray-500">@{skill.owner.handle}</span>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Imported from ClawHub badge + claim button */}
+      {skill.importSource && (
+        <div className="flex items-center gap-3 rounded-lg border border-blue-500/20 bg-blue-500/5 px-4 py-3">
+          <span className="text-sm text-blue-400">
+            Imported from {skill.importSource.source === "clawhub" ? "ClawHub" : skill.importSource.source}
+          </span>
+          {skill.importSource.originalOwnerHandle && (
+            <span className="text-sm text-gray-500">
+              (original author: @{skill.importSource.originalOwnerHandle})
+            </span>
+          )}
+          {currentUser && !isOwner && (
+            <button
+              onClick={async () => {
+                setClaiming(true);
+                setClaimError("");
+                try {
+                  await claimSkill({ slug: skill.slug });
+                } catch (e: any) {
+                  setClaimError(e.message || "Claim failed");
+                } finally {
+                  setClaiming(false);
+                }
+              }}
+              disabled={claiming}
+              className="ml-auto rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50 transition-colors"
+            >
+              {claiming ? "Claiming..." : "Claim Ownership"}
+            </button>
+          )}
+          {claimError && (
+            <span className="text-sm text-red-400">{claimError}</span>
+          )}
         </div>
       )}
 

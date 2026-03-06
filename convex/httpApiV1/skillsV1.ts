@@ -99,6 +99,7 @@ export const publishSkill = httpAction(async (ctx, request) => {
   let changelog: string;
   let customTags: string[] | undefined;
   let dependencies: { skills?: string[] } | undefined;
+  let importSource: { source: string; originalOwnerHandle: string; originalOwnerGithubId: string } | undefined;
   let skillMdText: string | undefined;
   const fileEntries: Array<{
     path: string;
@@ -124,6 +125,15 @@ export const publishSkill = httpAction(async (ctx, request) => {
         dependencies = JSON.parse(depsStr);
       } catch {
         return errorResponse("dependencies must be valid JSON: {\"skills\": [...]}", 400);
+      }
+    }
+
+    const importSourceStr = formData.get("importSource") as string | null;
+    if (importSourceStr) {
+      try {
+        importSource = JSON.parse(importSourceStr);
+      } catch {
+        // Ignore invalid importSource
       }
     }
 
@@ -221,6 +231,7 @@ export const publishSkill = httpAction(async (ctx, request) => {
       changelog,
       files: fileEntries as any,
       dependencies,
+      importSource,
       customTags,
       skillMdText,
       zipStorageId,
@@ -254,6 +265,31 @@ export async function handleDeleteSkill(ctx: any, request: Request): Promise<Res
   }
 }
 
+/**
+ * POST /api/v1/skills/:slug/claim — claim ownership of an imported skill
+ */
+export async function handleClaimSkill(ctx: any, request: Request): Promise<Response> {
+  const rateLimited = await checkHttpRateLimit(ctx, request, "write");
+  if (rateLimited) return rateLimited;
+
+  const authResult = await resolveTokenToUser(ctx, request);
+  if (authResult instanceof Response) return authResult;
+  const { userId } = authResult;
+
+  const url = new URL(request.url);
+  const parts = url.pathname.split("/");
+  // /api/v1/skills/:slug/claim
+  const slug = parts[parts.length - 2];
+  if (!slug) return errorResponse("Slug required", 400);
+
+  try {
+    const result = await ctx.runMutation(internal.skills.claimSkillInternal, { slug, userId });
+    return jsonResponse(result);
+  } catch (e: any) {
+    return errorResponse(e.message || "Claim failed", 400);
+  }
+}
+
 // ─── Formatters ──────────────────────────────────────────────────────────────
 
 function formatSkill(skill: any) {
@@ -275,6 +311,7 @@ function formatSkillDetail(skill: any) {
     owner: skill.owner,
     stats: skill.stats,
     badges: skill.badges,
+    importSource: skill.importSource ?? null,
     dependencies: skill.dependencies,
     zipUrl: skill.zipUrl ?? null,
     latestVersion: skill.latestVersion
