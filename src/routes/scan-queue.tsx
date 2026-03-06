@@ -97,7 +97,6 @@ function ScanQueueCard({
     scanStatus: string;
     scanResult?: { errorMessage?: string } | null;
     priority: "high" | "low";
-    owner: { handle?: string; image?: string } | null;
     createdAt: number;
   };
   onRetrigger: () => Promise<void>;
@@ -141,11 +140,6 @@ function ScanQueueCard({
             <ScanStatusBadge scanStatus={item.scanStatus} />
           </div>
           <p className="text-xs text-gray-500">
-            by{" "}
-            <span className="text-gray-400">
-              {item.owner?.handle ?? "unknown"}
-            </span>
-            {" on "}
             {new Date(item.createdAt).toLocaleDateString()}
           </p>
           {item.scanResult?.errorMessage && (

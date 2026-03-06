@@ -57,7 +57,11 @@ export default defineSchema({
     updatedAt: v.optional(v.number()),
   })
     .index("email", ["email"])
-    .index("by_handle", ["handle"]),
+    .index("by_handle", ["handle"])
+    .searchIndex("search", {
+      searchField: "name",
+      filterFields: ["deactivatedAt"],
+    }),
 
   // ── Skills ───────────────────────────────────────────────────────────────
 
@@ -88,7 +92,11 @@ export default defineSchema({
     .index("by_owner", ["ownerUserId"])
     .index("by_updated", ["updatedAt"])
     .index("by_stats_downloads", ["stats.downloads"])
-    .index("by_stats_stars", ["stats.stars"]),
+    .index("by_stats_stars", ["stats.stars"])
+    .searchIndex("search", {
+      searchField: "displayName",
+      filterFields: ["softDeletedAt"],
+    }),
 
   skillVersions: defineTable({
     skillId: v.id("skills"),
@@ -132,7 +140,8 @@ export default defineSchema({
     softDeletedAt: v.optional(v.number()),
   })
     .index("by_skill", ["skillId"])
-    .index("by_skill_version", ["skillId", "version"]),
+    .index("by_skill_version", ["skillId", "version"])
+    .index("by_scanStatus", ["scanStatus"]),
 
   skillEmbeddings: defineTable({
     skillId: v.id("skills"),
@@ -145,6 +154,7 @@ export default defineSchema({
   })
     .index("by_skill", ["skillId"])
     .index("by_version", ["versionId"])
+    .index("by_visibility", ["visibility"])
     .vectorIndex("by_embedding", {
       vectorField: "embedding",
       dimensions: 1536,
@@ -173,7 +183,11 @@ export default defineSchema({
     .index("by_owner", ["ownerUserId"])
     .index("by_updated", ["updatedAt"])
     .index("by_stats_downloads", ["stats.downloads"])
-    .index("by_stats_stars", ["stats.stars"]),
+    .index("by_stats_stars", ["stats.stars"])
+    .searchIndex("search", {
+      searchField: "displayName",
+      filterFields: ["softDeletedAt"],
+    }),
 
   roleVersions: defineTable({
     roleId: v.id("roles"),
@@ -210,6 +224,7 @@ export default defineSchema({
   })
     .index("by_role", ["roleId"])
     .index("by_version", ["versionId"])
+    .index("by_visibility", ["visibility"])
     .vectorIndex("by_embedding", {
       vectorField: "embedding",
       dimensions: 1536,
@@ -238,7 +253,11 @@ export default defineSchema({
     .index("by_owner", ["ownerUserId"])
     .index("by_updated", ["updatedAt"])
     .index("by_stats_downloads", ["stats.downloads"])
-    .index("by_stats_stars", ["stats.stars"]),
+    .index("by_stats_stars", ["stats.stars"])
+    .searchIndex("search", {
+      searchField: "displayName",
+      filterFields: ["softDeletedAt"],
+    }),
 
   agentVersions: defineTable({
     agentId: v.id("agents"),
@@ -278,7 +297,8 @@ export default defineSchema({
     softDeletedAt: v.optional(v.number()),
   })
     .index("by_agent", ["agentId"])
-    .index("by_agent_version", ["agentId", "version"]),
+    .index("by_agent_version", ["agentId", "version"])
+    .index("by_scanStatus", ["scanStatus"]),
 
   agentEmbeddings: defineTable({
     agentId: v.id("agents"),
@@ -291,6 +311,7 @@ export default defineSchema({
   })
     .index("by_agent", ["agentId"])
     .index("by_version", ["versionId"])
+    .index("by_visibility", ["visibility"])
     .vectorIndex("by_embedding", {
       vectorField: "embedding",
       dimensions: 1536,

@@ -2,5 +2,3 @@ User-agent: *
 Allow: /
 Disallow: /dashboard
 Disallow: /settings
-
-Sitemap: https://strawhub.dev/sitemap.xml

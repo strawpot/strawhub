@@ -1,6 +1,7 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useConvexAuth, useMutation, useQuery } from "convex/react";
+import { useConvexAuth, useMutation } from "convex/react";
+import { usePaginatedQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useSEO } from "../lib/useSEO";
 
@@ -20,48 +21,45 @@ function SkillsPage() {
   const [filter, setFilter] = useState("");
   const trimmed = filter.trim();
 
-  const results = useQuery(api.skills.list, {
-    query: trimmed || undefined,
-  });
+  const { results, status, loadMore } = usePaginatedQuery(
+    api.skills.list,
+    { query: trimmed || undefined },
+    { initialNumItems: PAGE_SIZE },
+  );
   const { isAuthenticated } = useConvexAuth();
-  const starredIds = useQuery(api.stars.listStarredIds) ?? [];
+  const { results: starredIds } = usePaginatedQuery(
+    api.stars.listStarredIds,
+    {},
+    { initialNumItems: 1000 },
+  );
   const toggleStar = useMutation(api.stars.toggle);
 
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const [prevFilter, setPrevFilter] = useState(trimmed);
-  if (prevFilter !== trimmed) {
-    setPrevFilter(trimmed);
-    setVisibleCount(PAGE_SIZE);
-  }
-
-  const visibleResults = results?.slice(0, visibleCount);
-  const canLoadMore = results !== undefined && visibleCount < results.length;
+  const canLoadMore = status === "CanLoadMore";
+  const isLoading = status === "LoadingFirstPage";
 
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const loadMoreCallback = useCallback(() => {
+    if (canLoadMore) loadMore(PAGE_SIZE);
+  }, [canLoadMore, loadMore]);
 
   useEffect(() => {
     const el = sentinelRef.current;
     if (!el || !canLoadMore) return;
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && canLoadMore) {
-          setVisibleCount((c) => c + PAGE_SIZE);
-        }
+        if (entries[0].isIntersecting) loadMoreCallback();
       },
       { threshold: 0 },
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [canLoadMore]);
+  }, [canLoadMore, loadMoreCallback]);
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl md:text-3xl font-bold text-white">
           Skills
-          {results !== undefined && (
-            <span className="ml-2 font-normal text-gray-500">({results.length})</span>
-          )}
         </h1>
         <Link
           to="/upload"
@@ -84,7 +82,7 @@ function SkillsPage() {
         className="w-full rounded-lg border border-gray-800 bg-gray-900 px-4 py-2 text-sm text-gray-200 placeholder-gray-500 focus:border-gray-600 focus:outline-none"
       />
 
-      {results === undefined ? (
+      {isLoading ? (
         <div className="text-gray-500">Loading...</div>
       ) : results.length === 0 ? (
         <div className="text-gray-500">
@@ -92,7 +90,7 @@ function SkillsPage() {
         </div>
       ) : (
         <div className="grid gap-4">
-          {visibleResults?.map((skill) => (
+          {results.map((skill) => (
             <SkillCard
               key={skill._id}
               skill={skill}
@@ -102,7 +100,7 @@ function SkillsPage() {
             />
           ))}
           <div ref={sentinelRef} />
-          {canLoadMore && (
+          {(canLoadMore || status === "LoadingMore") && (
             <div className="text-center text-gray-500 text-sm py-2">Loading more...</div>
           )}
         </div>

@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useConvexAuth, useMutation, useQuery } from "convex/react";
+import { useConvexAuth, useMutation } from "convex/react";
+import { usePaginatedQuery } from "convex/react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { api } from "../../convex/_generated/api";
 import { useSEO } from "../lib/useSEO";
@@ -54,16 +55,24 @@ function StarsPage() {
 }
 
 function StarredList() {
-  const starred = useQuery(api.stars.listByUser);
+  const { results: starred, status: starredStatus, loadMore: loadMoreStarred } = usePaginatedQuery(
+    api.stars.listByUser,
+    {},
+    { initialNumItems: 100 },
+  );
   const toggleStar = useMutation(api.stars.toggle);
 
-  if (starred === undefined) {
+  if (starredStatus === "LoadingFirstPage") {
     return <p className="text-gray-500 text-sm">Loading...</p>;
   }
 
-  const hasSkills = starred.skills.length > 0;
-  const hasRoles = starred.roles.length > 0;
-  const hasAgents = (starred as any).agents?.length > 0;
+  const starredRoles = starred.filter((s) => s.kind === "role");
+  const starredSkills = starred.filter((s) => s.kind === "skill");
+  const starredAgents = starred.filter((s) => s.kind === "agent");
+
+  const hasSkills = starredSkills.length > 0;
+  const hasRoles = starredRoles.length > 0;
+  const hasAgents = starredAgents.length > 0;
 
   if (!hasSkills && !hasRoles && !hasAgents) {
     return (
@@ -104,10 +113,10 @@ function StarredList() {
         <section className="space-y-3">
           <h2 className="text-xl font-semibold text-white">
             Roles
-            <span className="ml-2 font-normal text-gray-500">({starred.roles.length})</span>
+            <span className="ml-2 font-normal text-gray-500">({starredRoles.length})</span>
           </h2>
           <div className="space-y-3">
-            {starred.roles.map((r) => (
+            {starredRoles.map((r) => (
               <div
                 key={r._id}
                 className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-lg border border-gray-800 p-4"
@@ -129,7 +138,6 @@ function StarredList() {
                   <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-gray-500">
                     <span>{r.stats.downloads} installs</span>
                     <span>{r.stats.stars} stars</span>
-                    <span>{r.stats.versions} versions</span>
                   </div>
                 </div>
                 <button
@@ -161,10 +169,10 @@ function StarredList() {
         <section className="space-y-3">
           <h2 className="text-xl font-semibold text-white">
             Skills
-            <span className="ml-2 font-normal text-gray-500">({starred.skills.length})</span>
+            <span className="ml-2 font-normal text-gray-500">({starredSkills.length})</span>
           </h2>
           <div className="space-y-3">
-            {starred.skills.map((s) => (
+            {starredSkills.map((s) => (
               <div
                 key={s._id}
                 className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-lg border border-gray-800 p-4"
@@ -186,7 +194,6 @@ function StarredList() {
                   <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-gray-500">
                     <span>{s.stats.downloads} installs</span>
                     <span>{s.stats.stars} stars</span>
-                    <span>{s.stats.versions} versions</span>
                   </div>
                 </div>
                 <button
@@ -218,10 +225,10 @@ function StarredList() {
         <section className="space-y-3">
           <h2 className="text-xl font-semibold text-white">
             Agents
-            <span className="ml-2 font-normal text-gray-500">({(starred as any).agents.length})</span>
+            <span className="ml-2 font-normal text-gray-500">({starredAgents.length})</span>
           </h2>
           <div className="space-y-3">
-            {(starred as any).agents.map((a: any) => (
+            {starredAgents.map((a) => (
               <div
                 key={a._id}
                 className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-lg border border-gray-800 p-4"
@@ -243,7 +250,6 @@ function StarredList() {
                   <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-gray-500">
                     <span>{a.stats.downloads} installs</span>
                     <span>{a.stats.stars} stars</span>
-                    <span>{a.stats.versions} versions</span>
                   </div>
                 </div>
                 <button
@@ -269,6 +275,18 @@ function StarredList() {
             ))}
           </div>
         </section>
+      )}
+
+      {starredStatus === "CanLoadMore" && (
+        <button
+          onClick={() => loadMoreStarred(100)}
+          className="w-full text-center text-sm text-gray-500 hover:text-gray-300 py-2 transition-colors"
+        >
+          Load more starred items
+        </button>
+      )}
+      {starredStatus === "LoadingMore" && (
+        <p className="text-center text-sm text-gray-500 py-2">Loading more...</p>
       )}
     </div>
   );

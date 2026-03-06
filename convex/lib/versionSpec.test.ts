@@ -24,26 +24,10 @@ describe("parseDependencySpec", () => {
     });
   });
 
-  it("parses minimum version >=", () => {
-    expect(parseDependencySpec("testing>=2.1.0")).toEqual({
-      slug: "testing",
-      operator: ">=",
-      version: "2.1.0",
-    });
-  });
-
-  it("parses caret version ^", () => {
-    expect(parseDependencySpec("utils^1.2.3")).toEqual({
-      slug: "utils",
-      operator: "^",
-      version: "1.2.3",
-    });
-  });
-
   it("trims whitespace", () => {
-    expect(parseDependencySpec("  git-workflow>=1.0.0  ")).toEqual({
+    expect(parseDependencySpec("  git-workflow==1.0.0  ")).toEqual({
       slug: "git-workflow",
-      operator: ">=",
+      operator: "==",
       version: "1.0.0",
     });
   });
@@ -64,6 +48,18 @@ describe("parseDependencySpec", () => {
 
   it("throws on empty string", () => {
     expect(() => parseDependencySpec("")).toThrow(
+      "Invalid dependency specifier",
+    );
+  });
+
+  it("throws on >= operator (no longer supported)", () => {
+    expect(() => parseDependencySpec("testing>=2.1.0")).toThrow(
+      "Invalid dependency specifier",
+    );
+  });
+
+  it("throws on ^ operator (no longer supported)", () => {
+    expect(() => parseDependencySpec("utils^1.2.3")).toThrow(
       "Invalid dependency specifier",
     );
   });
@@ -118,25 +114,6 @@ describe("satisfiesVersion", () => {
     expect(satisfiesVersion("1.2.4", spec)).toBe(false);
     expect(satisfiesVersion("1.2.2", spec)).toBe(false);
   });
-
-  it(">= minimum", () => {
-    const spec = { slug: "x", operator: ">=" as const, version: "1.2.0" };
-    expect(satisfiesVersion("1.2.0", spec)).toBe(true);
-    expect(satisfiesVersion("1.3.0", spec)).toBe(true);
-    expect(satisfiesVersion("2.0.0", spec)).toBe(true);
-    expect(satisfiesVersion("1.1.9", spec)).toBe(false);
-    expect(satisfiesVersion("0.9.0", spec)).toBe(false);
-  });
-
-  it("^ caret: same major and >=", () => {
-    const spec = { slug: "x", operator: "^" as const, version: "1.2.0" };
-    expect(satisfiesVersion("1.2.0", spec)).toBe(true);
-    expect(satisfiesVersion("1.9.0", spec)).toBe(true);
-    expect(satisfiesVersion("1.2.1", spec)).toBe(true);
-    expect(satisfiesVersion("2.0.0", spec)).toBe(false); // different major
-    expect(satisfiesVersion("1.1.0", spec)).toBe(false); // below minimum
-    expect(satisfiesVersion("0.2.0", spec)).toBe(false); // different major
-  });
 });
 
 describe("extractSlug", () => {
@@ -145,8 +122,6 @@ describe("extractSlug", () => {
   });
 
   it("extracts from versioned spec", () => {
-    expect(extractSlug("git-workflow>=1.0.0")).toBe("git-workflow");
     expect(extractSlug("code-review==2.1.0")).toBe("code-review");
-    expect(extractSlug("utils^3.0.0")).toBe("utils");
   });
 });

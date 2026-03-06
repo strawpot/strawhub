@@ -5,7 +5,7 @@
 
 export interface DependencySpec {
   slug: string;
-  operator: "latest" | "==" | ">=" | "^";
+  operator: "latest" | "==";
   version: string | null;
 }
 
@@ -15,7 +15,7 @@ export interface ParsedVersion {
   patch: number;
 }
 
-const SPEC_REGEX = /^([a-z0-9][a-z0-9-]*)(==|>=|\^)(\d+\.\d+\.\d+)$/;
+const SPEC_REGEX = /^([a-z0-9][a-z0-9-]*)(==)(\d+\.\d+\.\d+)$/;
 const SLUG_REGEX = /^[a-z0-9][a-z0-9-]*$/;
 const VERSION_REGEX = /^(\d+)\.(\d+)\.(\d+)$/;
 
@@ -26,7 +26,7 @@ export function parseDependencySpec(spec: string): DependencySpec {
   if (match) {
     return {
       slug: match[1],
-      operator: match[2] as "==" | ">=" | "^",
+      operator: match[2] as "==",
       version: match[3],
     };
   }
@@ -35,7 +35,7 @@ export function parseDependencySpec(spec: string): DependencySpec {
     return { slug: input, operator: "latest", version: null };
   }
 
-  throw new Error(`Invalid dependency specifier: '${spec}'`);
+  throw new Error(`Invalid dependency specifier: '${spec}'. Use 'slug' for latest or 'slug==X.Y.Z' for exact version.`);
 }
 
 export function parseVersion(version: string): ParsedVersion {
@@ -60,23 +60,7 @@ export function satisfiesVersion(
   spec: DependencySpec,
 ): boolean {
   if (spec.operator === "latest" || !spec.version) return true;
-
-  const candidate = parseVersion(candidateVersion);
-  const required = parseVersion(spec.version);
-
-  switch (spec.operator) {
-    case "==":
-      return compareVersions(candidate, required) === 0;
-    case ">=":
-      return compareVersions(candidate, required) >= 0;
-    case "^":
-      return (
-        candidate.major === required.major &&
-        compareVersions(candidate, required) >= 0
-      );
-    default:
-      return false;
-  }
+  return candidateVersion === spec.version;
 }
 
 export function extractSlug(spec: string): string {

@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useConvexAuth, useQuery, useMutation } from "convex/react";
+import { usePaginatedQuery } from "convex/react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { api } from "../../convex/_generated/api";
 import { useState } from "react";
@@ -152,7 +153,11 @@ function ProfileForm({ user }: { user: any }) {
 }
 
 function ApiTokensSection() {
-  const tokens = useQuery(api.apiTokens.list);
+  const { results: tokens, status: tokensStatus } = usePaginatedQuery(
+    api.apiTokens.list,
+    {},
+    { initialNumItems: 100 },
+  );
   const createToken = useMutation(api.apiTokens.create);
   const revokeToken = useMutation(api.apiTokens.revoke);
 
@@ -185,8 +190,8 @@ function ApiTokensSection() {
     await revokeToken({ tokenId: tokenId as any });
   };
 
-  const activeTokens = tokens?.filter((t) => !t.revokedAt) ?? [];
-  const revokedTokens = tokens?.filter((t) => t.revokedAt) ?? [];
+  const activeTokens = tokens.filter((t) => !t.revokedAt);
+  const revokedTokens = tokens.filter((t) => !!t.revokedAt);
 
   return (
     <section className="space-y-4 rounded-lg border border-gray-800 p-5">
@@ -243,7 +248,7 @@ function ApiTokensSection() {
       )}
 
       {/* Token list */}
-      {tokens === undefined ? (
+      {tokensStatus === "LoadingFirstPage" ? (
         <p className="text-gray-500 text-sm">Loading tokens...</p>
       ) : activeTokens.length === 0 && !createdToken ? (
         <p className="text-gray-500 text-sm">No tokens yet.</p>

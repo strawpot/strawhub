@@ -49,7 +49,7 @@ strawhub install [--skip-tools] [--yes]
 Reads `strawpot.toml` from the current directory and installs all listed dependencies. For each entry, if the currently installed version already satisfies the constraint, it is skipped. Otherwise the package is installed or reinstalled.
 
 - For `==X.Y.Z` constraints: installs the exact specified version.
-- For `^X.Y.Z`, `>=X.Y.Z`, and `*` constraints: installs the latest version from the registry.
+- For `*` constraints: installs the latest version from the registry.
 
 | Option | Description |
 |--------|-------------|
@@ -60,7 +60,7 @@ Reads `strawpot.toml` from the current directory and installs all listed depende
 
 ```
 $ strawhub install
-  skill 'git-workflow' v1.2.0 satisfies ^1.0.0 (skip)
+  skill 'git-workflow' v1.2.0 satisfies * (skip)
   skill 'code-review' v2.0.0 does not satisfy ==2.1.0, reinstalling...
 ✓ Installed skill 'code-review' v2.1.0
 ✓ All dependencies from strawpot.toml installed.
@@ -82,7 +82,7 @@ Installs a skill or role from the StrawHub registry. Dependencies are resolved a
 | `--force` | Force replace an existing installation (requires `--version`) |
 | `--update` | Update to the latest version if already installed |
 | `--recursive` | With `--update`, also update all dependencies to latest |
-| `--save` | Save to `strawpot.toml` with `^X.Y.Z` constraint |
+| `--save` | Save to `strawpot.toml` with `*` constraint |
 | `--save-exact` | Save to `strawpot.toml` with `==X.Y.Z` constraint |
 | `--skip-tools` | Skip running system tool install commands |
 | `--yes`, `-y` | Automatically confirm tool install prompts |
@@ -215,9 +215,7 @@ When `--save` is used, the version constraint in `strawpot.toml` is updated to r
 
 | Before | Installed | After |
 |--------|-----------|-------|
-| `^1.0.0` | `1.3.0` | `^1.3.0` |
 | `==1.0.0` | `2.0.0` | `==2.0.0` |
-| `>=1.0.0` | `1.5.0` | `>=1.5.0` |
 | `*` | `3.0.0` | `*` (unchanged) |
 
 Only packages already listed in `strawpot.toml` are affected. Packages not in the project file are silently skipped.
@@ -256,7 +254,7 @@ Reads the local lockfile (`.strawpot/strawpot.lock`) and writes all direct insta
 | Option | Description |
 |--------|-------------|
 | `--force` | Overwrite an existing `strawpot.toml` |
-| `--exact` | Use `==X.Y.Z` constraints instead of the default `^X.Y.Z` |
+| `--exact` | Use `==X.Y.Z` constraints instead of the default `*` |
 
 Errors if:
 - `strawpot.toml` already exists (without `--force`)
@@ -628,13 +626,13 @@ The project file declares dependencies with version constraints. It lives in the
 
 ```toml
 [skills]
-git-workflow = "^1.0.0"
+git-workflow = "*"
 code-review = "==2.1.0"
 security-baseline = "*"
 
 [roles]
-implementer = "^1.0.0"
-reviewer = ">=2.0.0"
+implementer = "*"
+reviewer = "==2.0.0"
 ```
 
 ### Version Constraints
@@ -642,9 +640,7 @@ reviewer = ">=2.0.0"
 | Format | Meaning | Example |
 |--------|---------|---------|
 | `"*"` | Accept any version (install latest) | `security-baseline = "*"` |
-| `"^X.Y.Z"` | Compatible — same major version, >= specified | `git-workflow = "^1.0.0"` |
 | `"==X.Y.Z"` | Exact — must be this specific version | `code-review = "==2.1.0"` |
-| `">=X.Y.Z"` | Minimum — any version >= specified | `reviewer = ">=2.0.0"` |
 
 See [Project File documentation](project-file.md) for full details on workflows and behavior.
 

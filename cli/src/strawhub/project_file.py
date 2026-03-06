@@ -3,19 +3,17 @@
 The project file declares dependencies with optional version constraints:
 
     [skills]
-    git-workflow = "^1.0.0"
+    git-workflow = "*"
     code-review = "==2.1.0"
     security-baseline = "*"
 
     [roles]
-    implementer = "^1.0.0"
-    reviewer = ">=2.0.0"
+    implementer = "*"
+    reviewer = "==2.0.0"
 
 Constraint formats:
     "*"       — latest version
-    "^X.Y.Z"  — compatible (same major, >= specified)
     "==X.Y.Z" — exact version
-    ">=X.Y.Z" — minimum version
 """
 
 from __future__ import annotations
@@ -75,16 +73,14 @@ class ProjectFile:
         self, kind: str, slug: str, version: str, exact: bool = False
     ) -> None:
         """Add or update a dependency with a version constraint."""
-        constraint = f"=={version}" if exact else f"^{version}"
+        constraint = f"=={version}" if exact else "*"
         target = self.skills if kind == "skill" else self.roles
         target[slug] = constraint
 
     def update_dependency(self, kind: str, slug: str, new_version: str) -> bool:
         """Update the version in an existing constraint, preserving the operator.
 
-        "^1.0.0" + "1.3.0" → "^1.3.0"
         "==1.0.0" + "2.0.0" → "==2.0.0"
-        ">=1.0.0" + "1.5.0" → ">=1.5.0"
         "*" stays "*"
 
         Returns True if the dependency existed and was updated.
@@ -95,13 +91,10 @@ class ProjectFile:
         current = target[slug]
         if current == "*":
             return True  # no version to update
-        # Extract operator prefix (==, >=, ^)
-        for op in ("==", ">=", "^"):
-            if current.startswith(op):
-                target[slug] = f"{op}{new_version}"
-                return True
-        # Unknown format, overwrite with caret
-        target[slug] = f"^{new_version}"
+        if current.startswith("=="):
+            target[slug] = f"=={new_version}"
+            return True
+        # Unknown format, keep as-is
         return True
 
     def get_constraint(self, kind: str, slug: str) -> str | None:

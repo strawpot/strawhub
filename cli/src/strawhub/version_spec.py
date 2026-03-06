@@ -3,8 +3,6 @@
 Supported formats:
   "slug"              — resolves to latest
   "slug==1.0.0"       — exact version
-  "slug>=1.0.0"       — minimum version
-  "slug^1.0.0"        — compatible (same major, >= specified)
 
 Python port of convex/lib/versionSpec.ts.
 """
@@ -13,17 +11,17 @@ import re
 from dataclasses import dataclass
 from typing import Literal
 
-SPEC_REGEX = re.compile(r"^([a-z0-9][a-z0-9-]*)(==|>=|\^)(\d+\.\d+\.\d+)$")
+SPEC_REGEX = re.compile(r"^([a-z0-9][a-z0-9-]*)(==)(\d+\.\d+\.\d+)$")
 SLUG_REGEX = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 VERSION_REGEX = re.compile(r"^(\d+)\.(\d+)\.(\d+)$")
 DIR_NAME_REGEX = re.compile(r"^(.+)-(\d+\.\d+\.\d+)$")
-CONSTRAINT_REGEX = re.compile(r"^(==|>=|\^)(\d+\.\d+\.\d+)$")
+CONSTRAINT_REGEX = re.compile(r"^(==)(\d+\.\d+\.\d+)$")
 
 
 @dataclass(frozen=True)
 class DependencySpec:
     slug: str
-    operator: Literal["latest", "==", ">=", "^"]
+    operator: Literal["latest", "=="]
     version: str | None
 
 
@@ -37,8 +35,8 @@ class ParsedVersion:
 def parse_dependency_spec(spec: str) -> DependencySpec:
     """Parse a dependency string into its components.
 
-    "git-workflow"        → DependencySpec("git-workflow", "latest", None)
-    "git-workflow>=1.0.0" → DependencySpec("git-workflow", ">=", "1.0.0")
+    "git-workflow"         → DependencySpec("git-workflow", "latest", None)
+    "git-workflow==1.0.0"  → DependencySpec("git-workflow", "==", "1.0.0")
     """
     s = spec.strip()
 
@@ -49,7 +47,10 @@ def parse_dependency_spec(spec: str) -> DependencySpec:
     if SLUG_REGEX.match(s):
         return DependencySpec(slug=s, operator="latest", version=None)
 
-    raise ValueError(f"Invalid dependency specifier: '{spec}'")
+    raise ValueError(
+        f"Invalid dependency specifier: '{spec}'. "
+        "Use 'slug' for latest or 'slug==X.Y.Z' for exact version."
+    )
 
 
 def parse_version(version: str) -> ParsedVersion:
@@ -80,25 +81,10 @@ def satisfies_version(candidate_version: str, spec: DependencySpec) -> bool:
 
     latest  → always true
     ==X.Y.Z → candidate == X.Y.Z
-    >=X.Y.Z → candidate >= X.Y.Z
-    ^X.Y.Z  → candidate.major == X.major AND candidate >= X.Y.Z
     """
     if spec.operator == "latest" or spec.version is None:
         return True
-
-    candidate = parse_version(candidate_version)
-    required = parse_version(spec.version)
-
-    if spec.operator == "==":
-        return compare_versions(candidate, required) == 0
-    elif spec.operator == ">=":
-        return compare_versions(candidate, required) >= 0
-    elif spec.operator == "^":
-        return (
-            candidate.major == required.major
-            and compare_versions(candidate, required) >= 0
-        )
-    return False
+    return candidate_version == spec.version
 
 
 def extract_slug(spec: str) -> str:
@@ -110,9 +96,7 @@ def parse_constraint(constraint: str) -> DependencySpec:
     """Parse a standalone constraint string from strawpot.toml.
 
     "*"       → DependencySpec("", "latest", None)
-    "^1.0.0"  → DependencySpec("", "^", "1.0.0")
     "==1.0.0" → DependencySpec("", "==", "1.0.0")
-    ">=1.0.0" → DependencySpec("", ">=", "1.0.0")
 
     The slug is empty because in the TOML context the slug comes from
     the dict key, not the constraint string.
@@ -123,7 +107,10 @@ def parse_constraint(constraint: str) -> DependencySpec:
     m = CONSTRAINT_REGEX.match(s)
     if m:
         return DependencySpec(slug="", operator=m.group(1), version=m.group(2))  # type: ignore[arg-type]
-    raise ValueError(f"Invalid version constraint: '{constraint}'")
+    raise ValueError(
+        f"Invalid version constraint: '{constraint}'. "
+        "Use '*' for latest or '==X.Y.Z' for exact version."
+    )
 
 
 def parse_dir_name(name: str) -> tuple[str, str] | None:

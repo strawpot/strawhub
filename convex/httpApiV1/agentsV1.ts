@@ -6,7 +6,7 @@ import { parseFrontmatter, extractName } from "../lib/frontmatter";
 import { createZipBlob } from "../lib/zip";
 
 /**
- * GET /api/v1/agents — list agents
+ * GET /api/v1/agents — list agents (cursor-based pagination)
  */
 export const listAgents = httpAction(async (ctx, request) => {
   const rateLimited = await checkHttpRateLimit(ctx, request, "read");
@@ -15,16 +15,20 @@ export const listAgents = httpAction(async (ctx, request) => {
   const params = getSearchParams(request);
   const sort = params.get("sort") ?? "updated";
   const query = params.get("query") ?? undefined;
+  const numItems = Math.min(parseInt(params.get("numItems") ?? params.get("limit") ?? "50", 10) || 50, 200);
+  const cursor = params.get("cursor") ?? null;
 
-  const agents = await ctx.runQuery(api.agents.list, {
+  const result = await ctx.runQuery(api.agents.list, {
+    paginationOpts: { numItems, cursor },
     sort: sort as "updated" | "downloads" | "stars",
     query,
   });
 
   return jsonResponse({
-    items: agents.map(formatAgent),
-    count: agents.length,
-  });
+    items: result.page.map(formatAgent),
+    continueCursor: result.continueCursor,
+    isDone: result.isDone,
+  }, 200, { "Cache-Control": "public, max-age=60, stale-while-revalidate=300" });
 });
 
 /**

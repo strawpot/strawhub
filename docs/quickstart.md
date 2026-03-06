@@ -141,11 +141,11 @@ Or create one manually:
 
 ```toml
 [skills]
-git-workflow = "^1.0.0"
+git-workflow = "*"
 code-review = "==2.1.0"
 
 [roles]
-implementer = "^1.0.0"
+implementer = "*"
 ```
 
 Then install all declared dependencies:

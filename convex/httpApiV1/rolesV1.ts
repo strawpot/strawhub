@@ -1,13 +1,13 @@
 import { httpAction } from "../_generated/server";
 import { api, internal } from "../_generated/api";
 import { jsonResponse, errorResponse, getSearchParams, resolveTokenToUser, checkHttpRateLimit } from "./shared";
-import { parseDependencySpec, satisfiesVersion } from "../lib/versionSpec";
+import { parseDependencySpec } from "../lib/versionSpec";
 import { validateSlug, validateVersion, validateDisplayName, validateChangelog, validateRoleFiles, assertFileIsText, MAX_FILE_SIZE } from "../lib/publishValidation";
 import { parseFrontmatter, extractName } from "../lib/frontmatter";
 import { createZipBlob } from "../lib/zip";
 
 /**
- * GET /api/v1/roles — list roles
+ * GET /api/v1/roles — list roles (cursor-based pagination)
  */
 export const listRoles = httpAction(async (ctx, request) => {
   const rateLimited = await checkHttpRateLimit(ctx, request, "read");
@@ -16,16 +16,20 @@ export const listRoles = httpAction(async (ctx, request) => {
   const params = getSearchParams(request);
   const sort = params.get("sort") ?? "updated";
   const query = params.get("query") ?? undefined;
+  const numItems = Math.min(parseInt(params.get("numItems") ?? params.get("limit") ?? "50", 10) || 50, 200);
+  const cursor = params.get("cursor") ?? null;
 
-  const roles = await ctx.runQuery(api.roles.list, {
+  const result = await ctx.runQuery(api.roles.list, {
+    paginationOpts: { numItems, cursor },
     sort: sort as "updated" | "downloads" | "stars",
     query,
   });
 
   return jsonResponse({
-    items: roles.map(formatRole),
-    count: roles.length,
-  });
+    items: result.page.map(formatRole),
+    continueCursor: result.continueCursor,
+    isDone: result.isDone,
+  }, 200, { "Cache-Control": "public, max-age=60, stale-while-revalidate=300" });
 });
 
 /**
@@ -95,11 +99,15 @@ export async function handleResolveRoleDeps(ctx: any, request: Request): Promise
   if (!role) return errorResponse("Role not found", 404);
 
   // Resolve transitive dependencies (skills + roles) with version awareness
+  const MAX_DEPTH = 100;
   const resolved: Array<{ kind: "skill" | "role"; slug: string; version: string }> = [];
   const resolvedKeys = new Set<string>();
   const visiting = new Set<string>();
 
-  async function resolveSkill(depSpec: string) {
+  async function resolveSkill(depSpec: string, depth: number) {
+    if (depth > MAX_DEPTH) {
+      throw new Error(`Dependency tree too deep (>${MAX_DEPTH} levels)`);
+    }
     const spec = parseDependencySpec(depSpec);
     const key = `skill:${spec.slug}`;
     if (resolvedKeys.has(key)) return;
@@ -116,16 +124,8 @@ export async function handleResolveRoleDeps(ctx: any, request: Request): Promise
       if (skill.latestVersion) {
         resolvedVersion = skill.latestVersion.version;
       }
-    } else {
-      const versions = await ctx.runQuery(api.skills.getVersions, {
-        skillId: skill._id,
-      });
-      for (const v of versions) {
-        if (satisfiesVersion(v.version, spec)) {
-          resolvedVersion = v.version;
-          break;
-        }
-      }
+    } else if (spec.operator === "==" && spec.version) {
+      resolvedVersion = spec.version;
     }
 
     if (!resolvedVersion) {
@@ -136,7 +136,7 @@ export async function handleResolveRoleDeps(ctx: any, request: Request): Promise
 
     // Recurse into transitive skill deps (skills can only depend on other skills)
     for (const dep of skill.dependencies?.skills ?? []) {
-      await resolveSkill(dep);
+      await resolveSkill(dep, depth + 1);
     }
 
     visiting.delete(key);
@@ -144,7 +144,10 @@ export async function handleResolveRoleDeps(ctx: any, request: Request): Promise
     resolved.push({ kind: "skill", slug: spec.slug, version: resolvedVersion });
   }
 
-  async function resolveRole(depSpec: string) {
+  async function resolveRole(depSpec: string, depth: number) {
+    if (depth > MAX_DEPTH) {
+      throw new Error(`Dependency tree too deep (>${MAX_DEPTH} levels)`);
+    }
     const spec = parseDependencySpec(depSpec);
     const key = `role:${spec.slug}`;
     if (resolvedKeys.has(key)) return;
@@ -161,16 +164,8 @@ export async function handleResolveRoleDeps(ctx: any, request: Request): Promise
       if (depRole.latestVersion) {
         resolvedVersion = depRole.latestVersion.version;
       }
-    } else {
-      const versions = await ctx.runQuery(api.roles.getVersions, {
-        roleId: depRole._id,
-      });
-      for (const v of versions) {
-        if (satisfiesVersion(v.version, spec)) {
-          resolvedVersion = v.version;
-          break;
-        }
-      }
+    } else if (spec.operator === "==" && spec.version) {
+      resolvedVersion = spec.version;
     }
 
     if (!resolvedVersion) {
@@ -181,10 +176,10 @@ export async function handleResolveRoleDeps(ctx: any, request: Request): Promise
 
     // Recurse into transitive deps from role dependencies
     for (const dep of depRole.dependencies?.skills ?? []) {
-      await resolveSkill(dep);
+      await resolveSkill(dep, depth + 1);
     }
     for (const dep of depRole.dependencies?.roles ?? []) {
-      await resolveRole(dep);
+      await resolveRole(dep, depth + 1);
     }
 
     visiting.delete(key);
@@ -194,10 +189,10 @@ export async function handleResolveRoleDeps(ctx: any, request: Request): Promise
 
   try {
     for (const dep of role.dependencies?.skills ?? []) {
-      await resolveSkill(dep);
+      await resolveSkill(dep, 0);
     }
     for (const dep of role.dependencies?.roles ?? []) {
-      await resolveRole(dep);
+      await resolveRole(dep, 0);
     }
   } catch (e: any) {
     return errorResponse(e.message, 400);

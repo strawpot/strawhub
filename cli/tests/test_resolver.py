@@ -73,7 +73,7 @@ class TestResolveMultiVersion:
         make_skill("git-workflow", "1.0.0")
         make_skill("git-workflow", "1.4.0")
         make_skill("git-workflow", "2.0.0")
-        make_role("implementer", "1.0.0", skill_deps=["git-workflow^1.0.0"])
+        make_role("implementer", "1.0.0", skill_deps=["git-workflow==1.0.0"])
 
         result = resolve(
             "implementer", kind="role",

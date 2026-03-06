@@ -29,19 +29,9 @@ class TestParseDependencySpec:
             "code-review", "==", "1.0.0"
         )
 
-    def test_minimum_version(self):
-        assert parse_dependency_spec("testing>=2.1.0") == DependencySpec(
-            "testing", ">=", "2.1.0"
-        )
-
-    def test_caret_version(self):
-        assert parse_dependency_spec("utils^1.2.3") == DependencySpec(
-            "utils", "^", "1.2.3"
-        )
-
     def test_trims_whitespace(self):
-        assert parse_dependency_spec("  git-workflow>=1.0.0  ") == DependencySpec(
-            "git-workflow", ">=", "1.0.0"
+        assert parse_dependency_spec("  git-workflow==1.0.0  ") == DependencySpec(
+            "git-workflow", "==", "1.0.0"
         )
 
     def test_single_char_slug(self):
@@ -54,6 +44,14 @@ class TestParseDependencySpec:
     def test_empty_string(self):
         with pytest.raises(ValueError, match="Invalid dependency specifier"):
             parse_dependency_spec("")
+
+    def test_gte_no_longer_supported(self):
+        with pytest.raises(ValueError, match="Invalid dependency specifier"):
+            parse_dependency_spec("testing>=2.1.0")
+
+    def test_caret_no_longer_supported(self):
+        with pytest.raises(ValueError, match="Invalid dependency specifier"):
+            parse_dependency_spec("utils^1.2.3")
 
 
 # --- parseVersion ---
@@ -110,23 +108,6 @@ class TestSatisfiesVersion:
         assert satisfies_version("1.2.4", spec) is False
         assert satisfies_version("1.2.2", spec) is False
 
-    def test_minimum_version(self):
-        spec = DependencySpec("x", ">=", "1.2.0")
-        assert satisfies_version("1.2.0", spec) is True
-        assert satisfies_version("1.3.0", spec) is True
-        assert satisfies_version("2.0.0", spec) is True
-        assert satisfies_version("1.1.9", spec) is False
-        assert satisfies_version("0.9.0", spec) is False
-
-    def test_caret_same_major_and_gte(self):
-        spec = DependencySpec("x", "^", "1.2.0")
-        assert satisfies_version("1.2.0", spec) is True
-        assert satisfies_version("1.9.0", spec) is True
-        assert satisfies_version("1.2.1", spec) is True
-        assert satisfies_version("2.0.0", spec) is False  # different major
-        assert satisfies_version("1.1.0", spec) is False  # below minimum
-        assert satisfies_version("0.2.0", spec) is False  # different major
-
 
 # --- extractSlug ---
 
@@ -135,10 +116,8 @@ class TestExtractSlug:
     def test_bare_slug(self):
         assert extract_slug("git-workflow") == "git-workflow"
 
-    def test_versioned_specs(self):
-        assert extract_slug("git-workflow>=1.0.0") == "git-workflow"
+    def test_versioned_spec(self):
         assert extract_slug("code-review==2.1.0") == "code-review"
-        assert extract_slug("utils^3.0.0") == "utils"
 
 
 # --- parseDirName ---
@@ -171,17 +150,19 @@ class TestParseConstraint:
     def test_empty_constraint(self):
         assert parse_constraint("") == DependencySpec("", "latest", None)
 
-    def test_caret_constraint(self):
-        assert parse_constraint("^1.2.3") == DependencySpec("", "^", "1.2.3")
-
     def test_exact_constraint(self):
         assert parse_constraint("==1.0.0") == DependencySpec("", "==", "1.0.0")
 
-    def test_gte_constraint(self):
-        assert parse_constraint(">=2.0.0") == DependencySpec("", ">=", "2.0.0")
+    def test_caret_no_longer_supported(self):
+        with pytest.raises(ValueError, match="Invalid version constraint"):
+            parse_constraint("^1.2.3")
+
+    def test_gte_no_longer_supported(self):
+        with pytest.raises(ValueError, match="Invalid version constraint"):
+            parse_constraint(">=2.0.0")
 
     def test_whitespace_trimmed(self):
-        assert parse_constraint("  ^1.0.0  ") == DependencySpec("", "^", "1.0.0")
+        assert parse_constraint("  ==1.0.0  ") == DependencySpec("", "==", "1.0.0")
 
     def test_invalid_constraint(self):
         with pytest.raises(ValueError, match="Invalid version constraint"):
@@ -189,7 +170,7 @@ class TestParseConstraint:
 
     def test_invalid_no_version(self):
         with pytest.raises(ValueError, match="Invalid version constraint"):
-            parse_constraint("^")
+            parse_constraint("==")
 
     def test_invalid_partial_version(self):
         with pytest.raises(ValueError, match="Invalid version constraint"):

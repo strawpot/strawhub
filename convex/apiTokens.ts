@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { paginationOptsValidator } from "convex/server";
 import { mutation, query, internalQuery } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
@@ -33,24 +34,29 @@ export const getUser = internalQuery({
  * List the current user's API tokens (excludes the hash for security).
  */
 export const list = query({
-  args: {},
-  handler: async (ctx) => {
+  args: { paginationOpts: paginationOptsValidator },
+  handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) return [];
+    if (!userId) {
+      return { page: [] as any[], isDone: true, continueCursor: "" as any };
+    }
 
-    const tokens = await ctx.db
+    const result = await ctx.db
       .query("apiTokens")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .paginate(args.paginationOpts);
 
-    return tokens.map((t) => ({
-      _id: t._id,
-      name: t.name,
-      tokenPrefix: t.tokenPrefix,
-      lastUsedAt: t.lastUsedAt,
-      revokedAt: t.revokedAt,
-      createdAt: t.createdAt,
-    }));
+    return {
+      ...result,
+      page: result.page.map((t) => ({
+        _id: t._id,
+        name: t.name,
+        tokenPrefix: t.tokenPrefix,
+        lastUsedAt: t.lastUsedAt,
+        revokedAt: t.revokedAt,
+        createdAt: t.createdAt,
+      })),
+    };
   },
 });
 

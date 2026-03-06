@@ -1,47 +1,57 @@
 import { v } from "convex/values";
+import { paginationOptsValidator } from "convex/server";
 import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { isModerator } from "./lib/access";
 
 /**
- * List comments for a skill or role, newest first.
+ * List comments for a skill or role, newest first (cursor-based pagination).
  */
 export const list = query({
   args: {
+    paginationOpts: paginationOptsValidator,
     targetId: v.string(),
   },
   handler: async (ctx, args) => {
-    const comments = await ctx.db
+    const paginatedResult = await ctx.db
       .query("comments")
       .withIndex("by_target", (q) => q.eq("targetId", args.targetId))
       .order("desc")
-      .collect();
+      .paginate(args.paginationOpts);
 
     const userId = await getAuthUserId(ctx);
     const canModerate = userId ? await isModerator(ctx, userId) : false;
 
-    return Promise.all(
-      comments.map(async (comment) => {
-        const deleted = !!comment.softDeletedAt;
-        const user = await ctx.db.get(comment.userId);
-        return {
-          _id: comment._id,
-          body: deleted ? null : comment.body,
-          createdAt: comment.createdAt,
-          deleted,
-          canDelete: !deleted && (userId === comment.userId || canModerate),
-          author: deleted
-            ? null
-            : user
-              ? {
-                  displayName: user.displayName,
-                  handle: user.handle,
-                  image: user.image,
-                }
-              : null,
-        };
-      }),
-    );
+    // Batch-fetch unique user docs to avoid N+1
+    const userIds = [...new Set(paginatedResult.page.map((c) => c.userId))];
+    const userDocs = await Promise.all(userIds.map((id) => ctx.db.get(id)));
+    const userMap = new Map(userIds.map((id, i) => [id, userDocs[i]]));
+
+    const enriched = paginatedResult.page.map((comment) => {
+      const deleted = !!comment.softDeletedAt;
+      const user = userMap.get(comment.userId);
+      return {
+        _id: comment._id,
+        body: deleted ? null : comment.body,
+        createdAt: comment.createdAt,
+        deleted,
+        canDelete: !deleted && (userId === comment.userId || canModerate),
+        author: deleted
+          ? null
+          : user
+            ? {
+                displayName: user.displayName,
+                handle: user.handle,
+                image: user.image,
+              }
+            : null,
+      };
+    });
+
+    return {
+      ...paginatedResult,
+      page: enriched,
+    };
   },
 });
 

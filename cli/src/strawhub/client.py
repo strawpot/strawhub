@@ -136,6 +136,10 @@ class StrawHubClient:
         resp = self._request("GET",f"/api/v1/roles/{slug}/resolve")
         return self._handle_response(resp)
 
+    def resolve_skill_deps(self, slug: str) -> dict:
+        resp = self._request("GET", f"/api/v1/skills/{slug}/resolve")
+        return self._handle_response(resp)
+
     def list_agents(self, limit: int = 50, sort: str = "updated") -> dict:
         resp = self._request("GET",
             "/api/v1/agents", params={"limit": limit, "sort": sort}

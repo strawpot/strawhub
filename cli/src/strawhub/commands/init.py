@@ -50,7 +50,7 @@ def init(force, exact):
     count = len(lockfile.direct_installs)
     console.print(f"Wrote {count} package(s) to strawpot.toml")
     for ref in sorted(lockfile.direct_installs, key=lambda r: (r.kind, r.slug)):
-        constraint = f"=={ref.version}" if exact else f"^{ref.version}"
+        constraint = f"=={ref.version}" if exact else "*"
         console.print(f"  {ref.kind} '{ref.slug}' {constraint}")
 
     print_success("strawpot.toml created.")

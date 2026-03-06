@@ -1,10 +1,9 @@
 import { v } from "convex/values";
 import { query } from "./_generated/server";
-import { generateEmbedding } from "./lib/embeddings";
 
 /**
- * Hybrid search: vector similarity + lexical boost + popularity.
- * Searches skills, roles, and agents.
+ * Search skills, roles, and agents using Convex search indexes
+ * with lexical boost + popularity scoring.
  */
 export const search = query({
   args: {
@@ -19,178 +18,72 @@ export const search = query({
 
     const results: SearchResult[] = [];
 
-    // Vector search for skills
     if (kind === "all" || kind === "skill") {
-      const skillEmbedding = await generateEmbedding(args.query);
-      const skillResults = await ctx.db
-        .query("skillEmbeddings")
-        .filter((q) => q.eq(q.field("visibility"), "public"))
-        .take(limit * 2);
+      const matched = await ctx.db
+        .query("skills")
+        .withSearchIndex("search", (q) =>
+          q.search("displayName", args.query).eq("softDeletedAt", undefined),
+        )
+        .take(limit);
 
-      for (const emb of skillResults) {
-        const skill = await ctx.db.get(emb.skillId);
-        if (!skill || skill.softDeletedAt) continue;
-
-        const owner = await ctx.db.get(skill.ownerUserId);
-        const latestVersion = skill.latestVersionId ? await ctx.db.get(skill.latestVersionId) : null;
+      for (const skill of matched) {
         const lexicalBoost = computeLexicalBoost(queryTokens, skill.slug, skill.displayName);
         const popularityBoost = Math.log(Math.max(skill.stats.downloads, 1)) * 0.08;
 
         results.push({
-          kind: "skill" as const,
+          kind: "skill",
           slug: skill.slug,
           displayName: skill.displayName,
           summary: skill.summary,
           stats: skill.stats,
-          latestVersionString: latestVersion?.version ?? null,
-          totalSize: latestVersion?.files?.reduce((sum: number, f: { size: number }) => sum + f.size, 0) ?? 0,
-          owner: owner ? { handle: owner.handle, image: owner.image } : null,
           score: lexicalBoost + popularityBoost,
         });
       }
     }
 
-    // Vector search for roles
     if (kind === "all" || kind === "role") {
-      const roleResults = await ctx.db
-        .query("roleEmbeddings")
-        .filter((q) => q.eq(q.field("visibility"), "public"))
-        .take(limit * 2);
+      const matched = await ctx.db
+        .query("roles")
+        .withSearchIndex("search", (q) =>
+          q.search("displayName", args.query).eq("softDeletedAt", undefined),
+        )
+        .take(limit);
 
-      for (const emb of roleResults) {
-        const role = await ctx.db.get(emb.roleId);
-        if (!role || role.softDeletedAt) continue;
-
-        const owner = await ctx.db.get(role.ownerUserId);
-        const latestVersion = role.latestVersionId ? await ctx.db.get(role.latestVersionId) : null;
+      for (const role of matched) {
         const lexicalBoost = computeLexicalBoost(queryTokens, role.slug, role.displayName);
         const popularityBoost = Math.log(Math.max(role.stats.downloads, 1)) * 0.08;
 
         results.push({
-          kind: "role" as const,
+          kind: "role",
           slug: role.slug,
           displayName: role.displayName,
           summary: role.summary,
           stats: role.stats,
-          latestVersionString: latestVersion?.version ?? null,
-          totalSize: latestVersion?.files?.reduce((sum: number, f: { size: number }) => sum + f.size, 0) ?? 0,
-          owner: owner ? { handle: owner.handle, image: owner.image } : null,
           score: lexicalBoost + popularityBoost,
         });
       }
     }
 
-    // Vector search for agents
     if (kind === "all" || kind === "agent") {
-      const agentResults = await ctx.db
-        .query("agentEmbeddings")
-        .filter((q) => q.eq(q.field("visibility"), "public"))
-        .take(limit * 2);
+      const matched = await ctx.db
+        .query("agents")
+        .withSearchIndex("search", (q) =>
+          q.search("displayName", args.query).eq("softDeletedAt", undefined),
+        )
+        .take(limit);
 
-      for (const emb of agentResults) {
-        const agent = await ctx.db.get(emb.agentId);
-        if (!agent || agent.softDeletedAt) continue;
-
-        const owner = await ctx.db.get(agent.ownerUserId);
-        const latestVersion = agent.latestVersionId ? await ctx.db.get(agent.latestVersionId) : null;
+      for (const agent of matched) {
         const lexicalBoost = computeLexicalBoost(queryTokens, agent.slug, agent.displayName);
         const popularityBoost = Math.log(Math.max(agent.stats.downloads, 1)) * 0.08;
 
         results.push({
-          kind: "agent" as const,
+          kind: "agent",
           slug: agent.slug,
           displayName: agent.displayName,
           summary: agent.summary,
           stats: agent.stats,
-          latestVersionString: latestVersion?.version ?? null,
-          totalSize: latestVersion?.files?.reduce((sum: number, f: { size: number }) => sum + f.size, 0) ?? 0,
-          owner: owner ? { handle: owner.handle, image: owner.image } : null,
           score: lexicalBoost + popularityBoost,
         });
-      }
-    }
-
-    // Fallback: if no embedding results, do text-based scan
-    if (results.length === 0) {
-      if (kind === "all" || kind === "skill") {
-        const allSkills = await ctx.db
-          .query("skills")
-          .withIndex("by_updated")
-          .filter((q) => q.eq(q.field("softDeletedAt"), undefined))
-          .take(500);
-
-        for (const skill of allSkills) {
-          const boost = computeLexicalBoost(queryTokens, skill.slug, skill.displayName);
-          if (boost > 0) {
-            const owner = await ctx.db.get(skill.ownerUserId);
-            const latestVersion = skill.latestVersionId ? await ctx.db.get(skill.latestVersionId) : null;
-            results.push({
-              kind: "skill",
-              slug: skill.slug,
-              displayName: skill.displayName,
-              summary: skill.summary,
-              stats: skill.stats,
-              latestVersionString: latestVersion?.version ?? null,
-              totalSize: latestVersion?.files?.reduce((sum: number, f: { size: number }) => sum + f.size, 0) ?? 0,
-              owner: owner ? { handle: owner.handle, image: owner.image } : null,
-              score: boost,
-            });
-          }
-        }
-      }
-
-      if (kind === "all" || kind === "role") {
-        const allRoles = await ctx.db
-          .query("roles")
-          .withIndex("by_updated")
-          .filter((q) => q.eq(q.field("softDeletedAt"), undefined))
-          .take(500);
-
-        for (const role of allRoles) {
-          const boost = computeLexicalBoost(queryTokens, role.slug, role.displayName);
-          if (boost > 0) {
-            const owner = await ctx.db.get(role.ownerUserId);
-            const latestVersion = role.latestVersionId ? await ctx.db.get(role.latestVersionId) : null;
-            results.push({
-              kind: "role",
-              slug: role.slug,
-              displayName: role.displayName,
-              summary: role.summary,
-              stats: role.stats,
-              latestVersionString: latestVersion?.version ?? null,
-              totalSize: latestVersion?.files?.reduce((sum: number, f: { size: number }) => sum + f.size, 0) ?? 0,
-              owner: owner ? { handle: owner.handle, image: owner.image } : null,
-              score: boost,
-            });
-          }
-        }
-      }
-
-      if (kind === "all" || kind === "agent") {
-        const allAgents = await ctx.db
-          .query("agents")
-          .withIndex("by_updated")
-          .filter((q) => q.eq(q.field("softDeletedAt"), undefined))
-          .take(500);
-
-        for (const agent of allAgents) {
-          const boost = computeLexicalBoost(queryTokens, agent.slug, agent.displayName);
-          if (boost > 0) {
-            const owner = await ctx.db.get(agent.ownerUserId);
-            const latestVersion = agent.latestVersionId ? await ctx.db.get(agent.latestVersionId) : null;
-            results.push({
-              kind: "agent",
-              slug: agent.slug,
-              displayName: agent.displayName,
-              summary: agent.summary,
-              stats: agent.stats,
-              latestVersionString: latestVersion?.version ?? null,
-              totalSize: latestVersion?.files?.reduce((sum: number, f: { size: number }) => sum + f.size, 0) ?? 0,
-              owner: owner ? { handle: owner.handle, image: owner.image } : null,
-              score: boost,
-            });
-          }
-        }
       }
     }
 
@@ -208,9 +101,6 @@ interface SearchResult {
   displayName: string;
   summary?: string;
   stats: { downloads: number; stars: number; versions: number; comments: number };
-  latestVersionString: string | null;
-  totalSize: number;
-  owner: { handle: string | undefined; image: string | undefined } | null;
   score: number;
 }
 

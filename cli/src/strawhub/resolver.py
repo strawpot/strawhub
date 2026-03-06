@@ -84,12 +84,18 @@ def resolve(
             )
 
     # Step 3: Resolve transitive dependencies via DFS
+    MAX_DEPTH = 100
     resolved: dict[tuple[str, str], ResolvedPackage] = {}
     visiting: set[tuple[str, str]] = set()
 
     def resolve_pkg(
-        pkg_kind: str, pkg_slug: str, constraint: DependencySpec | None = None
+        pkg_kind: str, pkg_slug: str, constraint: DependencySpec | None = None,
+        depth: int = 0,
     ) -> None:
+        if depth > MAX_DEPTH:
+            raise DependencyError(
+                f"Dependency tree too deep (>{MAX_DEPTH} levels)"
+            )
         key = (pkg_kind, pkg_slug)
         if key in resolved:
             return
@@ -123,7 +129,7 @@ def resolve(
 
         # Recurse into dependencies (no version constraints)
         for dep_kind, dep_slug in deps_slugs:
-            resolve_pkg(dep_kind, dep_slug)
+            resolve_pkg(dep_kind, dep_slug, depth=depth + 1)
 
         visiting.discard(key)
         resolved[key] = ResolvedPackage(

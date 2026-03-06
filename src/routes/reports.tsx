@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useConvexAuth, useQuery, useMutation } from "convex/react";
+import { usePaginatedQuery } from "convex/react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { api } from "../../convex/_generated/api";
 import { useSEO } from "../lib/useSEO";
@@ -18,7 +19,11 @@ function ReportsPage() {
   const { signIn } = useAuthActions();
   const currentUser = useQuery(api.users.me);
   const [tab, setTab] = useState<Status>("pending");
-  const reports = useQuery(api.reports.list, { status: tab });
+  const { results: reports, status: reportsStatus, loadMore: loadMoreReports } = usePaginatedQuery(
+    api.reports.list,
+    { status: tab },
+    { initialNumItems: 50 },
+  );
   const resolveReport = useMutation(api.reports.resolve);
 
   if (isLoading) {
@@ -79,7 +84,7 @@ function ReportsPage() {
       </div>
 
       {/* Report list */}
-      {reports === undefined ? (
+      {reportsStatus === "LoadingFirstPage" ? (
         <p className="text-gray-500 text-sm">Loading reports...</p>
       ) : reports.length === 0 ? (
         <p className="text-gray-500 text-sm">No {tab} reports.</p>
@@ -97,6 +102,17 @@ function ReportsPage() {
               }}
             />
           ))}
+          {reportsStatus === "CanLoadMore" && (
+            <button
+              onClick={() => loadMoreReports(50)}
+              className="w-full text-center text-sm text-gray-500 hover:text-gray-300 py-2 transition-colors"
+            >
+              Load more reports
+            </button>
+          )}
+          {reportsStatus === "LoadingMore" && (
+            <p className="text-center text-sm text-gray-500 py-2">Loading more...</p>
+          )}
         </div>
       )}
     </div>
