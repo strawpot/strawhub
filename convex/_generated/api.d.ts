@@ -14,6 +14,7 @@ import type * as auth from "../auth.js";
 import type * as comments from "../comments.js";
 import type * as counters from "../counters.js";
 import type * as crons from "../crons.js";
+import type * as deleteAllFiles from "../deleteAllFiles.js";
 import type * as downloads from "../downloads.js";
 import type * as files from "../files.js";
 import type * as http from "../http.js";
@@ -59,6 +60,7 @@ declare const fullApi: ApiFromModules<{
   comments: typeof comments;
   counters: typeof counters;
   crons: typeof crons;
+  deleteAllFiles: typeof deleteAllFiles;
   downloads: typeof downloads;
   files: typeof files;
   http: typeof http;
