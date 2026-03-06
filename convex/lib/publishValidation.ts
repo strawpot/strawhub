@@ -10,9 +10,9 @@ const SLUG_REGEX = /^[a-z0-9][a-z0-9-]*$/;
 export const MAX_SLUG_LENGTH = 64;
 export const MAX_DISPLAY_NAME_LENGTH = 128;
 export const MAX_CHANGELOG_LENGTH = 10_000;
-export const MAX_FILE_SIZE = 512 * 1024; // 512 KB per file
+export const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB per file
 export const MAX_TOTAL_SIZE = 50 * 1024 * 1024; // 50 MB total
-export const MAX_FILE_COUNT = 20;
+export const MAX_FILE_COUNT = 50;
 
 // Agent-specific limits (agents may include compiled binaries)
 export const AGENT_MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB per file
@@ -63,7 +63,7 @@ export function validateFiles(
   for (const file of files) {
     if (file.size > MAX_FILE_SIZE) {
       throw new Error(
-        `File '${file.path}' exceeds ${MAX_FILE_SIZE / 1024}KB limit`,
+        `File '${file.path}' exceeds ${MAX_FILE_SIZE / 1024 / 1024}MB limit`,
       );
     }
     totalSize += file.size;

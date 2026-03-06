@@ -133,7 +133,7 @@ describe("validateFiles", () => {
         size: 100,
       })),
     ];
-    expect(() => validateFiles(files)).toThrow(/Maximum 20 files/);
+    expect(() => validateFiles(files)).toThrow(/Maximum 50 files/);
   });
 
   it("accepts exactly MAX_FILE_COUNT files", () => {
@@ -149,17 +149,13 @@ describe("validateFiles", () => {
 
   it("rejects oversized file", () => {
     const files = [{ path: "SKILL.md", size: MAX_FILE_SIZE + 1 }];
-    expect(() => validateFiles(files)).toThrow(/exceeds 512KB/);
+    expect(() => validateFiles(files)).toThrow(/exceeds 10MB/);
   });
 
   it("accepts file at max size", () => {
     const files = [{ path: "SKILL.md", size: MAX_FILE_SIZE }];
     expect(() => validateFiles(files)).not.toThrow();
   });
-
-  // Total size limit (50 MB) is unreachable with current per-file (512 KB)
-  // and count (20) limits: 20 × 512 KB = 10 MB < 50 MB.
-  // The limit exists as a safety net if per-file or count limits are raised.
 
   it("requires SKILL.md", () => {
     expect(() => validateFiles([{ path: "script.js", size: 100 }])).toThrow(
