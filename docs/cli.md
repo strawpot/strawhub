@@ -639,7 +639,7 @@ reviewer = "==2.0.0"
 
 | Format | Meaning | Example |
 |--------|---------|---------|
-| `"*"` | Accept any version (install latest) | `security-baseline = "*"` |
+| `"*"` or `""` | Accept any version (install latest) | `security-baseline = "*"` |
 | `"==X.Y.Z"` | Exact — must be this specific version | `code-review = "==2.1.0"` |
 
 See [Project File documentation](project-file.md) for full details on workflows and behavior.
