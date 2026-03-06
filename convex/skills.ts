@@ -297,7 +297,7 @@ export const publishInternal = internalMutation({
           : undefined,
         ownerUserId: user._id,
         tags: {},
-        importSource: user.role === "admin" ? args.importSource : undefined,
+        importSource: user.role === "admin" || user.role === "moderator" ? args.importSource : undefined,
         stats: { downloads: 0, stars: 0, versions: 0, comments: 0 },
         createdAt: now,
         updatedAt: now,
