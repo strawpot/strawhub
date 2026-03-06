@@ -19,14 +19,18 @@ export const listRoles = httpAction(async (ctx, request) => {
   const numItems = Math.min(parseInt(params.get("numItems") ?? params.get("limit") ?? "50", 10) || 50, 200);
   const cursor = params.get("cursor") ?? null;
 
-  const result = await ctx.runQuery(api.roles.list, {
-    paginationOpts: { numItems, cursor },
-    sort: sort as "updated" | "downloads" | "stars",
-    query,
-  });
+  const [result, counts] = await Promise.all([
+    ctx.runQuery(api.roles.list, {
+      paginationOpts: { numItems, cursor },
+      sort: sort as "updated" | "downloads" | "stars",
+      query,
+    }),
+    ctx.runQuery(api.counters.getCounts, {}),
+  ]);
 
   return jsonResponse({
     items: result.page.map(formatRole),
+    totalCount: counts.roles ?? 0,
     continueCursor: result.continueCursor,
     isDone: result.isDone,
   }, 200, { "Cache-Control": "public, max-age=60, stale-while-revalidate=300" });

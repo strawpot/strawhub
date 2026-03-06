@@ -333,6 +333,9 @@ export const publishInternal = internalMutation({
         updatedAt: now,
       });
       role = (await ctx.db.get(roleId))!;
+      const counter = await ctx.db.query("counters").withIndex("by_name", (q) => q.eq("name", "roles")).first();
+      if (counter) { await ctx.db.patch(counter._id, { count: counter.count + 1 }); }
+      else { await ctx.db.insert("counters", { name: "roles", count: 1 }); }
     }
 
     // Resolve version: use provided, or auto-increment from latest
@@ -520,6 +523,9 @@ export const publish = mutation({
         updatedAt: now,
       });
       role = (await ctx.db.get(roleId))!;
+      const counter = await ctx.db.query("counters").withIndex("by_name", (q) => q.eq("name", "roles")).first();
+      if (counter) { await ctx.db.patch(counter._id, { count: counter.count + 1 }); }
+      else { await ctx.db.insert("counters", { name: "roles", count: 1 }); }
     }
 
     // Resolve version: use provided, or auto-increment from latest
@@ -605,6 +611,10 @@ export const softDeleteInternal = internalMutation({
       .first();
     if (!role) throw new Error("Role not found");
 
+    if (!role.softDeletedAt) {
+      const counter = await ctx.db.query("counters").withIndex("by_name", (q) => q.eq("name", "roles")).first();
+      if (counter && counter.count > 0) { await ctx.db.patch(counter._id, { count: counter.count - 1 }); }
+    }
     await ctx.db.patch(role._id, { softDeletedAt: Date.now() });
     return { ok: true };
   },
@@ -629,6 +639,10 @@ export const softDelete = mutation({
       .first();
     if (!role) throw new Error("Role not found");
 
+    if (!role.softDeletedAt) {
+      const counter = await ctx.db.query("counters").withIndex("by_name", (q) => q.eq("name", "roles")).first();
+      if (counter && counter.count > 0) { await ctx.db.patch(counter._id, { count: counter.count - 1 }); }
+    }
     await ctx.db.patch(role._id, { softDeletedAt: Date.now() });
   },
 });

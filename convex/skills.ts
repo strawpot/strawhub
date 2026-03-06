@@ -334,6 +334,10 @@ export const publishInternal = internalMutation({
         updatedAt: now,
       });
       skill = (await ctx.db.get(skillId))!;
+      // Increment global skill counter
+      const counter = await ctx.db.query("counters").withIndex("by_name", (q) => q.eq("name", "skills")).first();
+      if (counter) { await ctx.db.patch(counter._id, { count: counter.count + 1 }); }
+      else { await ctx.db.insert("counters", { name: "skills", count: 1 }); }
     }
 
     // Resolve version: use provided, or auto-increment from latest
@@ -497,6 +501,9 @@ export const publish = mutation({
         updatedAt: now,
       });
       skill = (await ctx.db.get(skillId))!;
+      const counter = await ctx.db.query("counters").withIndex("by_name", (q) => q.eq("name", "skills")).first();
+      if (counter) { await ctx.db.patch(counter._id, { count: counter.count + 1 }); }
+      else { await ctx.db.insert("counters", { name: "skills", count: 1 }); }
     }
 
     // Resolve version: use provided, or auto-increment from latest
@@ -572,6 +579,10 @@ export const softDeleteInternal = internalMutation({
       .first();
     if (!skill) throw new Error("Skill not found");
 
+    if (!skill.softDeletedAt) {
+      const counter = await ctx.db.query("counters").withIndex("by_name", (q) => q.eq("name", "skills")).first();
+      if (counter && counter.count > 0) { await ctx.db.patch(counter._id, { count: counter.count - 1 }); }
+    }
     await ctx.db.patch(skill._id, { softDeletedAt: Date.now() });
     return { ok: true };
   },
@@ -596,6 +607,10 @@ export const softDelete = mutation({
       .first();
     if (!skill) throw new Error("Skill not found");
 
+    if (!skill.softDeletedAt) {
+      const counter = await ctx.db.query("counters").withIndex("by_name", (q) => q.eq("name", "skills")).first();
+      if (counter && counter.count > 0) { await ctx.db.patch(counter._id, { count: counter.count - 1 }); }
+    }
     await ctx.db.patch(skill._id, { softDeletedAt: Date.now() });
   },
 });

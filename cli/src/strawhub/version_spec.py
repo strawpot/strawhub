@@ -96,6 +96,7 @@ def parse_constraint(constraint: str) -> DependencySpec:
     """Parse a standalone constraint string from strawpot.toml.
 
     "*"       → DependencySpec("", "latest", None)
+    ""        → DependencySpec("", "latest", None)
     "==1.0.0" → DependencySpec("", "==", "1.0.0")
 
     The slug is empty because in the TOML context the slug comes from
@@ -109,7 +110,7 @@ def parse_constraint(constraint: str) -> DependencySpec:
         return DependencySpec(slug="", operator=m.group(1), version=m.group(2))  # type: ignore[arg-type]
     raise ValueError(
         f"Invalid version constraint: '{constraint}'. "
-        "Use '*' for latest or '==X.Y.Z' for exact version."
+        "Use '*' or '' for latest, or '==X.Y.Z' for exact version."
     )
 
 
