@@ -186,9 +186,9 @@ export function extractName(fm: Record<string, unknown>): string | undefined {
  */
 export function extractDependencies(
   fm: Record<string, unknown>,
-  kind: "skill" | "role" | "agent",
+  kind: "skill" | "role" | "agent" | "memory",
 ): { skills?: string[]; roles?: string[] } | undefined {
-  if (kind === "agent") return undefined;
+  if (kind === "agent" || kind === "memory") return undefined;
 
   const meta = fm.metadata as Record<string, unknown> | undefined;
   const strawpot = meta?.strawpot as Record<string, unknown> | undefined;

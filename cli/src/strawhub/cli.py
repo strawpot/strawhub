@@ -23,7 +23,7 @@ from strawhub.commands.install_tools import install_tools
 @click.group()
 @click.version_option(version=__version__, prog_name="strawhub")
 def cli():
-    """StrawHub CLI - discover and install agent skills, roles, and agents."""
+    """StrawHub CLI - discover and install agent skills, roles, agents, and memories."""
 
 
 cli.add_command(login)

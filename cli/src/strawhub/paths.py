@@ -50,7 +50,7 @@ def get_lockfile_path(root: Path) -> Path:
 
 def get_package_dir(root: Path, kind: str, slug: str, version: str) -> Path:
     """Return the package directory path, e.g. root/skills/git-workflow-1.0.0/"""
-    subdir = "skills" if kind == "skill" else "roles"
+    subdir = {"skill": "skills", "role": "roles", "agent": "agents", "memory": "memories"}[kind]
     return root / subdir / f"{slug}-{version}"
 
 
@@ -64,7 +64,7 @@ def find_installed_versions(root: Path, kind: str, slug: str) -> list[str]:
 
     Returns a list of version strings found on disk.
     """
-    subdir = "skills" if kind == "skill" else "roles"
+    subdir = {"skill": "skills", "role": "roles", "agent": "agents", "memory": "memories"}[kind]
     parent = root / subdir
     if not parent.is_dir():
         return []

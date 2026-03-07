@@ -58,6 +58,22 @@ export const getAgentVersionFiles = internalQuery({
   },
 });
 
+/** Return the files array for a memory version (used by scan actions). */
+export const getMemoryVersionFiles = internalQuery({
+  args: { versionId: v.id("memoryVersions") },
+  handler: async (ctx, args) => {
+    const version = await ctx.db.get(args.versionId);
+    if (!version) return null;
+    return (version.files ?? []) as Array<{
+      path: string;
+      size: number;
+      storageId: string;
+      sha256: string;
+      contentType?: string;
+    }>;
+  },
+});
+
 // ─── Internal Mutations ──────────────────────────────────────────────────────
 
 export const setScanStatus = internalMutation({
@@ -131,6 +147,44 @@ export const flagAgent = internalMutation({
       scanResult: args.scanResult,
     });
     await ctx.db.patch(args.agentId, {
+      moderationStatus: "hidden" as const,
+    });
+  },
+});
+
+export const setMemoryScanStatus = internalMutation({
+  args: {
+    versionId: v.id("memoryVersions"),
+    scanStatus: scanStatusLiterals,
+    scanResult: scanResultValidator,
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.versionId, {
+      scanStatus: args.scanStatus,
+      scanResult: args.scanResult,
+    });
+  },
+});
+
+export const flagMemory = internalMutation({
+  args: {
+    memoryId: v.id("memories"),
+    versionId: v.id("memoryVersions"),
+    scanResult: v.object({
+      analysisId: v.optional(v.string()),
+      positives: v.optional(v.number()),
+      total: v.optional(v.number()),
+      scanDate: v.optional(v.number()),
+      permalink: v.optional(v.string()),
+      errorMessage: v.optional(v.string()),
+    }),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.versionId, {
+      scanStatus: "flagged" as const,
+      scanResult: args.scanResult,
+    });
+    await ctx.db.patch(args.memoryId, {
       moderationStatus: "hidden" as const,
     });
   },
@@ -230,7 +284,45 @@ export const listPendingScans = query({
       };
     });
 
-    const items = [...skillItems, ...agentItems];
+    // Collect rate_limited and error memory versions using index
+    const memoryRateLimited = await ctx.db
+      .query("memoryVersions")
+      .withIndex("by_scanStatus", (q) => q.eq("scanStatus", "rate_limited"))
+      .take(20);
+
+    const memoryErrored = await ctx.db
+      .query("memoryVersions")
+      .withIndex("by_scanStatus", (q) => q.eq("scanStatus", "error"))
+      .take(20);
+
+    const memoryVersions = [...memoryRateLimited, ...memoryErrored]
+      .filter((ver) => !ver.softDeletedAt);
+
+    // Batch-fetch parent memories to avoid N+1
+    const memoryDocs = await Promise.all(
+      memoryVersions.map((ver) => ctx.db.get(ver.memoryId)),
+    );
+
+    const memoryItems = memoryVersions.map((ver, i) => {
+      const mem = memoryDocs[i];
+      if (!mem || mem.softDeletedAt) return null;
+
+      const isLatest = mem.latestVersionId === ver._id;
+      return {
+        _id: ver._id,
+        kind: "memory" as const,
+        parentId: ver.memoryId,
+        slug: mem.slug,
+        displayName: mem.displayName,
+        version: ver.version,
+        scanStatus: ver.scanStatus as string,
+        scanResult: ver.scanResult,
+        priority: isLatest ? ("high" as const) : ("low" as const),
+        createdAt: ver.createdAt,
+      };
+    });
+
+    const items = [...skillItems, ...agentItems, ...memoryItems];
 
     // Filter nulls, sort: high priority first, then by creation date desc
     return items
@@ -317,6 +409,45 @@ export const retriggerAgentScan = mutation({
       agentId: version.agentId,
       zipStorageId: version.zipStorageId,
       zipFileName: `${agent.slug}-v${version.version}.zip`,
+    });
+  },
+});
+
+/**
+ * Retrigger a VirusTotal scan for a memory version.
+ * Admin/moderator only. Only allowed for rate_limited or error versions.
+ */
+export const retriggerMemoryScan = mutation({
+  args: { versionId: v.id("memoryVersions") },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const user = await ctx.db.get(userId);
+    if (user?.role !== "admin" && user?.role !== "moderator") {
+      throw new Error("Not authorized");
+    }
+
+    const version = await ctx.db.get(args.versionId);
+    if (!version) throw new Error("Version not found");
+
+    if (version.scanStatus !== "rate_limited" && version.scanStatus !== "error") {
+      throw new Error("Can only retrigger scans for rate_limited or errored versions");
+    }
+
+    const memory = await ctx.db.get(version.memoryId);
+    if (!memory) throw new Error("Memory not found");
+
+    await ctx.db.patch(args.versionId, {
+      scanStatus: "pending",
+      scanResult: undefined,
+    });
+
+    await ctx.scheduler.runAfter(0, internal.virusTotalScanActions.submitMemoryScan, {
+      versionId: args.versionId,
+      memoryId: version.memoryId,
+      zipStorageId: version.zipStorageId,
+      zipFileName: `${memory.slug}-v${version.version}.zip`,
     });
   },
 });

@@ -125,7 +125,7 @@ function ReportCard({
 }: {
   report: {
     _id: any;
-    targetKind: "skill" | "role" | "agent";
+    targetKind: "skill" | "role" | "agent" | "memory";
     targetName: string;
     targetSlug: string | null;
     description: string;
@@ -146,11 +146,15 @@ function ReportCard({
     }
   };
 
+  const kindToPath: Record<string, string> = {
+    skill: "skills",
+    role: "roles",
+    agent: "agents",
+    memory: "memories",
+  };
   const targetUrl =
-    report.targetSlug
-      ? report.targetKind === "skill"
-        ? `/skills/${report.targetSlug}`
-        : `/roles/${report.targetSlug}`
+    report.targetSlug && kindToPath[report.targetKind]
+      ? `/${kindToPath[report.targetKind]}/${report.targetSlug}`
       : null;
 
   return (

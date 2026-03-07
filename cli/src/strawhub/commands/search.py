@@ -9,7 +9,7 @@ from strawhub.errors import StrawHubError
 
 @click.command()
 @click.argument("query")
-@click.option("--kind", type=click.Choice(["skill", "role", "agent", "all"]), default="all")
+@click.option("--kind", type=click.Choice(["skill", "role", "agent", "memory", "all"]), default="all")
 @click.option("--limit", type=int, default=20, help="Max results (1-100)")
 @click.option("--json", "as_json", is_flag=True, default=False, help="Output as JSON")
 def search(query, kind, limit, as_json):

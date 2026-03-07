@@ -12,7 +12,7 @@ from strawhub.frontmatter import parse_frontmatter, extract_dependencies, rewrit
 @click.group(invoke_without_command=True)
 @click.pass_context
 def publish(ctx):
-    """Publish a skill, role, or agent to the StrawHub registry."""
+    """Publish a skill, role, agent, or memory to the StrawHub registry."""
     if ctx.invoked_subcommand is None:
         click.echo(ctx.get_help())
         ctx.exit(1)
@@ -21,7 +21,7 @@ def publish(ctx):
 def _publish_impl(path, kind, ver, changelog, tags):
     directory = Path(path).resolve()
 
-    main_file = "SKILL.md" if kind == "skill" else "ROLE.md" if kind == "role" else "AGENT.md"
+    main_file = {"skill": "SKILL.md", "role": "ROLE.md", "agent": "AGENT.md", "memory": "MEMORY.md"}[kind]
     main_path = directory / main_file
     if not main_path.exists():
         print_error(f"{main_file} not found in {directory}")
@@ -106,6 +106,8 @@ def _publish_impl(path, kind, ver, changelog, tags):
                 result = client.publish_skill(form_data, files)
             elif kind == "role":
                 result = client.publish_role(form_data, files)
+            elif kind == "memory":
+                result = client.publish_memory(form_data, files)
             else:
                 result = client.publish_agent(form_data, files)
             print_success(
@@ -144,6 +146,16 @@ def publish_role(path, ver, changelog, tags):
 def publish_agent(path, ver, changelog, tags):
     """Publish an agent to the StrawHub registry."""
     _publish_impl(path, kind="agent", ver=ver, changelog=changelog, tags=tags)
+
+
+@publish.command("memory")
+@click.argument("path", type=click.Path(exists=True, file_okay=False, dir_okay=True), default=".")
+@click.option("--version", "ver", default=None, help="Version to publish")
+@click.option("--changelog", default="", help="Changelog for this version")
+@click.option("--tag", "tags", multiple=True, help="Custom tags")
+def publish_memory(path, ver, changelog, tags):
+    """Publish a memory to the StrawHub registry."""
+    _publish_impl(path, kind="memory", ver=ver, changelog=changelog, tags=tags)
 
 
 def _collect_files(directory: Path) -> list[tuple[str, tuple[str, bytes, str]]]:

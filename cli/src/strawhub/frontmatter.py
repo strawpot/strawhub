@@ -217,7 +217,7 @@ def extract_dependencies(
         .get("dependencies")
     )
 
-    if deps is None or kind == "agent":
+    if deps is None or kind in ("agent", "memory"):
         return None
 
     if kind == "skill" and isinstance(deps, list):

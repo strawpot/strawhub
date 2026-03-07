@@ -10,7 +10,7 @@ from strawhub.errors import StrawHubError
 @click.command("list")
 @click.option(
     "--kind",
-    type=click.Choice(["skills", "roles", "agents", "all"]),
+    type=click.Choice(["skills", "roles", "agents", "memories", "all"]),
     default="all",
 )
 @click.option("--limit", type=int, default=50, help="Max results (1-200)")
@@ -57,6 +57,17 @@ def list_cmd(kind, limit, sort, as_json):
                         print_list_table(items, "agent")
                     elif kind == "agents":
                         console.print("No agents found.")
+
+            if kind in ("memories", "all"):
+                data = client.list_memories(limit=limit, sort=sort)
+                if as_json:
+                    result["memories"] = data.get("items", [])
+                else:
+                    items = data.get("items", [])
+                    if items:
+                        print_list_table(items, "memory")
+                    elif kind == "memories":
+                        console.print("No memories found.")
 
             if as_json:
                 console.print_json(json.dumps(result))

@@ -16,7 +16,7 @@ from strawhub.project_file import ProjectFile
 @click.group(invoke_without_command=True)
 @click.pass_context
 def uninstall(ctx):
-    """Remove an installed skill or role and clean up orphaned dependencies."""
+    """Remove an installed skill, role, agent, or memory and clean up orphaned dependencies."""
     if ctx.invoked_subcommand is None:
         click.echo(ctx.get_help())
         ctx.exit(1)
@@ -90,6 +90,26 @@ def uninstall_skill(slug, ver, is_global, save):
 def uninstall_role(slug, ver, is_global, save):
     """Remove an installed role and clean up orphaned dependencies."""
     _uninstall_impl(slug, kind="role", ver=ver, is_global=is_global, save=save)
+
+
+@uninstall.command("agent")
+@click.argument("slug")
+@click.option("--version", "ver", default=None, help="Specific version to remove (removes all versions if omitted)")
+@click.option("--global", "is_global", is_flag=True, default=False, help="Remove from global directory (~/.strawpot or STRAWPOT_HOME)")
+@click.option("--save", is_flag=True, default=False, help="Also remove from strawpot.toml")
+def uninstall_agent(slug, ver, is_global, save):
+    """Remove an installed agent and clean up orphaned dependencies."""
+    _uninstall_impl(slug, kind="agent", ver=ver, is_global=is_global, save=save)
+
+
+@uninstall.command("memory")
+@click.argument("slug")
+@click.option("--version", "ver", default=None, help="Specific version to remove (removes all versions if omitted)")
+@click.option("--global", "is_global", is_flag=True, default=False, help="Remove from global directory (~/.strawpot or STRAWPOT_HOME)")
+@click.option("--save", is_flag=True, default=False, help="Also remove from strawpot.toml")
+def uninstall_memory(slug, ver, is_global, save):
+    """Remove an installed memory and clean up orphaned dependencies."""
+    _uninstall_impl(slug, kind="memory", ver=ver, is_global=is_global, save=save)
 
 
 def _find_targets(

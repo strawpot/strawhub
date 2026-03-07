@@ -61,8 +61,8 @@ function RolesPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl md:text-3xl font-bold text-white">
           Roles
-          {counts?.roles != null && (
-            <span className="ml-2 font-normal text-gray-500">({counts.roles.toLocaleString()})</span>
+          {counts && (
+            <span className="ml-2 font-normal text-gray-500">({(counts.roles ?? 0).toLocaleString()})</span>
           )}
         </h1>
         <Link

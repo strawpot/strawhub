@@ -11,7 +11,7 @@ import { fetchFromClawHub } from "../lib/clawhubImport";
 import JSZip from "jszip";
 import { isBinaryByMagicBytes, containsNullBytes } from "../../convex/lib/binaryDetection";
 
-type UploadSearch = { mode?: "import"; updateSlug?: string; kind?: "skill" | "role" | "agent" };
+type UploadSearch = { mode?: "import"; updateSlug?: string; kind?: "skill" | "role" | "agent" | "memory" };
 
 /** Recursively read all files from a dropped directory entry. */
 async function readDirectoryRecursively(
@@ -58,7 +58,7 @@ export const Route = createFileRoute("/upload")({
   validateSearch: (search: Record<string, unknown>): UploadSearch => ({
     mode: search.mode === "import" ? "import" : undefined,
     updateSlug: typeof search.updateSlug === "string" ? search.updateSlug : undefined,
-    kind: search.kind === "role" ? "role" : search.kind === "agent" ? "agent" : search.kind === "skill" ? "skill" : undefined,
+    kind: search.kind === "role" ? "role" : search.kind === "agent" ? "agent" : search.kind === "memory" ? "memory" : search.kind === "skill" ? "skill" : undefined,
   }),
   component: UploadPage,
 });
@@ -74,7 +74,7 @@ interface UploadFile {
 function UploadPage() {
   useSEO({
     title: "Publish - StrawHub",
-    description: "Publish or update a role, skill, or agent on StrawHub.",
+    description: "Publish or update a role, skill, agent, or memory on StrawHub.",
     url: "/upload",
   });
 
@@ -83,7 +83,7 @@ function UploadPage() {
   const navigate = useNavigate();
   const { mode, updateSlug, kind: initialKind } = Route.useSearch();
 
-  const [kind, setKind] = useState<"skill" | "role" | "agent">(initialKind ?? "role");
+  const [kind, setKind] = useState<"skill" | "role" | "agent" | "memory">(initialKind ?? "role");
   const [slug, setSlug] = useState(updateSlug ?? "");
   const [displayName, setDisplayName] = useState(
     updateSlug
@@ -115,12 +115,14 @@ function UploadPage() {
   const publishSkill = useMutation(api.skills.publish);
   const publishRole = useMutation(api.roles.publish);
   const publishAgent = useMutation(api.agents.publish);
+  const publishMemory = useMutation(api.memories.publish);
 
   const currentUser = useQuery(api.users.me);
   const existingSkill = useQuery(api.skills.getBySlug, kind === "skill" && slug.trim() ? { slug: slug.trim() } : "skip");
   const existingRole = useQuery(api.roles.getBySlug, kind === "role" && slug.trim() ? { slug: slug.trim() } : "skip");
   const existingAgent = useQuery(api.agents.getBySlug, kind === "agent" && slug.trim() ? { slug: slug.trim() } : "skip");
-  const existing = kind === "skill" ? existingSkill : kind === "role" ? existingRole : existingAgent;
+  const existingMemory = useQuery(api.memories.getBySlug, kind === "memory" && slug.trim() ? { slug: slug.trim() } : "skip");
+  const existing = kind === "skill" ? existingSkill : kind === "role" ? existingRole : kind === "agent" ? existingAgent : existingMemory;
   const isOwnedByOther = !!(existing && currentUser && existing.ownerUserId !== currentUser._id);
   const isUpdate = !!existing && !isOwnedByOther;
 
@@ -146,7 +148,7 @@ function UploadPage() {
     return null;
   })();
 
-  const primaryFile = kind === "skill" ? "SKILL.md" : kind === "role" ? "ROLE.md" : "AGENT.md";
+  const primaryFile = kind === "skill" ? "SKILL.md" : kind === "role" ? "ROLE.md" : kind === "agent" ? "AGENT.md" : "MEMORY.md";
   const hasPrimaryFile = files.some((f) => f.path === primaryFile);
 
   const validationErrors = useMemo(() => {
@@ -184,6 +186,15 @@ function UploadPage() {
         }
       }
 
+      // Memories require MEMORY.md
+      if (kind === "memory") {
+        const memoryMd = newFiles.find((f) => f.path === "MEMORY.md");
+        if (!memoryMd) {
+          setError("Memory uploads must include a MEMORY.md file.");
+          return;
+        }
+      }
+
       setError(null);
 
       const incoming: UploadFile[] = newFiles.map((f) => ({
@@ -205,7 +216,9 @@ function UploadPage() {
         ? newFiles.find((f) => f.path === "ROLE.md")
         : kind === "agent"
           ? newFiles.find((f) => f.path === "AGENT.md")
-          : newFiles.find((f) => f.path === "SKILL.md");
+          : kind === "memory"
+            ? newFiles.find((f) => f.path === "MEMORY.md")
+            : newFiles.find((f) => f.path === "SKILL.md");
 
       if (mdFile) {
         mdFile.file.text().then((text) => {
@@ -354,7 +367,7 @@ function UploadPage() {
       return;
     }
 
-    const primaryFile = kind === "skill" ? "SKILL.md" : kind === "role" ? "ROLE.md" : "AGENT.md";
+    const primaryFile = kind === "skill" ? "SKILL.md" : kind === "role" ? "ROLE.md" : kind === "agent" ? "AGENT.md" : "MEMORY.md";
     if (!files.some((f) => f.path === primaryFile)) {
       setError(`A ${primaryFile} file is required.`);
       return;
@@ -366,7 +379,7 @@ function UploadPage() {
     }
 
     // Verify primary .md files are actually text, not renamed binaries
-    if (kind === "role" || kind === "skill" || kind === "agent") {
+    if (kind === "role" || kind === "skill" || kind === "agent" || kind === "memory") {
       const mdFile = files.find((f) => f.path === primaryFile);
       if (mdFile) {
         const buf = new Uint8Array(await mdFile.file.arrayBuffer());
@@ -506,7 +519,7 @@ function UploadPage() {
           roleMdText,
           zipStorageId,
         });
-      } else {
+      } else if (kind === "agent") {
         const agentMdFile = files.find((f) => f.path === "AGENT.md");
         const rawText = agentMdFile ? await agentMdFile.file.text() : undefined;
         const agentMdText = ensureFrontmatterName(rawText, slug.trim());
@@ -519,9 +532,22 @@ function UploadPage() {
           agentMdText,
           zipStorageId,
         });
+      } else {
+        const memoryMdFile = files.find((f) => f.path === "MEMORY.md");
+        const rawText = memoryMdFile ? await memoryMdFile.file.text() : undefined;
+        const memoryMdText = ensureFrontmatterName(rawText, slug.trim());
+        await publishMemory({
+          slug: slug.trim(),
+          displayName: resolvedDisplayName,
+          version: version.trim() || undefined,
+          changelog: changelog.trim(),
+          files: uploadedFiles as any,
+          memoryMdText,
+          zipStorageId,
+        });
       }
 
-      navigate({ to: kind === "skill" ? "/skills" : kind === "role" ? "/roles" : "/agents" });
+      navigate({ to: kind === "skill" ? "/skills" : kind === "role" ? "/roles" : kind === "agent" ? "/agents" : "/memories" });
     } catch (e: any) {
       const raw = e.message || "Publish failed";
       // Strip Convex internal prefix and stack trace to show only the meaningful error
@@ -549,7 +575,7 @@ function UploadPage() {
         <h1 className="text-3xl font-bold text-white">Publish</h1>
         <div className="rounded-lg border border-gray-800 p-8 text-center">
           <p className="text-gray-400 mb-4">
-            Sign in with GitHub to publish roles, skills, and agents.
+            Sign in with GitHub to publish roles, skills, agents, and memories.
           </p>
           <button
             onClick={() => void signIn("github")}
@@ -599,6 +625,16 @@ function UploadPage() {
           >
             Agent
           </button>
+          <button
+            onClick={() => { setKind("memory"); setFiles([]); setError(null); }}
+            className={`rounded px-4 py-2 text-sm font-medium transition-colors ${
+              kind === "memory"
+                ? "bg-orange-500 text-white"
+                : "bg-gray-800 text-gray-400 hover:text-white"
+            }`}
+          >
+            Memory
+          </button>
         </div>
 
         {/* GitHub Import */}
@@ -621,7 +657,7 @@ function UploadPage() {
                   type="text"
                   value={githubUrl}
                   onChange={(e) => setGithubUrl(e.target.value)}
-                  placeholder={kind === "role" ? "https://github.com/user/repo/tree/main/roles/my-role" : kind === "agent" ? "https://github.com/user/repo/tree/main/agents/my-agent" : "https://github.com/user/repo/tree/main/skills/my-skill"}
+                  placeholder={kind === "role" ? "https://github.com/user/repo/tree/main/roles/my-role" : kind === "agent" ? "https://github.com/user/repo/tree/main/agents/my-agent" : kind === "memory" ? "https://github.com/user/repo/tree/main/memories/my-memory" : "https://github.com/user/repo/tree/main/skills/my-skill"}
                   className="flex-1 rounded border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-orange-400 focus:outline-none"
                 />
                 <button
@@ -690,9 +726,9 @@ function UploadPage() {
             <p className="text-gray-400 text-sm">
               {kind === "role"
                 ? "Drop your ROLE.md file here, or click to browse."
-                : kind === "agent"
+                : kind === "agent" || kind === "memory"
                 ? <>
-                    Drop your AGENT.md and binary files or folder here, or browse{" "}
+                    Drop your {kind === "agent" ? "AGENT.md" : "MEMORY.md"} and binary files or folder here, or browse{" "}
                     <span
                       role="button"
                       onClick={(e) => {
@@ -849,7 +885,7 @@ function UploadPage() {
               type="text"
               value={slug}
               onChange={(e) => setSlug(e.target.value)}
-              placeholder={kind === "role" ? "my-role" : kind === "agent" ? "my-agent" : "my-skill"}
+              placeholder={kind === "role" ? "my-role" : kind === "agent" ? "my-agent" : kind === "memory" ? "my-memory" : "my-skill"}
               className={`mt-1 block w-full rounded border bg-gray-900 px-3 py-2 text-white placeholder-gray-500 focus:outline-none ${
                 slugError || (slug.trim() && existing !== undefined && isOwnedByOther)
                   ? "border-red-600 focus:border-red-500"
@@ -879,7 +915,7 @@ function UploadPage() {
               type="text"
               value={isUpdate ? (existing?.displayName ?? displayName) : displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              placeholder={kind === "role" ? "My Role" : kind === "agent" ? "My Agent" : "My Skill"}
+              placeholder={kind === "role" ? "My Role" : kind === "agent" ? "My Agent" : kind === "memory" ? "My Memory" : "My Skill"}
               disabled={isUpdate}
               className={`mt-1 block w-full rounded border border-gray-700 bg-gray-900 px-3 py-2 text-white placeholder-gray-500 focus:outline-none ${
                 isUpdate
@@ -958,8 +994,8 @@ function UploadPage() {
           {isPublishing
             ? "Publishing..."
             : isUpdate
-              ? `Update ${kind === "skill" ? "Skill" : kind === "role" ? "Role" : "Agent"}`
-              : `Publish ${kind === "skill" ? "Skill" : kind === "role" ? "Role" : "Agent"}`}
+              ? `Update ${kind === "skill" ? "Skill" : kind === "role" ? "Role" : kind === "agent" ? "Agent" : "Memory"}`
+              : `Publish ${kind === "skill" ? "Skill" : kind === "role" ? "Role" : kind === "agent" ? "Agent" : "Memory"}`}
         </button>
       </div>
     </div>
