@@ -4,6 +4,7 @@ import { auth } from "./auth";
 import { listSkills, handleGetSkill, handleGetSkillFile, handleResolveSkillDeps, publishSkill, handleDeleteSkill, handleClaimSkill } from "./httpApiV1/skillsV1";
 import { listRoles, handleGetRole, handleGetRoleFile, handleResolveRoleDeps, publishRole, handleDeleteRole } from "./httpApiV1/rolesV1";
 import { listAgents, handleGetAgent, handleGetAgentFile, publishAgent, handleDeleteAgent } from "./httpApiV1/agentsV1";
+import { listMemories, handleGetMemory, handleGetMemoryFile, publishMemory, handleDeleteMemory } from "./httpApiV1/memoriesV1";
 import { searchAll } from "./httpApiV1/searchV1";
 import { whoami } from "./httpApiV1/whoamiV1";
 
@@ -79,6 +80,23 @@ const agentSlugDeleteDispatcher = httpAction(async (ctx, request) => {
 http.route({ pathPrefix: "/api/v1/agents/", method: "GET", handler: agentSlugDispatcher });
 http.route({ pathPrefix: "/api/v1/agents/", method: "DELETE", handler: agentSlugDeleteDispatcher });
 http.route({ pathPrefix: "/api/v1/agents/", method: "OPTIONS", handler: corsHandler });
+
+// ── Memories ─────────────────────────────────────────────────────────────────
+http.route({ path: "/api/v1/memories", method: "GET", handler: listMemories });
+http.route({ path: "/api/v1/memories", method: "POST", handler: publishMemory });
+http.route({ path: "/api/v1/memories", method: "OPTIONS", handler: corsHandler });
+
+const memorySlugDispatcher = httpAction(async (ctx, request) => {
+  const parts = new URL(request.url).pathname.split("/");
+  if (parts[5] === "file") return handleGetMemoryFile(ctx, request);
+  return handleGetMemory(ctx, request);
+});
+const memorySlugDeleteDispatcher = httpAction(async (ctx, request) => {
+  return handleDeleteMemory(ctx, request);
+});
+http.route({ pathPrefix: "/api/v1/memories/", method: "GET", handler: memorySlugDispatcher });
+http.route({ pathPrefix: "/api/v1/memories/", method: "DELETE", handler: memorySlugDeleteDispatcher });
+http.route({ pathPrefix: "/api/v1/memories/", method: "OPTIONS", handler: corsHandler });
 
 // ── Stars ───────────────────────────────────────────────────────────────────
 http.route({ path: "/api/v1/stars/toggle", method: "POST", handler: toggleStar });

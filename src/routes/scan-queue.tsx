@@ -19,6 +19,7 @@ function ScanQueuePage() {
   const items = useQuery(api.virusTotalScan.listPendingScans);
   const retriggerScan = useMutation(api.virusTotalScan.retriggerScan);
   const retriggerAgentScan = useMutation(api.virusTotalScan.retriggerAgentScan);
+  const retriggerMemoryScan = useMutation(api.virusTotalScan.retriggerMemoryScan);
 
   if (isLoading) {
     return <p className="text-gray-400">Loading...</p>;
@@ -55,7 +56,7 @@ function ScanQueuePage() {
       <div>
         <h1 className="text-2xl md:text-3xl font-bold text-white">Scan Queue</h1>
         <p className="text-sm text-gray-500 mt-1">
-          Skill and agent versions that need VirusTotal scanning. High priority = latest version.
+          Skill, agent, and memory versions that need VirusTotal scanning. High priority = latest version.
         </p>
       </div>
 
@@ -72,6 +73,8 @@ function ScanQueuePage() {
               onRetrigger={async () => {
                 if (item.kind === "agent") {
                   await retriggerAgentScan({ versionId: item._id as any });
+                } else if (item.kind === "memory") {
+                  await retriggerMemoryScan({ versionId: item._id as any });
                 } else {
                   await retriggerScan({ versionId: item._id as any });
                 }
@@ -90,7 +93,7 @@ function ScanQueueCard({
 }: {
   item: {
     _id: any;
-    kind: "skill" | "agent";
+    kind: "skill" | "agent" | "memory";
     slug: string;
     displayName: string;
     version: string;
@@ -130,7 +133,7 @@ function ScanQueueCard({
               {item.kind}
             </span>
             <Link
-              to={item.kind === "agent" ? "/agents/$slug" : "/skills/$slug"}
+              to={item.kind === "agent" ? "/agents/$slug" : item.kind === "memory" ? "/memories/$slug" : "/skills/$slug"}
               params={{ slug: item.slug }}
               className="text-sm font-medium text-orange-400 hover:text-orange-300 truncate"
             >

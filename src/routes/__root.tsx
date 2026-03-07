@@ -35,6 +35,9 @@ function RootLayout() {
           <Link to="/agents" className="hidden md:block text-sm text-gray-400 hover:text-white">
             Agents
           </Link>
+          <Link to="/memories" className="hidden md:block text-sm text-gray-400 hover:text-white">
+            Memories
+          </Link>
           <Link to="/search" className="hidden md:block text-sm text-gray-400 hover:text-white">
             Search
           </Link>
@@ -87,6 +90,9 @@ function RootLayout() {
             </Link>
             <Link to="/agents" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-sm text-gray-400 hover:text-white">
               Agents
+            </Link>
+            <Link to="/memories" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-sm text-gray-400 hover:text-white">
+              Memories
             </Link>
             <Link to="/search" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-sm text-gray-400 hover:text-white">
               Search

@@ -9,13 +9,14 @@ import { mutation } from "./_generated/server";
  */
 export const trackDownload = mutation({
   args: {
-    targetKind: v.union(v.literal("skill"), v.literal("role"), v.literal("agent")),
+    targetKind: v.union(v.literal("skill"), v.literal("role"), v.literal("agent"), v.literal("memory")),
     slug: v.string(),
     version: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const table = args.targetKind === "skill" ? "skills"
       : args.targetKind === "role" ? "roles"
+      : args.targetKind === "memory" ? "memories"
       : "agents";
     const target = await ctx.db
       .query(table)
@@ -39,6 +40,14 @@ export const trackDownload = mutation({
           .query("roleVersions")
           .withIndex("by_role_version", (q) =>
             q.eq("roleId", target._id as any).eq("version", args.version!),
+          )
+          .first();
+        versionId = ver?._id;
+      } else if (args.targetKind === "memory") {
+        const ver = await ctx.db
+          .query("memoryVersions")
+          .withIndex("by_memory_version", (q) =>
+            q.eq("memoryId", target._id as any).eq("version", args.version!),
           )
           .first();
         versionId = ver?._id;

@@ -9,7 +9,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 export const toggle = mutation({
   args: {
     targetId: v.string(),
-    targetKind: v.union(v.literal("skill"), v.literal("role"), v.literal("agent")),
+    targetKind: v.union(v.literal("skill"), v.literal("role"), v.literal("agent"), v.literal("memory")),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -22,7 +22,7 @@ export const toggle = mutation({
       )
       .first();
 
-    const table = args.targetKind === "skill" ? "skills" : args.targetKind === "role" ? "roles" : "agents";
+    const table = args.targetKind === "skill" ? "skills" : args.targetKind === "role" ? "roles" : args.targetKind === "memory" ? "memories" : "agents";
 
     if (existing) {
       await ctx.db.delete(existing._id);
@@ -68,7 +68,7 @@ export const toggleInternal = internalMutation({
   args: {
     userId: v.id("users"),
     targetId: v.string(),
-    targetKind: v.union(v.literal("skill"), v.literal("role"), v.literal("agent")),
+    targetKind: v.union(v.literal("skill"), v.literal("role"), v.literal("agent"), v.literal("memory")),
   },
   handler: async (ctx, args) => {
     const existing = await ctx.db

@@ -61,8 +61,8 @@ function SkillsPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl md:text-3xl font-bold text-white">
           Skills
-          {counts?.skills != null && (
-            <span className="ml-2 font-normal text-gray-500">({counts.skills.toLocaleString()})</span>
+          {counts && (
+            <span className="ml-2 font-normal text-gray-500">({(counts.skills ?? 0).toLocaleString()})</span>
           )}
         </h1>
         <Link

@@ -19,6 +19,11 @@ export const AGENT_MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB per file
 export const AGENT_MAX_TOTAL_SIZE = 50 * 1024 * 1024; // 50 MB total
 export const AGENT_MAX_FILE_COUNT = 50;
 
+// Memory-specific limits (same as agent — may include binary files)
+export const MEMORY_MAX_FILE_SIZE = AGENT_MAX_FILE_SIZE;
+export const MEMORY_MAX_TOTAL_SIZE = AGENT_MAX_TOTAL_SIZE;
+export const MEMORY_MAX_FILE_COUNT = AGENT_MAX_FILE_COUNT;
+
 export function validateSlug(slug: string): void {
   if (!slug || slug.length > MAX_SLUG_LENGTH) {
     throw new Error(`Slug must be 1-${MAX_SLUG_LENGTH} characters`);
@@ -105,6 +110,39 @@ export function validateAgentFiles(
   if (totalSize > AGENT_MAX_TOTAL_SIZE) {
     throw new Error(
       `Total upload size exceeds ${AGENT_MAX_TOTAL_SIZE / 1024 / 1024}MB limit`,
+    );
+  }
+}
+
+/**
+ * Validate a memory upload: must include MEMORY.md, allows binaries.
+ */
+export function validateMemoryFiles(
+  files: Array<{ path: string; size: number }>,
+): void {
+  if (files.length === 0) {
+    throw new Error("At least one file is required");
+  }
+  if (files.length > MEMORY_MAX_FILE_COUNT) {
+    throw new Error(`Maximum ${MEMORY_MAX_FILE_COUNT} files allowed`);
+  }
+  if (!files.some((f) => f.path === "MEMORY.md")) {
+    throw new Error("Memory uploads must include a MEMORY.md file");
+  }
+
+  let totalSize = 0;
+  for (const file of files) {
+    if (file.size > MEMORY_MAX_FILE_SIZE) {
+      throw new Error(
+        `File '${file.path}' exceeds ${MEMORY_MAX_FILE_SIZE / 1024 / 1024}MB limit`,
+      );
+    }
+    totalSize += file.size;
+  }
+
+  if (totalSize > MEMORY_MAX_TOTAL_SIZE) {
+    throw new Error(
+      `Total upload size exceeds ${MEMORY_MAX_TOTAL_SIZE / 1024 / 1024}MB limit`,
     );
   }
 }

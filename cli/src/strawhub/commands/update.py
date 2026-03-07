@@ -47,7 +47,7 @@ from strawhub.project_file import ProjectFile
 )
 @click.pass_context
 def update(ctx, update_all, is_global, skip_tools, yes, save):
-    """Update installed skills/roles to their latest versions."""
+    """Update installed skills/roles/agents/memories to their latest versions."""
     if save and is_global:
         print_error("--save cannot be used with --global")
         raise SystemExit(1)
@@ -55,7 +55,7 @@ def update(ctx, update_all, is_global, skip_tools, yes, save):
         _update_all_impl(is_global, skip_tools=skip_tools, yes=yes, save=save)
         return
     if ctx.invoked_subcommand is None:
-        click.echo("Specify 'skill <slug>', 'role <slug>', or use --all.")
+        click.echo("Specify 'skill <slug>', 'role <slug>', 'agent <slug>', 'memory <slug>', or use --all.")
         ctx.exit(1)
 
 
@@ -128,3 +128,21 @@ def update_skill(slug, is_global, skip_tools, yes, save):
 def update_role(slug, is_global, skip_tools, yes, save):
     """Update an installed role to its latest version."""
     _update_one_impl(slug, kind="role", is_global=is_global, skip_tools=skip_tools, yes=yes, save=save)
+
+
+@update.command("agent")
+@click.argument("slug")
+@click.option("--global", "is_global", is_flag=True, default=False, help="Update global packages (~/.strawpot or STRAWPOT_HOME)")
+@click.option("--save", is_flag=True, default=False, help="Update version constraint in strawpot.toml")
+def update_agent(slug, is_global, save):
+    """Update an installed agent to its latest version."""
+    _update_one_impl(slug, kind="agent", is_global=is_global, save=save)
+
+
+@update.command("memory")
+@click.argument("slug")
+@click.option("--global", "is_global", is_flag=True, default=False, help="Update global packages (~/.strawpot or STRAWPOT_HOME)")
+@click.option("--save", is_flag=True, default=False, help="Update version constraint in strawpot.toml")
+def update_memory(slug, is_global, save):
+    """Update an installed memory to its latest version."""
+    _update_one_impl(slug, kind="memory", is_global=is_global, save=save)

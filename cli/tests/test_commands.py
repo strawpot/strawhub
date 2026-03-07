@@ -76,6 +76,7 @@ class TestListJson:
         mock.list_skills.return_value = {"items": [{"slug": "s1"}]}
         mock.list_roles.return_value = {"items": [{"slug": "r1"}]}
         mock.list_agents.return_value = {"items": [{"slug": "a1"}]}
+        mock.list_memories.return_value = {"items": [{"slug": "m1"}]}
         mock.__enter__ = MagicMock(return_value=mock)
         mock.__exit__ = MagicMock(return_value=False)
 

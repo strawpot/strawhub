@@ -23,8 +23,8 @@ export const toggleStar = httpAction(async (ctx, request) => {
 
   const { slug, kind } = body;
   if (!slug || !kind) return errorResponse("slug and kind are required", 400);
-  if (kind !== "skill" && kind !== "role" && kind !== "agent") {
-    return errorResponse("kind must be 'skill', 'role', or 'agent'", 400);
+  if (kind !== "skill" && kind !== "role" && kind !== "agent" && kind !== "memory") {
+    return errorResponse("kind must be 'skill', 'role', 'agent', or 'memory'", 400);
   }
 
   // Look up the target by slug to get its _id
@@ -32,7 +32,9 @@ export const toggleStar = httpAction(async (ctx, request) => {
     ? await ctx.runQuery(api.skills.getBySlug, { slug })
     : kind === "role"
       ? await ctx.runQuery(api.roles.getBySlug, { slug })
-      : await ctx.runQuery(api.agents.getBySlug, { slug });
+      : kind === "memory"
+        ? await ctx.runQuery(api.memories.getBySlug, { slug })
+        : await ctx.runQuery(api.agents.getBySlug, { slug });
   if (!target) return errorResponse(`${kind} '${slug}' not found`, 404);
 
   try {

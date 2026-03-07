@@ -10,7 +10,7 @@ from strawhub.errors import NotFoundError, StrawHubError
 @click.group(invoke_without_command=True)
 @click.pass_context
 def info(ctx):
-    """Show detailed information about a skill, role, or agent."""
+    """Show detailed information about a skill, role, agent, or memory."""
     if ctx.invoked_subcommand is None:
         click.echo(ctx.get_help())
         ctx.exit(1)
@@ -27,6 +27,10 @@ def _info_impl(slug, kind, file_path, as_json):
                     console.print(content)
                 elif kind == "agent":
                     content = client.get_agent_file(slug, path=file_path)
+                    import sys
+                    sys.stdout.buffer.write(content)
+                elif kind == "memory":
+                    content = client.get_memory_file(slug, path=file_path)
                     import sys
                     sys.stdout.buffer.write(content)
                 else:
@@ -72,3 +76,12 @@ def info_role(slug, file_path, as_json):
 def info_agent(slug, file_path, as_json):
     """Show detailed information about an agent."""
     _info_impl(slug, kind="agent", file_path=file_path, as_json=as_json)
+
+
+@info.command("memory")
+@click.argument("slug")
+@click.option("--file", "file_path", default=None, help="View raw content of a specific file (e.g. MEMORY.md)")
+@click.option("--json", "as_json", is_flag=True, default=False, help="Output as JSON")
+def info_memory(slug, file_path, as_json):
+    """Show detailed information about a memory."""
+    _info_impl(slug, kind="memory", file_path=file_path, as_json=as_json)

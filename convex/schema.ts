@@ -327,11 +327,101 @@ export default defineSchema({
       filterFields: ["visibility"],
     }),
 
+  // ── Memories ─────────────────────────────────────────────────────────────
+
+  memories: defineTable({
+    slug: v.string(),
+    displayName: v.string(),
+    summary: v.optional(v.string()),
+    ownerUserId: v.id("users"),
+    latestVersionId: v.optional(v.id("memoryVersions")),
+    tags: v.any(), // Record<string, Id<"memoryVersions">>
+    badges,
+    softDeletedAt: v.optional(v.number()),
+    moderationStatus: v.optional(
+      v.union(v.literal("active"), v.literal("hidden"), v.literal("removed")),
+    ),
+    stats,
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_owner", ["ownerUserId"])
+    .index("by_updated", ["updatedAt"])
+    .index("by_stats_downloads", ["stats.downloads"])
+    .index("by_stats_stars", ["stats.stars"])
+    .index("by_active_updated", ["softDeletedAt", "updatedAt"])
+    .index("by_active_stats_downloads", ["softDeletedAt", "stats.downloads"])
+    .index("by_active_stats_stars", ["softDeletedAt", "stats.stars"])
+    .searchIndex("search", {
+      searchField: "displayName",
+      filterFields: ["softDeletedAt"],
+    }),
+
+  memoryVersions: defineTable({
+    memoryId: v.id("memories"),
+    version: v.string(),
+    changelog: v.string(),
+    files: v.array(fileEntry),
+    zipStorageId: v.optional(v.id("_storage")),
+    parsed: v.object({
+      frontmatter: v.any(),
+      metadata: v.optional(v.any()),
+    }),
+    dependencies: v.optional(v.any()),
+    downloads: v.optional(v.number()),
+    scanStatus: v.optional(
+      v.union(
+        v.literal("pending"),
+        v.literal("skipped"),
+        v.literal("scanning"),
+        v.literal("clean"),
+        v.literal("flagged"),
+        v.literal("error"),
+        v.literal("rate_limited"),
+      ),
+    ),
+    scanResult: v.optional(
+      v.object({
+        analysisId: v.optional(v.string()),
+        positives: v.optional(v.number()),
+        total: v.optional(v.number()),
+        scanDate: v.optional(v.number()),
+        permalink: v.optional(v.string()),
+        errorMessage: v.optional(v.string()),
+      }),
+    ),
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+    softDeletedAt: v.optional(v.number()),
+  })
+    .index("by_memory", ["memoryId"])
+    .index("by_memory_version", ["memoryId", "version"])
+    .index("by_scanStatus", ["scanStatus"]),
+
+  memoryEmbeddings: defineTable({
+    memoryId: v.id("memories"),
+    versionId: v.id("memoryVersions"),
+    ownerId: v.id("users"),
+    embedding: v.array(v.float64()),
+    isLatest: v.boolean(),
+    visibility: v.string(),
+    updatedAt: v.number(),
+  })
+    .index("by_memory", ["memoryId"])
+    .index("by_version", ["versionId"])
+    .index("by_visibility", ["visibility"])
+    .vectorIndex("by_embedding", {
+      vectorField: "embedding",
+      dimensions: 1536,
+      filterFields: ["visibility"],
+    }),
+
   // ── Community ────────────────────────────────────────────────────────────
 
   stars: defineTable({
-    targetId: v.string(), // skill, role, or agent ID
-    targetKind: v.union(v.literal("skill"), v.literal("role"), v.literal("agent")),
+    targetId: v.string(), // skill, role, agent, or memory ID
+    targetKind: v.union(v.literal("skill"), v.literal("role"), v.literal("agent"), v.literal("memory")),
     userId: v.id("users"),
     createdAt: v.number(),
   })
@@ -340,8 +430,8 @@ export default defineSchema({
     .index("by_target_user", ["targetId", "userId"]),
 
   comments: defineTable({
-    targetId: v.string(), // skill, role, or agent ID
-    targetKind: v.union(v.literal("skill"), v.literal("role"), v.literal("agent")),
+    targetId: v.string(), // skill, role, agent, or memory ID
+    targetKind: v.union(v.literal("skill"), v.literal("role"), v.literal("agent"), v.literal("memory")),
     userId: v.id("users"),
     body: v.string(),
     createdAt: v.number(),
@@ -351,8 +441,8 @@ export default defineSchema({
     .index("by_user", ["userId"]),
 
   reports: defineTable({
-    targetId: v.string(), // skill, role, or agent ID
-    targetKind: v.union(v.literal("skill"), v.literal("role"), v.literal("agent")),
+    targetId: v.string(), // skill, role, agent, or memory ID
+    targetKind: v.union(v.literal("skill"), v.literal("role"), v.literal("agent"), v.literal("memory")),
     userId: v.id("users"),
     description: v.string(),
     status: v.union(
@@ -406,7 +496,7 @@ export default defineSchema({
   // ── Stat Events (event-sourced download tracking) ──────────────────────
 
   statEvents: defineTable({
-    targetKind: v.union(v.literal("skill"), v.literal("role"), v.literal("agent")),
+    targetKind: v.union(v.literal("skill"), v.literal("role"), v.literal("agent"), v.literal("memory")),
     targetId: v.string(),
     event: v.union(v.literal("download")),
     versionId: v.optional(v.string()),
@@ -416,7 +506,7 @@ export default defineSchema({
   // ── Counters ───────────────────────────────────────────────────────────
 
   counters: defineTable({
-    name: v.string(), // "skills", "roles", "agents"
+    name: v.string(), // "skills", "roles", "agents", "memories"
     count: v.number(),
   }).index("by_name", ["name"]),
 });
