@@ -62,13 +62,13 @@ See the [project file documentation](../docs/project-file.md) for full details.
 | Command | Description |
 |---------|-------------|
 | `install` | Install all dependencies from `strawpot.toml` |
-| `install skill\|role <slug>` | Install a specific skill or role |
-| `install skill\|role <slug> --save` | Install and save to `strawpot.toml` (`*`) |
-| `install skill\|role <slug> --save-exact` | Install and save to `strawpot.toml` (`==X.Y.Z`) |
-| `install skill\|role <slug> --version X.Y.Z` | Install a specific version |
-| `uninstall skill\|role <slug>` | Uninstall a skill or role |
-| `uninstall skill\|role <slug> --save` | Uninstall and remove from `strawpot.toml` |
-| `update skill\|role <slug>` | Update to the latest version |
+| `install skill\|role\|agent\|memory <slug>` | Install a specific package |
+| `install skill\|role\|agent\|memory <slug> --save` | Install and save to `strawpot.toml` (`*`) |
+| `install skill\|role\|agent\|memory <slug> --save-exact` | Install and save to `strawpot.toml` (`==X.Y.Z`) |
+| `install skill\|role\|agent\|memory <slug> --version X.Y.Z` | Install a specific version |
+| `uninstall skill\|role\|agent\|memory <slug>` | Uninstall a package |
+| `uninstall skill\|role\|agent\|memory <slug> --save` | Uninstall and remove from `strawpot.toml` |
+| `update skill\|role\|agent\|memory <slug>` | Update to the latest version |
 | `update --all` | Update all installed packages |
 | `update --all --save` | Update all and save new versions to `strawpot.toml` |
 | `init` | Create `strawpot.toml` from currently installed packages |
