@@ -8,7 +8,7 @@
 
 StrawHub is the registry for [StrawPot](https://strawpot.com) — the open-source framework for role-based AI agents.
 
-Discover, publish, and install **roles**, **skills**, and **agents** that power StrawPot.
+Discover, publish, and install **roles**, **skills**, **agents**, and **memories** that power StrawPot.
 
 ```
 # CrewAI: 40 lines of Python to define a 2-agent team
@@ -80,6 +80,11 @@ CLI runtimes that execute roles. Each agent bridges StrawPot to a specific AI pl
 
 Examples: `claude_code` · `codex` · `gemini`
 
+### Memory
+Persistent memory banks that store knowledge, context, and learned patterns across agent sessions.
+
+Examples: `project-context` · `code-patterns` · `team-decisions`
+
 ### Dependencies
 Roles and skills declare dependencies under `metadata.strawpot.dependencies`. A role can depend on skills (capabilities it needs) and other roles (sub-agents it delegates to). Dependencies are resolved automatically on install.
 
@@ -138,7 +143,7 @@ Instructions for the agent...
 - [x] Skills registry
 - [x] Roles registry
 - [x] Agents registry
-- [ ] Memory storage
+- [x] Memories registry
 
 ## Documentation
 

@@ -10,20 +10,20 @@
 
 ## Content ownership
 
-- Only the **owner** can publish new versions of an existing skill or role
+- Only the **owner** can publish new versions of an existing skill, role, agent, or memory
 - Users **cannot** delete their own content — only admins can soft-delete
-- Slug ownership is per-type: skills and roles have separate namespaces
+- Slug ownership is per-type: skills, roles, agents, and memories each have separate namespaces
 
 ## Reporting
 
-Users can report skills, roles, and comments for moderation review.
+Users can report skills, roles, agents, memories, and comments for moderation review.
 
 ## Moderation
 
 Public queries exclude soft-deleted content. Admin queries retain access to deleted items for review and restoration.
 
 Admins can:
-- Soft-delete and restore skills and roles
+- Soft-delete and restore skills, roles, agents, and memories
 - Ban and unban users
 - Assign user roles (admin, moderator, user)
 
@@ -65,8 +65,15 @@ All rate limits are per IP address.
 
 ## Upload constraints
 
+### Skills and Roles
 - Max 20 files per package, 512 KB each
 - Allowed extensions: `.md`, `.txt`, `.json`, `.yaml`, `.yml`, `.toml`
 - Roles must contain exactly one file (`ROLE.md`)
+
+### Agents and Memories
+- Max 50 files per package, 10 MB each, 50 MB total
+- Supports binary files (compiled executables, data files)
+
+### All types
 - Version monotonicity: new versions must be strictly greater than the latest
 - Dependency constraints are validated at publish time

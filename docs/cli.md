@@ -20,9 +20,9 @@ strawhub [--version] [--help] <command>
 | [`uninstall`](#uninstall) | Remove a package and clean up orphaned dependencies |
 | [`update`](#update) | Update packages to their latest versions |
 | [`init`](#init) | Create `strawpot.toml` from installed packages |
-| [`search`](#search) | Search for skills, roles, and agents |
+| [`search`](#search) | Search for skills, roles, agents, and memories |
 | [`info`](#info) | Show detailed information about a package |
-| [`list`](#list) | List available skills and roles |
+| [`list`](#list) | List available skills, roles, agents, and memories |
 | [`resolve`](#resolve) | Resolve a package to its installed path and dependencies |
 | [`publish`](#publish) | Publish a package to the registry |
 | [`install-tools`](#install-tools) | Install system tools declared by packages |
@@ -311,10 +311,10 @@ strawhub install-tools --global
 
 ### `search`
 
-Search for skills, roles, and agents in the registry.
+Search for skills, roles, agents, and memories in the registry.
 
 ```bash
-strawhub search <query> [--kind skill|role|all] [--limit N] [--json]
+strawhub search <query> [--kind skill|role|agent|memory|all] [--limit N] [--json]
 ```
 
 | Argument | Description |
@@ -323,7 +323,7 @@ strawhub search <query> [--kind skill|role|all] [--limit N] [--json]
 
 | Option | Description |
 |--------|-------------|
-| `--kind` | Filter by type: `skill`, `role`, or `all` (default: `all`) |
+| `--kind` | Filter by type: `skill`, `role`, `agent`, `memory`, or `all` (default: `all`) |
 | `--limit` | Maximum results, 1–100 (default: `20`) |
 | `--json` | Output raw JSON |
 
@@ -339,11 +339,13 @@ strawhub search "agent" --json
 
 ### `info`
 
-Show detailed information about a skill or role.
+Show detailed information about a skill, role, agent, or memory.
 
 ```bash
 strawhub info skill <slug> [--file PATH] [--json]
 strawhub info role <slug> [--file PATH] [--json]
+strawhub info agent <slug> [--file PATH] [--json]
+strawhub info memory <slug> [--file PATH] [--json]
 ```
 
 | Argument | Description |
@@ -352,7 +354,7 @@ strawhub info role <slug> [--file PATH] [--json]
 
 | Option | Description |
 |--------|-------------|
-| `--file <path>` | View raw content of a specific file (e.g. `SKILL.md`, `ROLE.md`) |
+| `--file <path>` | View raw content of a specific file (e.g. `SKILL.md`, `ROLE.md`, `AGENT.md`, `MEMORY.md`) |
 | `--json` | Output raw JSON |
 
 Without `--file`, displays a formatted summary: name, owner, description, latest version, published date, changelog, files, dependencies, and download/star counts.
@@ -362,6 +364,8 @@ Without `--file`, displays a formatted summary: name, owner, description, latest
 ```bash
 strawhub info skill code-review
 strawhub info role implementer --json
+strawhub info agent claude-code
+strawhub info memory project-context
 strawhub info skill code-review --file SKILL.md
 ```
 
@@ -369,15 +373,15 @@ strawhub info skill code-review --file SKILL.md
 
 ### `list`
 
-List available skills and roles from the registry.
+List available skills, roles, agents, and memories from the registry.
 
 ```bash
-strawhub list [--kind skills|roles|all] [--limit N] [--sort updated|downloads|stars] [--json]
+strawhub list [--kind skills|roles|agents|memories|all] [--limit N] [--sort updated|downloads|stars] [--json]
 ```
 
 | Option | Description |
 |--------|-------------|
-| `--kind` | Filter by type: `skills`, `roles`, or `all` (default: `all`) |
+| `--kind` | Filter by type: `skills`, `roles`, `agents`, `memories`, or `all` (default: `all`) |
 | `--limit` | Maximum results, 1–200 (default: `50`) |
 | `--sort` | Sort order: `updated`, `downloads`, or `stars` (default: `updated`) |
 | `--json` | Output raw JSON |
@@ -465,16 +469,18 @@ strawhub resolve skill git-workflow --global
 
 ### `publish`
 
-Publish a skill or role to the StrawHub registry. Requires authentication (`strawhub login`).
+Publish a skill, role, agent, or memory to the StrawHub registry. Requires authentication (`strawhub login`).
 
 ```bash
 strawhub publish skill [<path>] [--version <ver>] [--changelog <text>] [--tag <tag>]...
 strawhub publish role [<path>] [--version <ver>] [--changelog <text>] [--tag <tag>]...
+strawhub publish agent [<path>] [--version <ver>] [--changelog <text>] [--tag <tag>]...
+strawhub publish memory [<path>] [--version <ver>] [--changelog <text>] [--tag <tag>]...
 ```
 
 | Argument | Description |
 |----------|-------------|
-| `<path>` | Directory containing `SKILL.md` or `ROLE.md` (default: `.`) |
+| `<path>` | Directory containing the main markdown file (`SKILL.md`, `ROLE.md`, `AGENT.md`, or `MEMORY.md`) (default: `.`) |
 
 | Option | Description |
 |--------|-------------|
@@ -482,7 +488,7 @@ strawhub publish role [<path>] [--version <ver>] [--changelog <text>] [--tag <ta
 | `--changelog <text>` | Changelog text for this version |
 | `--tag <tag>` | Custom tag (can be specified multiple times) |
 
-The directory must contain a `SKILL.md` (for skills) or `ROLE.md` (for roles) with valid YAML frontmatter including at least `name` (the slug). All files in the directory are included in the published package (dotfiles are skipped).
+The directory must contain the appropriate main file (`SKILL.md`, `ROLE.md`, `AGENT.md`, or `MEMORY.md`) with valid YAML frontmatter including at least `name` (the slug). All files in the directory are included in the published package (dotfiles are skipped).
 
 **Frontmatter requirements:**
 
@@ -509,6 +515,12 @@ strawhub publish role ./my-role --version 2.0.0 --changelog "Major rewrite"
 
 # Publish with tags
 strawhub publish skill --tag python --tag testing
+
+# Publish an agent
+strawhub publish agent ./my-agent --version 1.0.0
+
+# Publish a memory
+strawhub publish memory ./my-memory --version 1.0.0
 ```
 
 ---
@@ -517,20 +529,24 @@ strawhub publish skill --tag python --tag testing
 
 ### `star`
 
-Star a skill or role. Requires authentication.
+Star a skill, role, agent, or memory. Requires authentication.
 
 ```bash
 strawhub star skill <slug>
 strawhub star role <slug>
+strawhub star agent <slug>
+strawhub star memory <slug>
 ```
 
 ### `unstar`
 
-Remove a star from a skill or role. Requires authentication.
+Remove a star from a skill, role, agent, or memory. Requires authentication.
 
 ```bash
 strawhub unstar skill <slug>
 strawhub unstar role <slug>
+strawhub unstar agent <slug>
+strawhub unstar memory <slug>
 ```
 
 ---
@@ -575,11 +591,13 @@ These commands require admin privileges.
 
 ### `delete`
 
-Soft-delete a skill or role from the registry.
+Soft-delete a skill, role, agent, or memory from the registry.
 
 ```bash
 strawhub delete skill <slug> [--yes]
 strawhub delete role <slug> [--yes]
+strawhub delete agent <slug> [--yes]
+strawhub delete memory <slug> [--yes]
 ```
 
 | Option | Description |

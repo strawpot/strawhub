@@ -2,7 +2,7 @@
 
 ## Overview
 
-StrawHub is a web registry for StrawPot roles and skills. Users discover, publish, and install reusable agent components through a web UI or REST API.
+StrawHub is a web registry for StrawPot roles, skills, agents, and memories. Users discover, publish, and install reusable agent components through a web UI or REST API.
 
 ## Content Types
 
@@ -93,6 +93,22 @@ metadata:
         description: Anthropic API key
 ```
 
+### Memories
+
+A memory is a persistent knowledge bank that stores context, patterns, and learned information across agent sessions.
+
+**Files:**
+- `MEMORY.md` (required) — YAML frontmatter + markdown body
+- Supporting files (optional) — data, indexes, binary assets
+
+**Frontmatter:**
+```yaml
+name: project-context
+description: "Persistent project context and conventions"
+```
+
+**File constraints:** Up to 50 files, 10 MB each, 50 MB total. Supports binary files.
+
 ## Dependencies
 
 Dependencies are declared under `metadata.strawpot.dependencies`. Skills use a flat list of slugs (skills can only depend on other skills). Roles use a structured object with `skills` and `roles` sub-keys. The `roles` list supports `"*"` as a wildcard meaning "all available roles" — this is expanded at runtime by StrawPot and filtered out during install.
@@ -181,9 +197,13 @@ The resolution logic exists server-side (handler in `rolesV1.ts`) but is not yet
 | `/skills/$slug` | Skill detail — file viewer with frontmatter table, version history, zip download, owner update button |
 | `/roles` | Browse roles |
 | `/roles/$slug` | Role detail — file viewer, version history, zip download |
-| `/search` | Search skills, roles, and agents |
+| `/agents` | Browse agents |
+| `/agents/$slug` | Agent detail — file viewer, version history, zip download |
+| `/memories` | Browse memories |
+| `/memories/$slug` | Memory detail — file viewer, version history, zip download |
+| `/search` | Search skills, roles, agents, and memories |
 | `/upload` | Publish — drag-and-drop files or folders, GitHub import, form auto-fill from frontmatter, update mode via `?updateSlug=` |
-| `/dashboard` | My content — manage published skills, roles, and agents |
+| `/dashboard` | My content — manage published skills, roles, agents, and memories |
 | `/settings` | Profile editing, API tokens, account deletion |
 
 ### Authentication
@@ -195,13 +215,13 @@ The resolution logic exists server-side (handler in `rolesV1.ts`) but is not yet
 ### Publishing
 
 - **Web UI**: Drag-and-drop files or use the GitHub import (paste a URL, files are fetched via GitHub Contents API)
-- SKILL.md / ROLE.md frontmatter is auto-parsed to populate form fields (slug, display name)
+- SKILL.md / ROLE.md / AGENT.md / MEMORY.md frontmatter is auto-parsed to populate form fields (slug, display name)
 - Slug ownership: if a slug already exists and belongs to another user, publishing is blocked
-- Slug uniqueness is per-type: skills and roles have separate slug namespaces
+- Slug uniqueness is per-type: skills, roles, agents, and memories each have separate slug namespaces
 - Version monotonicity: new versions must be strictly greater than the latest published version; auto-incremented patch if omitted
 - Dependency validation errors are aggregated — all issues are reported together rather than failing on the first one
 - Zip archives nest files under `{slug}-{version}/` so they extract into a named directory
-- **REST API**: `POST /api/v1/skills` and `POST /api/v1/roles` with bearer token auth (multipart form data)
+- **REST API**: `POST /api/v1/skills`, `POST /api/v1/roles`, `POST /api/v1/agents`, and `POST /api/v1/memories` with bearer token auth (multipart form data)
 
 ### API Tokens
 
@@ -214,13 +234,13 @@ The resolution logic exists server-side (handler in `rolesV1.ts`) but is not yet
 
 | Action | Who |
 |--------|-----|
-| Publish new skill/role | Any authenticated user |
-| Update existing skill/role | Owner only |
-| Delete (soft-delete) skill/role | Admin only |
-| Restore skill/role | Admin only |
+| Publish new skill/role/agent/memory | Any authenticated user |
+| Update existing skill/role/agent/memory | Owner only |
+| Delete (soft-delete) skill/role/agent/memory | Admin only |
+| Restore skill/role/agent/memory | Admin only |
 | Delete own account | Authenticated user (self) |
 
-Users cannot delete their own published skills or roles. Only administrators can remove content from the registry.
+Users cannot delete their own published content. Only administrators can remove content from the registry.
 
 ### Admin Assignment
 
@@ -235,8 +255,14 @@ Admins are designated via the `ADMIN_GITHUB_LOGINS` Convex environment variable 
 - `roles` — role registry entries (parallel to skills)
 - `roleVersions` — versioned role bundles with skill/role dependency declarations
 - `roleEmbeddings` — vector embeddings for search
-- `stars` — user stars on skills/roles
-- `comments` — user comments on skills/roles
+- `agents` — agent registry entries with stats, badges, moderation status
+- `agentVersions` — versioned agent bundles (files in Convex storage, supports binary files)
+- `agentEmbeddings` — vector embeddings for search
+- `memories` — memory registry entries with stats, badges, moderation status
+- `memoryVersions` — versioned memory bundles (files in Convex storage, supports binary files)
+- `memoryEmbeddings` — vector embeddings for search
+- `stars` — user stars on skills/roles/agents/memories
+- `comments` — user comments on skills/roles/agents/memories
 - `apiTokens` — SHA-256 hashed bearer tokens for CLI/API auth
 - `auditLogs` — moderation action trail
 - `rateLimits` — per-IP/per-token rate limiting

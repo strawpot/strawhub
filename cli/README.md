@@ -6,7 +6,7 @@
 
 Command-line client for [StrawHub](https://strawhub.dev), the public registry for [StrawPot](https://strawpot.com) agents.
 
-Discover, install, publish, and manage reusable **skills**, **roles**, and **agents** — with recursive dependency resolution.
+Discover, install, publish, and manage reusable **skills**, **roles**, **agents**, and **memories** — with recursive dependency resolution.
 
 ## Installation
 
@@ -17,7 +17,7 @@ pip install strawhub
 ## Quick Start
 
 ```bash
-# Search for skills, roles, and agents
+# Search for skills, roles, agents, and memories
 strawhub search "code review"
 
 # Install a skill (dependencies resolved automatically)
@@ -78,17 +78,17 @@ See the [project file documentation](../docs/project-file.md) for full details.
 
 | Command | Description |
 |---------|-------------|
-| `search <query>` | Search for skills, roles, and agents |
-| `info skill\|role\|agent <slug>` | Show detail for a skill, role, or agent |
-| `list` | List all available skills, roles, and agents |
-| `star skill\|role\|agent <slug>` | Star a skill, role, or agent |
-| `unstar skill\|role <slug>` | Unstar a skill or role |
+| `search <query>` | Search for skills, roles, agents, and memories |
+| `info skill\|role\|agent\|memory <slug>` | Show detail for a skill, role, agent, or memory |
+| `list` | List all available skills, roles, agents, and memories |
+| `star skill\|role\|agent\|memory <slug>` | Star a skill, role, agent, or memory |
+| `unstar skill\|role\|agent\|memory <slug>` | Unstar a skill, role, agent, or memory |
 
 ### Publishing
 
 | Command | Description |
 |---------|-------------|
-| `publish skill\|role <path>` | Publish to the registry |
+| `publish skill\|role\|agent\|memory <path>` | Publish to the registry |
 
 ### Runtime
 
