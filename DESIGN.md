@@ -1,6 +1,6 @@
 # StrawHub Design
 
-StrawHub is the public registry for [StrawPot](https://strawpot.com) agent skills, roles, and agents. Users discover, publish, and install reusable agent components through a web UI, REST API, or Python CLI.
+StrawHub is the public registry for [StrawPot](https://strawpot.com) agent skills, roles, agents, and memories. Users discover, publish, and install reusable agent components through a web UI, REST API, or Python CLI.
 
 ## System Architecture
 
@@ -41,7 +41,7 @@ Three-tier monorepo: React frontend, Convex backend, Python CLI.
 
 ## Content Model
 
-Three content types with parallel structure:
+Four content types with parallel structure:
 
 ### Skills
 
@@ -68,9 +68,17 @@ CLI wrapper binaries that translate StrawPot's protocol into native AI tool inte
 - **Allowed file types:** any (binaries allowed)
 - **Unique fields:** `bin` (OS-specific binary paths), `params`, `tools`, `env`
 
+### Memories
+
+Persistent knowledge banks that store context, patterns, and learned information across agent sessions.
+
+- **Files:** `MEMORY.md` (required) + supporting files (up to 50 files, 10 MB each, 50 MB total)
+- **Dependencies:** none (memories are standalone)
+- **Allowed file types:** any (binaries allowed)
+
 ### Frontmatter
 
-All three types use YAML frontmatter for metadata. The `name` field is the package slug and must match the slug used for publishing.
+All four types use YAML frontmatter for metadata. The `name` field is the package slug and must match the slug used for publishing.
 
 ```yaml
 # SKILL.md
@@ -135,9 +143,17 @@ metadata:
 ---
 ```
 
+```yaml
+# MEMORY.md
+---
+name: project-context
+description: "Persistent project context and conventions"
+---
+```
+
 ### Namespacing
 
-Skills, roles, and agents have **separate slug namespaces**. A skill named `foo`, a role named `foo`, and an agent named `foo` can all coexist. Slug ownership is enforced per-type — only the original publisher can push new versions.
+Skills, roles, agents, and memories have **separate slug namespaces**. A skill named `foo`, a role named `foo`, an agent named `foo`, and a memory named `foo` can all coexist. Slug ownership is enforced per-type — only the original publisher can push new versions.
 
 ## Data Model
 
@@ -154,9 +170,12 @@ Skills, roles, and agents have **separate slug namespaces**. A skill named `foo`
 | `agents` | Agent registry entries (parallel structure to skills/roles) |
 | `agentVersions` | Versioned agent bundles with binary files |
 | `agentEmbeddings` | Vector embeddings for agent search |
+| `memories` | Memory registry entries (parallel structure to skills/roles/agents) |
+| `memoryVersions` | Versioned memory bundles with supporting files |
+| `memoryEmbeddings` | Vector embeddings for memory search |
 | `users` | GitHub OAuth profiles: handle, display name, bio, role (admin/moderator/user) |
-| `stars` | Polymorphic favorites (skill, role, or agent) |
-| `comments` | User comments on skills/roles/agents |
+| `stars` | Polymorphic favorites (skill, role, agent, or memory) |
+| `comments` | User comments on skills/roles/agents/memories |
 | `reports` | Content moderation reports |
 | `apiTokens` | SHA-256 hashed Bearer tokens for CLI/API auth |
 | `auditLogs` | Moderation action trail |
@@ -214,12 +233,12 @@ Hybrid search combining three signals:
 2. **Lexical matching** — tokenized keyword matching against name/description
 3. **Popularity boost** — log of download count
 
-Searches both skills and roles simultaneously. Falls back to text scan if embeddings are unavailable. Soft-deleted content is excluded.
+Searches skills, roles, agents, and memories simultaneously. Falls back to text scan if embeddings are unavailable. Soft-deleted content is excluded.
 
 ### Install (CLI)
 
 ```
-CLI → resolve dependencies → fetch files → extract to ~/.strawpot/{skills,roles,agents}/{slug}-{version}/
+CLI → resolve dependencies → fetch files → extract to ~/.strawpot/{skills,roles,agents,memories}/{slug}-{version}/
 ```
 
 Install state tracked via lockfile at `.strawpot/strawpot.lock`. After installation, declared system tools are checked — missing tools trigger OS-specific install commands (with user confirmation).
@@ -270,6 +289,12 @@ GET    /api/v1/agents/:slug/file   Raw file content (binary)
 POST   /api/v1/agents              Publish agent (auth, multipart)
 DELETE /api/v1/agents/:slug        Delete agent (admin)
 
+GET    /api/v1/memories              List memories
+GET    /api/v1/memories/:slug        Memory detail
+GET    /api/v1/memories/:slug/file   Raw file content (binary)
+POST   /api/v1/memories              Publish memory (auth, multipart)
+DELETE /api/v1/memories/:slug        Delete memory (admin)
+
 GET    /api/v1/search?q=&kind=     Hybrid search
 GET    /api/v1/whoami              Current user info
 POST   /api/v1/stars/toggle        Toggle star (auth)
@@ -291,6 +316,7 @@ strawhub/
 │   ├── skills.ts               # Skill queries/mutations
 │   ├── roles.ts                # Role queries/mutations
 │   ├── agents.ts               # Agent queries/mutations
+│   ├── memories.ts             # Memory queries/mutations
 │   ├── search.ts               # Hybrid search logic
 │   ├── users.ts                # User management
 │   ├── httpApiV1/              # REST API v1 handlers
@@ -329,7 +355,7 @@ strawhub/
 
 **Convex as sole backend** — Database, file storage, auth, HTTP endpoints, and background jobs all run on Convex. No separate server infrastructure to manage or deploy.
 
-**Separate slug namespaces** — Skills, roles, and agents can share the same slug. Keeps the content types independent and avoids naming conflicts across different concerns.
+**Separate slug namespaces** — Skills, roles, agents, and memories can share the same slug. Keeps the content types independent and avoids naming conflicts across different concerns.
 
 **SHA-256 token hashing** — API tokens are hashed before storage. Raw token shown once at creation. Prevents token exposure from database breaches.
 
