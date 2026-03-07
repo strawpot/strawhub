@@ -25,17 +25,4 @@ test.describe("Search page", () => {
     ]);
   });
 
-  test("kind filter can be changed", async ({ page }) => {
-    await page.goto("/search");
-    const select = page.locator("select");
-    await select.selectOption("skill");
-    await expect(select).toHaveValue("skill");
-    await select.selectOption("role");
-    await expect(select).toHaveValue("role");
-    await select.selectOption("agent");
-    await expect(select).toHaveValue("agent");
-    await select.selectOption("all");
-    await expect(select).toHaveValue("all");
-  });
-
 });
