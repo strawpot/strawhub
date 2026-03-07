@@ -17,10 +17,10 @@ System overview: web app + Convex backend + Python CLI.
 
 ## Data + Storage
 
-Two content types: **skills** and **roles**, both versioned bundles of text files stored in Convex `_storage`.
+Four content types: **skills**, **roles**, **agents**, and **memories**, all versioned bundles of files stored in Convex `_storage`. Skills and roles are text-only; agents and memories also support binary files.
 
-Metadata is extracted from YAML frontmatter in SKILL.md / ROLE.md at publish time.
-Stats (downloads, stars, comments) live on the `skills` and `roles` tables.
+Metadata is extracted from YAML frontmatter in SKILL.md / ROLE.md / AGENT.md / MEMORY.md at publish time.
+Stats (downloads, stars, comments) live on the `skills`, `roles`, `agents`, and `memories` tables.
 Embeddings (OpenAI, 1536 dimensions) are stored separately for vector search.
 
 ## Main Flows
@@ -28,7 +28,7 @@ Embeddings (OpenAI, 1536 dimensions) are stored separately for vector search.
 ### Browse (web)
 
 UI fetches content metadata + latest version via Convex queries.
-Renders SKILL.md / ROLE.md as Markdown with a frontmatter summary table.
+Renders SKILL.md / ROLE.md / AGENT.md / MEMORY.md as Markdown with a frontmatter summary table.
 Version history, download counts, and star counts are shown on detail pages.
 
 ### Search (HTTP)
@@ -51,7 +51,7 @@ Install state is tracked via a lockfile (`.strawpot/strawpot.lock`).
 
 ### Publish (CLI + web)
 
-- **CLI**: `POST /api/v1/skills` or `POST /api/v1/roles` (multipart, Bearer token)
+- **CLI**: `POST /api/v1/skills`, `POST /api/v1/roles`, `POST /api/v1/agents`, or `POST /api/v1/memories` (multipart, Bearer token)
 - **Web**: drag-and-drop files or GitHub import (paste a repo URL, files are fetched via GitHub Contents API)
 
 Version monotonicity is enforced — new versions must be strictly greater than the latest.
@@ -76,7 +76,9 @@ strawhub/
 │   ├── schema.ts           # Database schema
 │   ├── http.ts             # HTTP route definitions
 │   ├── skills.ts           # Skill queries/mutations
-│   └── roles.ts            # Role queries/mutations
+│   ├── roles.ts            # Role queries/mutations
+│   ├── agents.ts           # Agent queries/mutations
+│   └── memories.ts         # Memory queries/mutations
 ├── cli/                    # Python CLI
 │   ├── src/strawhub/       # CLI source (Click-based)
 │   └── tests/              # CLI unit tests

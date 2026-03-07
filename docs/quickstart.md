@@ -129,7 +129,55 @@ Publish:
 strawhub publish role . --version 1.0.0 --changelog "Initial release"
 ```
 
-## 7) Project file
+## 7) Publish an agent
+
+Create a directory with an `AGENT.md`:
+
+```bash
+mkdir my-agent && cd my-agent
+cat > AGENT.md <<'EOF'
+---
+name: my-agent
+description: "A demo agent"
+---
+
+# My Agent
+
+Agent instructions.
+EOF
+```
+
+Publish:
+
+```bash
+strawhub publish agent . --version 1.0.0 --changelog "Initial release"
+```
+
+## 8) Publish a memory
+
+Create a directory with a `MEMORY.md`:
+
+```bash
+mkdir my-memory && cd my-memory
+cat > MEMORY.md <<'EOF'
+---
+name: my-memory
+description: "A demo memory"
+---
+
+# My Memory
+
+Persistent context for the agent.
+EOF
+```
+
+Publish:
+
+```bash
+strawhub publish memory . --version 1.0.0 --changelog "Initial release"
+```
+
+## 9) Project file
 
 Declare dependencies in `strawpot.toml` for reproducible installs:
 

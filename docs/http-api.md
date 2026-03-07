@@ -111,7 +111,7 @@ Additional constraints:
 
 ## Search
 
-### Search Skills and Roles
+### Search Skills, Roles, Agents, and Memories
 
 ```
 GET /api/v1/search?q=review&kind=all&limit=20
@@ -119,7 +119,7 @@ GET /api/v1/search?q=review&kind=all&limit=20
 
 Query params:
 - `q` (required) — search query
-- `kind` (`all` | `skill` | `role`, default `all`)
+- `kind` (`all` | `skill` | `role` | `agent` | `memory`, default `all`)
 - `limit` (1-100, default 20)
 
 Uses hybrid ranking: vector similarity + lexical matching + popularity boost.
@@ -196,6 +196,110 @@ Soft-deletes a role. Requires moderator or admin role.
 
 ---
 
+## Agents
+
+### List Agents
+
+```
+GET /api/v1/agents?limit=50&sort=updated
+```
+
+Query params:
+- `limit` (1-200, default 50)
+- `sort` (`updated` | `downloads` | `stars`)
+
+Response shape matches List Skills.
+
+### Publish Agent (auth required)
+
+```
+POST /api/v1/agents
+Content-Type: multipart/form-data
+
+payload: { slug, displayName, version, changelog, customTags?, files[] }
+```
+
+File constraints: up to 50 files, 10 MB each, 50 MB total. Supports binary files.
+
+### Get Agent Detail
+
+```
+GET /api/v1/agents/:slug
+```
+
+Returns full detail for a single agent (public).
+
+### Get Agent File
+
+```
+GET /api/v1/agents/:slug/file?path=AGENT.md
+```
+
+Returns the raw file content for an agent. `path` defaults to `AGENT.md`.
+
+### Delete Agent (auth required)
+
+```
+DELETE /api/v1/agents/:slug
+Authorization: Bearer sh_xxxxx
+```
+
+Soft-deletes an agent. Requires moderator or admin role.
+
+---
+
+## Memories
+
+### List Memories
+
+```
+GET /api/v1/memories?limit=50&sort=updated
+```
+
+Query params:
+- `limit` (1-200, default 50)
+- `sort` (`updated` | `downloads` | `stars`)
+
+Response shape matches List Skills.
+
+### Publish Memory (auth required)
+
+```
+POST /api/v1/memories
+Content-Type: multipart/form-data
+
+payload: { slug, displayName, version, changelog, customTags?, files[] }
+```
+
+File constraints: up to 50 files, 10 MB each, 50 MB total. Supports binary files.
+
+### Get Memory Detail
+
+```
+GET /api/v1/memories/:slug
+```
+
+Returns full detail for a single memory (public).
+
+### Get Memory File
+
+```
+GET /api/v1/memories/:slug/file?path=MEMORY.md
+```
+
+Returns the raw file content for a memory. `path` defaults to `MEMORY.md`.
+
+### Delete Memory (auth required)
+
+```
+DELETE /api/v1/memories/:slug
+Authorization: Bearer sh_xxxxx
+```
+
+Soft-deletes a memory. Requires moderator or admin role.
+
+---
+
 ## Stars
 
 ### Toggle Star (auth required)
@@ -205,7 +309,7 @@ POST /api/v1/stars/toggle
 Authorization: Bearer sh_xxxxx
 Content-Type: application/json
 
-{ "slug": "git-workflow", "kind": "skill" }
+{ "slug": "git-workflow", "kind": "skill|role|agent|memory" }
 ```
 
 Toggles the star status for the authenticated user. Returns `{ "starred": true }` or `{ "starred": false }`.
