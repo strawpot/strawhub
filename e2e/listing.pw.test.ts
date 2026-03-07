@@ -24,7 +24,7 @@ const ENTITIES = [
   {
     kind: "Memories",
     path: "/memories",
-    description: /Persistent knowledge banks/,
+    description: /Persistent memory banks/,
     publishLabel: "Publish Memory",
   },
 ];
