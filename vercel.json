@@ -1,5 +1,9 @@
 {
   "rewrites": [
-{ "source": "/(.*)", "destination": "/" }
+    {
+      "source": "/api/v1/:path*",
+      "destination": "https://wry-manatee-359.convex.site/api/v1/:path*"
+    },
+    { "source": "/(.*)", "destination": "/" }
   ]
 }
