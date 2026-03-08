@@ -63,6 +63,14 @@ describe("parseDependencySpec", () => {
       "Invalid dependency specifier",
     );
   });
+
+  it("parses wildcard *", () => {
+    expect(parseDependencySpec("*")).toEqual({
+      slug: "*",
+      operator: "wildcard",
+      version: null,
+    });
+  });
 });
 
 describe("parseVersion", () => {
@@ -104,6 +112,12 @@ describe("compareVersions", () => {
 describe("satisfiesVersion", () => {
   it("latest always satisfies", () => {
     const spec = { slug: "x", operator: "latest" as const, version: null };
+    expect(satisfiesVersion("0.0.1", spec)).toBe(true);
+    expect(satisfiesVersion("99.99.99", spec)).toBe(true);
+  });
+
+  it("wildcard always satisfies", () => {
+    const spec = { slug: "*", operator: "wildcard" as const, version: null };
     expect(satisfiesVersion("0.0.1", spec)).toBe(true);
     expect(satisfiesVersion("99.99.99", spec)).toBe(true);
   });

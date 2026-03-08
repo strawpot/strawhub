@@ -57,9 +57,6 @@ export function validateFiles(
   if (files.length === 0) {
     throw new Error("At least one file is required");
   }
-  if (!files.some((f) => f.path === "SKILL.md")) {
-    throw new Error("Skill uploads must include a SKILL.md file");
-  }
   if (files.length > MAX_FILE_COUNT) {
     throw new Error(`Maximum ${MAX_FILE_COUNT} files allowed`);
   }
@@ -78,6 +75,17 @@ export function validateFiles(
     throw new Error(
       `Total upload size exceeds ${MAX_TOTAL_SIZE / 1024 / 1024}MB limit`,
     );
+  }
+}
+
+/**
+ * Validate that a skill upload includes a SKILL.md file.
+ */
+export function validateSkillFiles(
+  files: Array<{ path: string; size: number }>,
+): void {
+  if (!files.some((f) => f.path === "SKILL.md")) {
+    throw new Error("Skill uploads must include a SKILL.md file");
   }
 }
 
