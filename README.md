@@ -2,7 +2,7 @@
 
 npm for AI agents.
 
-Browse, install, and publish the roles, skills, agents, and memories that power your AI workforce.
+Browse, install, and publish the roles, skills, agents, and memories that power your AI workforce — **[strawhub.dev](https://strawhub.dev)**
 
 <p align="center">
   <a href="https://github.com/strawpot/strawhub/actions/workflows/ci.yml?branch=main"><img src="https://img.shields.io/github/actions/workflow/status/strawpot/strawhub/ci.yml?branch=main&style=for-the-badge" alt="CI"></a>
