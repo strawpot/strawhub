@@ -5,6 +5,7 @@ import {
   validateDisplayName,
   validateChangelog,
   validateFiles,
+  validateSkillFiles,
   validateRoleFiles,
   validateFrontmatterName,
   assertFileIsText,
@@ -157,18 +158,23 @@ describe("validateFiles", () => {
     expect(() => validateFiles(files)).not.toThrow();
   });
 
+  it("accepts any file type (type-specific checks are separate)", () => {
+    expect(() => validateFiles([{ path: "ROLE.md", size: 100 }])).not.toThrow();
+    expect(() => validateFiles([{ path: "AGENT.md", size: 100 }])).not.toThrow();
+  });
+});
+
+describe("validateSkillFiles", () => {
   it("requires SKILL.md", () => {
-    expect(() => validateFiles([{ path: "script.js", size: 100 }])).toThrow(
+    expect(() => validateSkillFiles([{ path: "script.js", size: 100 }])).toThrow(
       /must include a SKILL.md file/,
     );
   });
 
-  it("accepts any file extension alongside SKILL.md", () => {
+  it("accepts files with SKILL.md", () => {
     const skill = { path: "SKILL.md", size: 100 };
-    expect(() => validateFiles([skill, { path: "script.js", size: 100 }])).not.toThrow();
-    expect(() => validateFiles([skill, { path: "handler.py", size: 100 }])).not.toThrow();
-    expect(() => validateFiles([skill, { path: "Makefile", size: 100 }])).not.toThrow();
-    expect(() => validateFiles([skill, { path: "image.png", size: 100 }])).not.toThrow();
+    expect(() => validateSkillFiles([skill])).not.toThrow();
+    expect(() => validateSkillFiles([skill, { path: "script.js", size: 100 }])).not.toThrow();
   });
 });
 

@@ -63,6 +63,32 @@ describe("parseDependencySpec", () => {
       "Invalid dependency specifier",
     );
   });
+
+  it("parses wildcard *", () => {
+    expect(parseDependencySpec("*")).toEqual({
+      slug: "*",
+      operator: "wildcard",
+      version: null,
+    });
+  });
+
+  it("strips surrounding quotes", () => {
+    expect(parseDependencySpec('"*"')).toEqual({
+      slug: "*",
+      operator: "wildcard",
+      version: null,
+    });
+    expect(parseDependencySpec("'git-workflow'")).toEqual({
+      slug: "git-workflow",
+      operator: "latest",
+      version: null,
+    });
+    expect(parseDependencySpec('"code-review==1.0.0"')).toEqual({
+      slug: "code-review",
+      operator: "==",
+      version: "1.0.0",
+    });
+  });
 });
 
 describe("parseVersion", () => {
@@ -104,6 +130,12 @@ describe("compareVersions", () => {
 describe("satisfiesVersion", () => {
   it("latest always satisfies", () => {
     const spec = { slug: "x", operator: "latest" as const, version: null };
+    expect(satisfiesVersion("0.0.1", spec)).toBe(true);
+    expect(satisfiesVersion("99.99.99", spec)).toBe(true);
+  });
+
+  it("wildcard always satisfies", () => {
+    const spec = { slug: "*", operator: "wildcard" as const, version: null };
     expect(satisfiesVersion("0.0.1", spec)).toBe(true);
     expect(satisfiesVersion("99.99.99", spec)).toBe(true);
   });

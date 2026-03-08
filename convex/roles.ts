@@ -260,6 +260,7 @@ export const publishInternal = internalMutation({
     if (dependencies?.skills?.length) {
       for (const depSpec of dependencies.skills) {
         const spec = parseDependencySpec(depSpec);
+        if (spec.operator === "wildcard") continue;
         const skill = await ctx.db
           .query("skills")
           .withIndex("by_slug", (q) => q.eq("slug", spec.slug))
@@ -286,6 +287,7 @@ export const publishInternal = internalMutation({
     if (dependencies?.roles?.length) {
       for (const depSpec of dependencies.roles) {
         const spec = parseDependencySpec(depSpec);
+        if (spec.operator === "wildcard") continue;
         if (spec.slug === args.slug) {
           selfDep = true;
           continue;
@@ -443,6 +445,7 @@ export const publish = mutation({
     if (dependencies?.skills?.length) {
       for (const depSpec of dependencies.skills) {
         const spec = parseDependencySpec(depSpec);
+        if (spec.operator === "wildcard") continue;
         const skill = await ctx.db
           .query("skills")
           .withIndex("by_slug", (q) => q.eq("slug", spec.slug))
@@ -469,6 +472,7 @@ export const publish = mutation({
     if (dependencies?.roles?.length) {
       for (const depSpec of dependencies.roles) {
         const spec = parseDependencySpec(depSpec);
+        if (spec.operator === "wildcard") continue;
         if (spec.slug === args.slug) {
           selfDep = true;
           continue;

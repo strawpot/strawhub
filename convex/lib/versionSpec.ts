@@ -8,7 +8,7 @@
 
 export interface DependencySpec {
   slug: string;
-  operator: "latest" | "==";
+  operator: "latest" | "==" | "wildcard";
   version: string | null;
 }
 
@@ -29,7 +29,15 @@ const VERSION_REGEX = /^(\d+)\.(\d+)\.(\d+)$/;
  *   "git-workflow==1.0.0"    → { slug: "git-workflow", operator: "==", version: "1.0.0" }
  */
 export function parseDependencySpec(spec: string): DependencySpec {
-  const input = spec.trim();
+  let input = spec.trim();
+  // Strip surrounding quotes that some YAML parsers may preserve
+  if ((input.startsWith('"') && input.endsWith('"')) || (input.startsWith("'") && input.endsWith("'"))) {
+    input = input.slice(1, -1);
+  }
+
+  if (input === "*") {
+    return { slug: "*", operator: "wildcard", version: null };
+  }
 
   const match = input.match(SPEC_REGEX);
   if (match) {
@@ -44,7 +52,7 @@ export function parseDependencySpec(spec: string): DependencySpec {
     return { slug: input, operator: "latest", version: null };
   }
 
-  throw new Error(`Invalid dependency specifier: '${spec}'. Use 'slug' for latest or 'slug==X.Y.Z' for exact version.`);
+  throw new Error(`Invalid dependency specifier: '${spec}'. Use 'slug' for latest, 'slug==X.Y.Z' for exact version, or '*' for all.`);
 }
 
 /**
@@ -81,7 +89,7 @@ export function satisfiesVersion(
   candidateVersion: string,
   spec: DependencySpec,
 ): boolean {
-  if (spec.operator === "latest" || !spec.version) return true;
+  if (spec.operator === "latest" || spec.operator === "wildcard" || !spec.version) return true;
   return candidateVersion === spec.version;
 }
 

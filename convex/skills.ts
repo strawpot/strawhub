@@ -6,7 +6,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { parseFrontmatter, extractDependencies } from "./lib/frontmatter";
 import { parseDependencySpec, parseVersion, compareVersions } from "./lib/versionSpec";
 import { paginateWithRecovery } from "./lib/pagination";
-import { validateSlug, validateVersion, validateDisplayName, validateChangelog, validateFiles, validateFrontmatterName } from "./lib/publishValidation";
+import { validateSlug, validateVersion, validateDisplayName, validateChangelog, validateFiles, validateSkillFiles, validateFrontmatterName } from "./lib/publishValidation";
 
 /** Resolve version: validate if provided, otherwise auto-increment from latest. */
 function resolveVersion(explicit: string | undefined, latestVersion: string | undefined): string {
@@ -254,6 +254,7 @@ export const publishInternal = internalMutation({
     validateDisplayName(args.displayName);
     validateChangelog(args.changelog);
     validateFiles(args.files);
+    validateSkillFiles(args.files);
 
     const user = await ctx.db.get(args.userId);
     if (!user) throw new Error("User not found");
@@ -282,6 +283,7 @@ export const publishInternal = internalMutation({
       let selfDep = false;
       for (const depSpec of dependencies.skills) {
         const spec = parseDependencySpec(depSpec);
+        if (spec.operator === "wildcard") continue;
         if (spec.slug === args.slug) {
           selfDep = true;
           continue;
@@ -427,6 +429,7 @@ export const publish = mutation({
     validateDisplayName(args.displayName);
     validateChangelog(args.changelog);
     validateFiles(args.files);
+    validateSkillFiles(args.files);
 
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
@@ -457,6 +460,7 @@ export const publish = mutation({
       let selfDep = false;
       for (const depSpec of dependencies.skills) {
         const spec = parseDependencySpec(depSpec);
+        if (spec.operator === "wildcard") continue;
         if (spec.slug === args.slug) {
           selfDep = true;
           continue;

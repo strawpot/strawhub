@@ -2,7 +2,7 @@ import { httpAction } from "../_generated/server";
 import { api, internal } from "../_generated/api";
 import { jsonResponse, errorResponse, getSearchParams, resolveTokenToUser, hashToken, checkHttpRateLimit } from "./shared";
 import { parseDependencySpec } from "../lib/versionSpec";
-import { validateSlug, validateVersion, validateDisplayName, validateChangelog, validateFiles, assertFileIsText, MAX_FILE_SIZE } from "../lib/publishValidation";
+import { validateSlug, validateVersion, validateDisplayName, validateChangelog, validateFiles, validateSkillFiles, assertFileIsText, MAX_FILE_SIZE } from "../lib/publishValidation";
 import { parseFrontmatter, extractName } from "../lib/frontmatter";
 import { createZipBlob } from "../lib/zip";
 
@@ -281,6 +281,7 @@ export const publishSkill = httpAction(async (ctx, request) => {
 
   try {
     validateFiles(fileEntries);
+    validateSkillFiles(fileEntries);
   } catch (e: any) {
     return errorResponse(e.message, 400);
   }
