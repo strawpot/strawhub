@@ -265,7 +265,7 @@ class TestRunToolInstalls:
 
 class TestRunToolInstallsForPackage:
     def test_reads_skill_md_and_runs_installs(self, tmp_path):
-        pkg_dir = tmp_path / "skills" / "git-workflow-1.0.0"
+        pkg_dir = tmp_path / "skills" / "git-workflow"
         pkg_dir.mkdir(parents=True)
         (pkg_dir / "SKILL.md").write_text(
             "---\n"
@@ -294,7 +294,7 @@ class TestRunToolInstallsForPackage:
         assert results[0]["status"] == "installed"
 
     def test_returns_empty_when_no_tools(self, tmp_path):
-        pkg_dir = tmp_path / "skills" / "basic-1.0.0"
+        pkg_dir = tmp_path / "skills" / "basic"
         pkg_dir.mkdir(parents=True)
         (pkg_dir / "SKILL.md").write_text(
             "---\nname: basic\n---\n\n# Basic\n"
@@ -312,7 +312,7 @@ class TestRunToolInstallsForPackage:
         assert results == []
 
     def test_reads_role_md(self, tmp_path):
-        pkg_dir = tmp_path / "roles" / "deployer-1.0.0"
+        pkg_dir = tmp_path / "roles" / "deployer"
         pkg_dir.mkdir(parents=True)
         (pkg_dir / "ROLE.md").write_text(
             "---\n"
@@ -346,7 +346,7 @@ class TestRunToolInstallsForAll:
     def test_scans_all_packages(self, tmp_path):
         # Create two skill packages
         for slug in ("skill-a", "skill-b"):
-            pkg_dir = tmp_path / "skills" / f"{slug}-1.0.0"
+            pkg_dir = tmp_path / "skills" / slug
             pkg_dir.mkdir(parents=True)
             (pkg_dir / "SKILL.md").write_text(
                 f"---\nname: {slug}\n"
@@ -379,7 +379,7 @@ class TestRunToolInstallsForAll:
     def test_deduplicates_across_packages(self, tmp_path):
         # Two packages declaring the same tool
         for slug in ("skill-a", "skill-b"):
-            pkg_dir = tmp_path / "skills" / f"{slug}-1.0.0"
+            pkg_dir = tmp_path / "skills" / slug
             pkg_dir.mkdir(parents=True)
             (pkg_dir / "SKILL.md").write_text(
                 f"---\nname: {slug}\n"
@@ -437,7 +437,7 @@ class TestInstallToolsCommand:
         from strawhub.cli import cli
 
         # Create a package with tools
-        pkg_dir = tmp_path / "skills" / "test-1.0.0"
+        pkg_dir = tmp_path / "skills" / "test"
         pkg_dir.mkdir(parents=True)
         (pkg_dir / "SKILL.md").write_text(
             "---\nname: test\n"

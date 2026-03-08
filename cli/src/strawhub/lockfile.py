@@ -36,8 +36,8 @@ class PackageRef:
 
     @property
     def dir_name(self) -> str:
-        """Directory name, e.g. 'git-workflow-1.0.0'."""
-        return f"{self.slug}-{self.version}"
+        """Directory name (same as slug)."""
+        return self.slug
 
 
 class Lockfile:

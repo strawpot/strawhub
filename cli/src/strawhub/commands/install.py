@@ -16,6 +16,7 @@ from strawhub.paths import (
     get_project_file_path,
     find_installed_versions,
     package_exists,
+    get_installed_version,
 )
 from strawhub.project_file import ProjectFile
 from strawhub.tools import run_tool_installs_for_package
@@ -143,7 +144,7 @@ def _install_impl(
                             f"'{slug}' v{found_version} is already installed ({scope})."
                         )
                         # Register as direct install if in our scope
-                        if package_exists(root, kind, slug, found_version):
+                        if package_exists(root, kind, slug):
                             existing_ref = PackageRef(
                                 kind=kind, slug=slug, version=found_version
                             )
@@ -193,9 +194,7 @@ def _install_impl(
                             slug=dep_slug,
                             version=existing_dep_in_scope,
                         )
-                        if package_exists(
-                            root, dep_kind, dep_slug, existing_dep_in_scope
-                        ):
+                        if package_exists(root, dep_kind, dep_slug):
                             lockfile.add_package(dep_ref, dependent=root_ref)
                         installed_deps.append(
                             {
@@ -211,7 +210,7 @@ def _install_impl(
                 elif existing_dep_anywhere:
                     # Skip: already installed in some scope
                     _, dep_ver = existing_dep_anywhere
-                    if package_exists(root, dep_kind, dep_slug, dep_ver):
+                    if package_exists(root, dep_kind, dep_slug):
                         dep_ref = PackageRef(
                             kind=dep_kind, slug=dep_slug, version=dep_ver
                         )
@@ -250,9 +249,7 @@ def _install_impl(
                 pkg = lockfile.packages.get(key)
                 if not pkg:
                     continue
-                pkg_dir = get_package_dir(
-                    root, pkg["kind"], pkg["slug"], pkg["version"]
-                )
+                pkg_dir = get_package_dir(root, pkg["kind"], pkg["slug"])
                 if pkg_dir.is_dir():
                     shutil.rmtree(pkg_dir)
                 lockfile.remove_package(key)
@@ -717,7 +714,7 @@ def _remove_from_scope(
     version = _slug_installed_in_scope(root, kind, slug)
     if not version:
         return None
-    pkg_dir = get_package_dir(root, kind, slug, version)
+    pkg_dir = get_package_dir(root, kind, slug)
     if pkg_dir.is_dir():
         shutil.rmtree(pkg_dir)
     ref = PackageRef(kind=kind, slug=slug, version=version)
@@ -737,12 +734,12 @@ def _download_package(
     root: Path,
     version: str | None = None,
 ) -> None:
-    """Download a package's files into root/{kind}s/{slug}-{version}/.
+    """Download a package's files into root/{kind}s/{slug}/.
 
     When *version* is given, it is passed to the API to request a specific
     version.  Otherwise the latest version files are fetched.
     """
-    target_dir = get_package_dir(root, kind, slug, target_version)
+    target_dir = get_package_dir(root, kind, slug)
     target_dir.mkdir(parents=True, exist_ok=True)
 
     # Fetch detail to get file list
@@ -766,6 +763,9 @@ def _download_package(
         else:
             content = client.get_role_file(slug, path=file_path, version=version)
             out_file.write_text(content, encoding="utf-8")
+
+    # Write version marker for local version lookups
+    (target_dir / ".version").write_text(target_version + "\n", encoding="utf-8")
 
 
 # ── Project file install ─────────────────────────────────────────────────────

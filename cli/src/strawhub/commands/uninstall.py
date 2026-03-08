@@ -54,7 +54,7 @@ def _uninstall_impl(slug, kind, ver, is_global, save=False):
         pkg = lockfile.packages.get(key)
         if not pkg:
             continue
-        pkg_dir = get_package_dir(root, pkg["kind"], pkg["slug"], pkg["version"])
+        pkg_dir = get_package_dir(root, pkg["kind"], pkg["slug"])
         if pkg_dir.is_dir():
             shutil.rmtree(pkg_dir)
         lockfile.remove_package(key)
