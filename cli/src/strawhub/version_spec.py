@@ -21,7 +21,7 @@ CONSTRAINT_REGEX = re.compile(r"^(==)(\d+\.\d+\.\d+)$")
 @dataclass(frozen=True)
 class DependencySpec:
     slug: str
-    operator: Literal["latest", "=="]
+    operator: Literal["latest", "==", "wildcard"]
     version: str | None
 
 
@@ -39,6 +39,12 @@ def parse_dependency_spec(spec: str) -> DependencySpec:
     "git-workflow==1.0.0"  → DependencySpec("git-workflow", "==", "1.0.0")
     """
     s = spec.strip()
+    # Strip surrounding quotes that some YAML parsers may preserve
+    if (s.startswith('"') and s.endswith('"')) or (s.startswith("'") and s.endswith("'")):
+        s = s[1:-1]
+
+    if s == "*":
+        return DependencySpec(slug="*", operator="wildcard", version=None)
 
     m = SPEC_REGEX.match(s)
     if m:
@@ -49,7 +55,7 @@ def parse_dependency_spec(spec: str) -> DependencySpec:
 
     raise ValueError(
         f"Invalid dependency specifier: '{spec}'. "
-        "Use 'slug' for latest or 'slug==X.Y.Z' for exact version."
+        "Use 'slug' for latest, 'slug==X.Y.Z' for exact version, or '*' for all."
     )
 
 
@@ -82,7 +88,7 @@ def satisfies_version(candidate_version: str, spec: DependencySpec) -> bool:
     latest  → always true
     ==X.Y.Z → candidate == X.Y.Z
     """
-    if spec.operator == "latest" or spec.version is None:
+    if spec.operator in ("latest", "wildcard") or spec.version is None:
         return True
     return candidate_version == spec.version
 

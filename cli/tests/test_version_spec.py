@@ -53,6 +53,18 @@ class TestParseDependencySpec:
         with pytest.raises(ValueError, match="Invalid dependency specifier"):
             parse_dependency_spec("utils^1.2.3")
 
+    def test_wildcard(self):
+        assert parse_dependency_spec("*") == DependencySpec("*", "wildcard", None)
+
+    def test_strips_surrounding_quotes(self):
+        assert parse_dependency_spec('"*"') == DependencySpec("*", "wildcard", None)
+        assert parse_dependency_spec("'git-workflow'") == DependencySpec(
+            "git-workflow", "latest", None
+        )
+        assert parse_dependency_spec('"code-review==1.0.0"') == DependencySpec(
+            "code-review", "==", "1.0.0"
+        )
+
 
 # --- parseVersion ---
 
@@ -99,6 +111,11 @@ class TestCompareVersions:
 class TestSatisfiesVersion:
     def test_latest_always_satisfies(self):
         spec = DependencySpec("x", "latest", None)
+        assert satisfies_version("0.0.1", spec) is True
+        assert satisfies_version("99.99.99", spec) is True
+
+    def test_wildcard_always_satisfies(self):
+        spec = DependencySpec("*", "wildcard", None)
         assert satisfies_version("0.0.1", spec) is True
         assert satisfies_version("99.99.99", spec) is True
 
