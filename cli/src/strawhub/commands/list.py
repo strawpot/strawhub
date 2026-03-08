@@ -21,7 +21,7 @@ from strawhub.errors import StrawHubError
 )
 @click.option("--json", "as_json", is_flag=True, default=False, help="Output as JSON")
 def list_cmd(kind, limit, sort, as_json):
-    """List skills, roles, and/or agents."""
+    """List skills, roles, agents, and/or memories."""
     with StrawHubClient() as client:
         try:
             result = {}

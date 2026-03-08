@@ -1,7 +1,7 @@
 """System tool dependency management for installed packages.
 
-Reads metadata.strawpot.tools from SKILL.md / ROLE.md frontmatter and
-installs missing tools via OS-specific commands.
+Reads metadata.strawpot.tools from package frontmatter (SKILL.md, ROLE.md,
+AGENT.md, or MEMORY.md) and installs missing tools via OS-specific commands.
 
 Example frontmatter:
     metadata:
@@ -158,7 +158,7 @@ def run_tool_installs_for_package(
 ) -> list[dict]:
     """Extract tools from a downloaded package and run installs."""
     pkg_dir = get_package_dir(root, kind, slug)
-    main_file = "SKILL.md" if kind == "skill" else "ROLE.md"
+    main_file = {"skill": "SKILL.md", "role": "ROLE.md", "agent": "AGENT.md", "memory": "MEMORY.md"}[kind]
     md_path = pkg_dir / main_file
 
     if not md_path.is_file():
