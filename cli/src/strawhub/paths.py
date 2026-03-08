@@ -50,6 +50,14 @@ def get_roles_dir(root: Path) -> Path:
     return root / "roles"
 
 
+def get_agents_dir(root: Path) -> Path:
+    return root / "agents"
+
+
+def get_memories_dir(root: Path) -> Path:
+    return root / "memories"
+
+
 def get_lockfile_path(root: Path) -> Path:
     return root / "strawpot.lock"
 
