@@ -21,6 +21,7 @@ Discover, publish, and install **roles**, **skills**, **agents**, and **memories
 | **Format** | YAML + Python | JSON5 + Markdown | Markdown only |
 | **Skills / Tools** | Python (tools) | Markdown (skills) | Markdown (skills) |
 | **Roles** | Agent attribute | — | Standalone Markdown |
+| **Memory** | Python config | Markdown/YAML (local) | Markdown (installable) |
 | **Skill dependency resolution** | — | — | Automatic |
 | **Multi-agent delegation** | Python config | Runtime (subagent spawn) | Declarative (role deps) |
 
