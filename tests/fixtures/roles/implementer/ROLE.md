@@ -8,7 +8,7 @@ metadata:
         - git-workflow
         - code-review
         - python-testing
-    default_agent: claude_code
+    default_agent: strawpot-claude-code
 ---
 
 # Implementer

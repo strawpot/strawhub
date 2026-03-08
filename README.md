@@ -70,7 +70,7 @@ That's it. StrawHub resolves every skill and sub-role your AI CEO needs. StrawPo
 │                                             │
 │   Agents                                    │
 │  ┌──────────────────────────────┐           │
-│  │claude_code · codex · gemini  │           │
+│  │strawpot-claude-code · codex · gemini  │           │
 │  └──────────────────────────────┘           │
 └─────────────────────────────────────────────┘
 ```
@@ -98,7 +98,7 @@ metadata:
   strawpot:
     dependencies:
       roles: [pm, implementer, reviewer]
-    default_agent: claude_code
+    default_agent: strawpot-claude-code
 ---
 
 # CEO
@@ -186,7 +186,7 @@ User task → StrawPot runtime → Role (ai-ceo)
                                  │   └─ Skills (project-planning, task-breakdown)
                                  ├─ Sub-role (implementer)
                                  │   ├─ Skills (git-workflow, python-dev)
-                                 │   └─ Agent (claude_code)
+                                 │   └─ Agent (strawpot-claude-code)
                                  └─ Sub-role (reviewer)
                                      ├─ Skills (code-review, security-baseline)
                                      └─ Agent (gemini)

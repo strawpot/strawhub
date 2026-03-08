@@ -6,7 +6,7 @@ metadata:
   tags: [documentation, writing]
   author: strawpot
   strawpot:
-    default_agent: claude_code
+    default_agent: strawpot-claude-code
 ---
 
 # Documenter

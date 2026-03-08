@@ -113,7 +113,7 @@ metadata:
         - code-review
       roles:
         - reviewer
-    default_agent: claude_code
+    default_agent: strawpot-claude-code
 ---
 ```
 

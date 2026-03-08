@@ -104,7 +104,7 @@ function HomePage() {
  │   ├─ extract-data
  │   └─ report-writing
  └─ default_agent
-     └─ claude_code`}</code></pre>
+     └─ strawpot-claude-code`}</code></pre>
           <p className="text-gray-500 text-sm mt-3">
             One install resolves everything.
           </p>

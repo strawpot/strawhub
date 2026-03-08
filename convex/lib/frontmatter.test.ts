@@ -232,14 +232,14 @@ Body.
 name: implementer
 metadata:
   strawpot:
-    default_agent: claude_code
+    default_agent: strawpot-claude-code
 ---
 Body.
 `;
     const result = parseFrontmatter(text);
     expect(result.frontmatter.metadata).toEqual({
       strawpot: {
-        default_agent: "claude_code",
+        default_agent: "strawpot-claude-code",
       },
     });
   });
