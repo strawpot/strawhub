@@ -114,6 +114,7 @@ export async function handleResolveSkillDeps(ctx: any, request: Request): Promis
       throw new Error(`Dependency tree too deep (>${MAX_DEPTH} levels)`);
     }
     const spec = parseDependencySpec(depSpec);
+    if (spec.operator === "wildcard") return; // "*" is not a real package
     const key = `skill:${spec.slug}`;
     if (resolvedKeys.has(key)) return;
     if (visiting.has(key)) {

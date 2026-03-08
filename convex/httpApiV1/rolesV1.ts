@@ -113,6 +113,7 @@ export async function handleResolveRoleDeps(ctx: any, request: Request): Promise
       throw new Error(`Dependency tree too deep (>${MAX_DEPTH} levels)`);
     }
     const spec = parseDependencySpec(depSpec);
+    if (spec.operator === "wildcard") return; // "*" is not a real package
     const key = `skill:${spec.slug}`;
     if (resolvedKeys.has(key)) return;
     if (visiting.has(key)) {
@@ -153,6 +154,7 @@ export async function handleResolveRoleDeps(ctx: any, request: Request): Promise
       throw new Error(`Dependency tree too deep (>${MAX_DEPTH} levels)`);
     }
     const spec = parseDependencySpec(depSpec);
+    if (spec.operator === "wildcard") return; // "*" is not a real package
     const key = `role:${spec.slug}`;
     if (resolvedKeys.has(key)) return;
     if (visiting.has(key)) {
