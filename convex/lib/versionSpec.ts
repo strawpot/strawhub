@@ -29,7 +29,11 @@ const VERSION_REGEX = /^(\d+)\.(\d+)\.(\d+)$/;
  *   "git-workflow==1.0.0"    → { slug: "git-workflow", operator: "==", version: "1.0.0" }
  */
 export function parseDependencySpec(spec: string): DependencySpec {
-  const input = spec.trim();
+  let input = spec.trim();
+  // Strip surrounding quotes that some YAML parsers may preserve
+  if ((input.startsWith('"') && input.endsWith('"')) || (input.startsWith("'") && input.endsWith("'"))) {
+    input = input.slice(1, -1);
+  }
 
   if (input === "*") {
     return { slug: "*", operator: "wildcard", version: null };

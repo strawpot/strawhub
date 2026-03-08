@@ -71,6 +71,24 @@ describe("parseDependencySpec", () => {
       version: null,
     });
   });
+
+  it("strips surrounding quotes", () => {
+    expect(parseDependencySpec('"*"')).toEqual({
+      slug: "*",
+      operator: "wildcard",
+      version: null,
+    });
+    expect(parseDependencySpec("'git-workflow'")).toEqual({
+      slug: "git-workflow",
+      operator: "latest",
+      version: null,
+    });
+    expect(parseDependencySpec('"code-review==1.0.0"')).toEqual({
+      slug: "code-review",
+      operator: "==",
+      version: "1.0.0",
+    });
+  });
 });
 
 describe("parseVersion", () => {
