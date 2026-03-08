@@ -156,14 +156,14 @@ class TestParseFrontmatter:
             "name: implementer\n"
             "metadata:\n"
             "  strawpot:\n"
-            "    default_agent: claude_code\n"
+            "    default_agent: strawpot-claude-code\n"
             "---\n"
             "Body.\n"
         )
         result = parse_frontmatter(text)
         assert result["frontmatter"]["metadata"] == {
             "strawpot": {
-                "default_agent": "claude_code",
+                "default_agent": "strawpot-claude-code",
             },
         }
 

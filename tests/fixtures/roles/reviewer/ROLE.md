@@ -7,7 +7,7 @@ metadata:
       skills:
         - code-review
         - security-baseline
-    default_agent: claude_code
+    default_agent: strawpot-claude-code
 ---
 
 # Reviewer

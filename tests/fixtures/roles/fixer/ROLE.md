@@ -6,7 +6,7 @@ metadata:
     dependencies:
       skills:
         - git-workflow
-    default_agent: claude_code
+    default_agent: strawpot-claude-code
 ---
 
 # Fixer
