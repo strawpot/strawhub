@@ -2,7 +2,7 @@ import type { GitHubFile } from "./githubImport";
 import JSZip from "jszip";
 
 const CLAWHUB_DOWNLOAD_BASE =
-  "https://descriptive-crab-211.convex.site/api/v1/download";
+  "https://wry-manatee-359.convex.site/api/v1/download";
 
 const INSTALL_HINTS: Record<string, Record<string, string>> = {
   node: {
