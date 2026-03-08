@@ -157,7 +157,7 @@ def run_tool_installs_for_package(
     seen: set[str] | None = None,
 ) -> list[dict]:
     """Extract tools from a downloaded package and run installs."""
-    pkg_dir = get_package_dir(root, kind, slug, version)
+    pkg_dir = get_package_dir(root, kind, slug)
     main_file = "SKILL.md" if kind == "skill" else "ROLE.md"
     md_path = pkg_dir / main_file
 

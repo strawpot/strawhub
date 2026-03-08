@@ -56,10 +56,8 @@ class TestResolveBasic:
         assert dep_slugs == {"code-review", "security-baseline"}
 
 
-class TestResolveMultiVersion:
-    def test_picks_highest_version(self, strawpot_dir, make_skill):
-        make_skill("git-workflow", "1.0.0")
-        make_skill("git-workflow", "1.4.0")
+class TestResolveSingleVersion:
+    def test_returns_installed_version(self, strawpot_dir, make_skill):
         make_skill("git-workflow", "2.0.0")
 
         result = resolve(
@@ -69,9 +67,7 @@ class TestResolveMultiVersion:
         assert result["version"] == "2.0.0"
 
     def test_dep_version_spec_ignored(self, strawpot_dir, make_skill, make_role):
-        """Version specs in deps are stripped; resolver picks highest installed."""
-        make_skill("git-workflow", "1.0.0")
-        make_skill("git-workflow", "1.4.0")
+        """Version specs in deps are stripped; resolver uses installed version."""
         make_skill("git-workflow", "2.0.0")
         make_role("implementer", "1.0.0", skill_deps=["git-workflow==1.0.0"])
 
@@ -80,12 +76,10 @@ class TestResolveMultiVersion:
             local_root=strawpot_dir, global_root=strawpot_dir,
         )
         gw = next(d for d in result["dependencies"] if d["slug"] == "git-workflow")
-        # Version constraint is ignored; picks highest
         assert gw["version"] == "2.0.0"
 
-    def test_bare_slug_dep_picks_highest(self, strawpot_dir, make_skill, make_role):
-        """Bare slug deps pick the highest installed version."""
-        make_skill("git-workflow", "1.0.0")
+    def test_bare_slug_dep_resolves(self, strawpot_dir, make_skill, make_role):
+        """Bare slug deps resolve the installed version."""
         make_skill("git-workflow", "2.0.0")
         make_role("reviewer", "1.0.0", skill_deps=["git-workflow"])
 
@@ -97,14 +91,13 @@ class TestResolveMultiVersion:
         assert gw["version"] == "2.0.0"
 
     def test_resolve_specific_version(self, strawpot_dir, make_skill):
-        make_skill("git-workflow", "1.0.0")
         make_skill("git-workflow", "2.0.0")
 
         result = resolve(
-            "git-workflow", kind="skill", version="1.0.0",
+            "git-workflow", kind="skill", version="2.0.0",
             local_root=strawpot_dir, global_root=strawpot_dir,
         )
-        assert result["version"] == "1.0.0"
+        assert result["version"] == "2.0.0"
 
 
 class TestResolveCrossScope:
@@ -113,18 +106,20 @@ class TestResolveCrossScope:
         glob = tmp_path / "global"
 
         # v1.0.0 in global
-        d = glob / "skills" / "git-workflow-1.0.0"
+        d = glob / "skills" / "git-workflow"
         d.mkdir(parents=True)
         (d / "SKILL.md").write_text(
             '---\nname: git-workflow\ndescription: "v1"\n---\n# GW\n'
         )
+        (d / ".version").write_text("1.0.0\n")
 
         # v1.2.0 in local
-        d = local / "skills" / "git-workflow-1.2.0"
+        d = local / "skills" / "git-workflow"
         d.mkdir(parents=True)
         (d / "SKILL.md").write_text(
             '---\nname: git-workflow\ndescription: "v1.2"\n---\n# GW\n'
         )
+        (d / ".version").write_text("1.2.0\n")
 
         result = resolve(
             "git-workflow", kind="skill",
@@ -138,17 +133,19 @@ class TestResolveCrossScope:
         local = tmp_path / "local"
         glob = tmp_path / "global"
 
-        d = local / "skills" / "git-workflow-1.0.0"
+        d = local / "skills" / "git-workflow"
         d.mkdir(parents=True)
         (d / "SKILL.md").write_text(
             '---\nname: git-workflow\ndescription: "v1"\n---\n# GW\n'
         )
+        (d / ".version").write_text("1.0.0\n")
 
-        d = glob / "skills" / "git-workflow-2.0.0"
+        d = glob / "skills" / "git-workflow"
         d.mkdir(parents=True)
         (d / "SKILL.md").write_text(
             '---\nname: git-workflow\ndescription: "v2"\n---\n# GW\n'
         )
+        (d / ".version").write_text("2.0.0\n")
 
         result = resolve(
             "git-workflow", kind="skill",
@@ -176,17 +173,19 @@ class TestResolveErrors:
 
     def test_circular_dependency(self, strawpot_dir):
         """Two skills that depend on each other."""
-        d = strawpot_dir / "skills" / "a-1.0.0"
+        d = strawpot_dir / "skills" / "a"
         d.mkdir(parents=True)
         (d / "SKILL.md").write_text(
             "---\nname: a\ndescription: \"a\"\nmetadata:\n  strawpot:\n    dependencies:\n      - b\n---\n# A\n"
         )
+        (d / ".version").write_text("1.0.0\n")
 
-        d = strawpot_dir / "skills" / "b-1.0.0"
+        d = strawpot_dir / "skills" / "b"
         d.mkdir(parents=True)
         (d / "SKILL.md").write_text(
             "---\nname: b\ndescription: \"b\"\nmetadata:\n  strawpot:\n    dependencies:\n      - a\n---\n# B\n"
         )
+        (d / ".version").write_text("1.0.0\n")
 
         with pytest.raises(DependencyError, match="Circular dependency"):
             resolve(

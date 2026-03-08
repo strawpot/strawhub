@@ -14,7 +14,7 @@ class TestPackageRef:
 
     def test_dir_name(self):
         ref = PackageRef("role", "implementer", "2.1.0")
-        assert ref.dir_name == "implementer-2.1.0"
+        assert ref.dir_name == "implementer"
 
     def test_frozen(self):
         ref = PackageRef("skill", "git-workflow", "1.0.0")

@@ -14,13 +14,13 @@ from strawhub.errors import DependencyError
 from strawhub.frontmatter import parse_frontmatter, extract_dependencies
 from strawhub.paths import (
     get_global_root,
+    get_installed_version,
     get_local_root,
     get_package_dir,
 )
 from strawhub.version_spec import (
     DependencySpec,
     extract_slug,
-    parse_dir_name,
     parse_version,
     satisfies_version,
 )
@@ -185,10 +185,10 @@ def _build_index(
             for entry in subdir.iterdir():
                 if not entry.is_dir():
                     continue
-                parsed = parse_dir_name(entry.name)
-                if not parsed:
+                pkg_slug = entry.name
+                pkg_version = get_installed_version(root, kind, pkg_slug)
+                if not pkg_version:
                     continue
-                pkg_slug, pkg_version = parsed
                 key = (kind, pkg_slug)
                 if key not in index:
                     index[key] = []

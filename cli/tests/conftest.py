@@ -27,7 +27,7 @@ def make_skill(strawpot_dir):
     """Factory fixture to create a skill directory with SKILL.md."""
 
     def _make(slug, version, deps=None):
-        d = strawpot_dir / "skills" / f"{slug}-{version}"
+        d = strawpot_dir / "skills" / slug
         d.mkdir(parents=True, exist_ok=True)
 
         dep_section = ""
@@ -43,6 +43,7 @@ def make_skill(strawpot_dir):
         (d / "SKILL.md").write_text(
             f"---\nname: {slug}\ndescription: \"{slug} skill\"\n{dep_section}---\n\n# {slug}\n"
         )
+        (d / ".version").write_text(version + "\n")
         return d
 
     return _make
@@ -53,7 +54,7 @@ def make_role(strawpot_dir):
     """Factory fixture to create a role directory with ROLE.md."""
 
     def _make(slug, version, skill_deps=None, role_deps=None):
-        d = strawpot_dir / "roles" / f"{slug}-{version}"
+        d = strawpot_dir / "roles" / slug
         d.mkdir(parents=True, exist_ok=True)
 
         dep_section = ""
@@ -76,6 +77,7 @@ def make_role(strawpot_dir):
         (d / "ROLE.md").write_text(
             f"---\nname: {slug}\ndescription: \"{slug} role\"\n{dep_section}---\n\n# {slug}\n"
         )
+        (d / ".version").write_text(version + "\n")
         return d
 
     return _make
