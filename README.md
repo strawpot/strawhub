@@ -2,7 +2,7 @@
 
 npm for AI agents.
 
-Browse, install, and publish the roles, skills, agents, and memories that power your AI workforce.
+Browse, install, and publish the roles, skills, agents, and memories that power your AI workforce — **[strawhub.dev](https://strawhub.dev)**
 
 <p align="center">
   <a href="https://github.com/strawpot/strawhub/actions/workflows/ci.yml?branch=main"><img src="https://img.shields.io/github/actions/workflow/status/strawpot/strawhub/ci.yml?branch=main&style=for-the-badge" alt="CI"></a>
@@ -15,16 +15,19 @@ strawhub install role ai-ceo
 
   Resolving dependencies...
 
+  ✓ role   ai-ceo
+  ✓ role   pm
+  ✓ skill  project-planning
+  ✓ skill  task-breakdown
+  ✓ role   implementer
   ✓ skill  git-workflow
   ✓ skill  python-dev
+  ✓ skill  run-tests
   ✓ skill  code-review
-  ✓ skill  security-baseline
-  ✓ role   pm
-  ✓ role   implementer
   ✓ role   reviewer
-  ✓ role   ai-ceo
+  ✓ skill  security-baseline
 
-  8 packages installed.
+  11 packages installed.
 ```
 
 One command. Your entire AI company — skills, roles, and all their dependencies — ready to work.
@@ -55,15 +58,15 @@ That's it. StrawHub resolves every skill and sub-role your AI CEO needs. StrawPo
 
 ```
 ┌─────────────────────────────────────────────┐
-│                  StrawHub                    │
+│                  StrawHub                   │
 │                                             │
 │   Skills          Roles          Memories   │
-│  ┌──────────┐   ┌──────────┐   ┌─────────┐ │
+│  ┌──────────┐   ┌──────────┐   ┌──────────┐ │
 │  │git-wflow │   │ai-ceo    │   │proj-ctx  │ │
 │  │code-rev  │   │pm        │   │patterns  │ │
 │  │py-test   │   │implmtr   │   │decisions │ │
 │  │debugging │   │reviewer  │   │lessons   │ │
-│  └──────────┘   └──────────┘   └─────────┘ │
+│  └──────────┘   └──────────┘   └──────────┘ │
 │                                             │
 │   Agents                                    │
 │  ┌──────────────────────────────┐           │
