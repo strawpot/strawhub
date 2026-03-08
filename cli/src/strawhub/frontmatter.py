@@ -210,6 +210,7 @@ def extract_dependencies(
     Reads from metadata.strawpot.dependencies.
     For skills: returns {"skills": [...]} from a flat array.
     For roles: returns {"skills": [...], "roles": [...]} from a nested object.
+    For agents and memories: returns None (no dependency support).
     """
     deps = (
         fm.get("metadata", {})

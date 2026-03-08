@@ -13,7 +13,7 @@ from strawhub.errors import StrawHubError
 @click.option("--limit", type=int, default=20, help="Max results (1-100)")
 @click.option("--json", "as_json", is_flag=True, default=False, help="Output as JSON")
 def search(query, kind, limit, as_json):
-    """Search for skills, roles, and agents."""
+    """Search for skills, roles, agents, and memories."""
     with StrawHubClient() as client:
         try:
             data = client.search(query, kind=kind, limit=limit)

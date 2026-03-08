@@ -59,3 +59,21 @@ def resolve_skill(slug, ver, is_global):
 def resolve_role(slug, ver, is_global):
     """Resolve a role to its installed path and dependency paths."""
     _resolve_impl(slug, kind="role", ver=ver, is_global=is_global)
+
+
+@resolve_cmd.command("agent")
+@click.argument("slug")
+@click.option("--version", "ver", default=None, help="Resolve a specific version")
+@click.option("--global", "is_global", is_flag=True, default=False, help="Only search global directory")
+def resolve_agent(slug, ver, is_global):
+    """Resolve an agent to its installed path and dependency paths."""
+    _resolve_impl(slug, kind="agent", ver=ver, is_global=is_global)
+
+
+@resolve_cmd.command("memory")
+@click.argument("slug")
+@click.option("--version", "ver", default=None, help="Resolve a specific version")
+@click.option("--global", "is_global", is_flag=True, default=False, help="Only search global directory")
+def resolve_memory(slug, ver, is_global):
+    """Resolve a memory provider to its installed path and dependency paths."""
+    _resolve_impl(slug, kind="memory", ver=ver, is_global=is_global)

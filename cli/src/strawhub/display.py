@@ -70,14 +70,14 @@ def print_detail(kind: str, detail: dict) -> None:
                 console.print(f"  - {f['path']} ({f['size']} bytes)")
 
     deps = detail.get("dependencies", {})
-    skill_deps = deps.get("skills", [])
-    role_deps = deps.get("roles", [])
-    if skill_deps or role_deps:
+    all_deps = []
+    for dep_kind in ("skills", "roles", "agents", "memories"):
+        for d in deps.get(dep_kind, []):
+            all_deps.append((dep_kind.rstrip("s"), d))
+    if all_deps:
         console.print("[bold]Dependencies:[/bold]")
-        for d in skill_deps:
-            console.print(f"  - skill: {d}")
-        for d in role_deps:
-            console.print(f"  - role: {d}")
+        for dep_kind, d in all_deps:
+            console.print(f"  - {dep_kind}: {d}")
 
     stats = detail.get("stats", {})
     console.print(

@@ -1,8 +1,8 @@
 """Runtime dependency resolution — selects paths to installed versions.
 
 Scans local .strawpot/ first, then global, to build an index of installed packages.
-For a given root package, reads its SKILL.md/ROLE.md frontmatter to get dependency
-slugs, then selects the highest installed version for each.
+For a given root package, reads its frontmatter (SKILL.md, ROLE.md, AGENT.md, or
+MEMORY.md) to get dependency slugs, then selects the highest installed version for each.
 
 Importable as: from strawhub.resolver import resolve
 """
@@ -123,7 +123,7 @@ def resolve(
         best_version, best_path, best_source = pkg_candidates[0]
 
         # Read frontmatter to get dependency slugs
-        main_file = "SKILL.md" if pkg_kind == "skill" else "ROLE.md"
+        main_file = {"skill": "SKILL.md", "role": "ROLE.md", "agent": "AGENT.md", "memory": "MEMORY.md"}[pkg_kind]
         main_path = Path(best_path) / main_file
         deps_slugs = _read_dependency_slugs(main_path, pkg_kind)
 
@@ -178,8 +178,8 @@ def _build_index(
     index: dict[tuple[str, str], list[tuple[str, str, str]]] = {}
 
     for scope, root in [("local", local_root), ("global", global_root)]:
-        for kind in ["skill", "role"]:
-            subdir = root / ("skills" if kind == "skill" else "roles")
+        for kind in ["skill", "role", "agent", "memory"]:
+            subdir = root / {"skill": "skills", "role": "roles", "agent": "agents", "memory": "memories"}[kind]
             if not subdir.is_dir():
                 continue
             for entry in subdir.iterdir():
@@ -203,7 +203,7 @@ def _build_index(
 def _read_dependency_slugs(
     main_file_path: Path, kind: str
 ) -> list[tuple[str, str]]:
-    """Read dependency slugs from a SKILL.md or ROLE.md file.
+    """Read dependency slugs from a package's main markdown file.
 
     Returns list of (dep_kind, slug) tuples.
     """

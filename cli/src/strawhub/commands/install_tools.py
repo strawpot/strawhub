@@ -24,7 +24,7 @@ from strawhub.tools import run_tool_installs_for_all
 def install_tools(is_global, yes):
     """Install system tools declared by installed packages.
 
-    Scans all installed skills/roles for metadata.strawpot.tools
+    Scans all installed packages for metadata.strawpot.tools
     and runs install commands for any missing tools.
     """
     root = get_root(is_global)
