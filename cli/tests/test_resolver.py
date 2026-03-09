@@ -244,6 +244,18 @@ class TestResolveRoleDeps:
         assert "*" not in dep_slugs
         assert dep_slugs == {"code-review"}
 
+    def test_wildcard_skill_dep_ignored(self, strawpot_dir, make_skill, make_role):
+        """'*' in skill deps is skipped during resolution."""
+        make_role("lead", "1.0.0", skill_deps=["*"])
+
+        result = resolve(
+            "lead", kind="role",
+            local_root=strawpot_dir, global_root=strawpot_dir,
+        )
+        dep_slugs = {d["slug"] for d in result["dependencies"]}
+        assert "*" not in dep_slugs
+        assert dep_slugs == set()
+
     def test_wildcard_with_explicit_role_dep(self, strawpot_dir, make_skill, make_role):
         """'*' alongside explicit role deps: explicit deps resolved, '*' skipped."""
         make_skill("testing", "1.0.0")
