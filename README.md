@@ -49,7 +49,7 @@ pip install strawpot        # the runtime
 pip install strawhub        # the registry CLI
 
 strawhub install role ai-ceo
-strawpot start
+strawpot gui
 ```
 
 That's it. StrawHub resolves every skill and sub-role your AI CEO needs. StrawPot runs them.
@@ -93,18 +93,21 @@ Runtime wrappers for Claude Code, Codex, Gemini, or your own CLI.
 # ai-ceo/ROLE.md
 ---
 name: ai-ceo
-description: "Plans strategy and delegates to the team"
+description: "Orchestrator that analyzes tasks, discovers all installed roles,
+  and delegates to the best-fit role."
 metadata:
   strawpot:
     dependencies:
-      roles: [pm, implementer, reviewer]
+      roles:
+        - "*"
     default_agent: strawpot-claude-code
 ---
 
-# CEO
+# AI CEO
 
-Plan strategy and break it into deliverables.
-Delegate planning, implementation, and review to sub-roles.
+You are a routing layer with judgment. The user brings you a task —
+you figure out which role on your team should handle it, write a clear
+task description, and delegate. That's the entire job.
 ```
 
 No Python. No YAML config files. No orchestration code. **One Markdown file per role.**
