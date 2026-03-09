@@ -1,7 +1,7 @@
 """Path resolution for .strawpot directories.
 
 Global root: STRAWPOT_HOME env var → ~/.strawpot (default)
-Local root:  ./.strawpot in the current working directory
+Local root:  ./.strawpot in the current working directory (or --root override)
 """
 
 import os
@@ -15,9 +15,23 @@ _KIND_SUBDIRS = {
     "memory": "memories",
 }
 
+# Module-level override set by ``--root`` CLI option.
+_local_root_override: Path | None = None
+
+
+def set_local_root(path: Path | None) -> None:
+    """Override the local root directory.
+
+    Called by the CLI ``--root`` option.  Pass ``None`` to reset.
+    """
+    global _local_root_override
+    _local_root_override = path
+
 
 def get_project_file_path() -> Path:
-    """Return the path to strawpot.toml in the current working directory."""
+    """Return the path to strawpot.toml in the project directory."""
+    if _local_root_override is not None:
+        return _local_root_override.parent / "strawpot.toml"
     return Path.cwd() / "strawpot.toml"
 
 
@@ -33,7 +47,13 @@ def get_global_root() -> Path:
 
 
 def get_local_root() -> Path:
-    """Return the local .strawpot root in the current working directory."""
+    """Return the local .strawpot root.
+
+    Uses the ``--root`` override if set, otherwise falls back to
+    ``./.strawpot`` in the current working directory.
+    """
+    if _local_root_override is not None:
+        return _local_root_override
     return Path.cwd() / ".strawpot"
 
 

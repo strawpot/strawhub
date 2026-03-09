@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import click
 
 from strawhub import __version__
@@ -22,8 +24,19 @@ from strawhub.commands.install_tools import install_tools
 
 @click.group()
 @click.version_option(version=__version__, prog_name="strawhub")
-def cli():
+@click.option(
+    "--root",
+    "root_dir",
+    default=None,
+    type=click.Path(exists=True, file_okay=False),
+    help="Project directory (default: current directory)",
+)
+def cli(root_dir):
     """StrawHub CLI - discover and install agent skills, roles, agents, and memories."""
+    if root_dir:
+        from strawhub.paths import set_local_root
+
+        set_local_root(Path(root_dir) / ".strawpot")
 
 
 cli.add_command(login)
