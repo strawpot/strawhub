@@ -12,12 +12,12 @@ export const MAX_DISPLAY_NAME_LENGTH = 128;
 export const MAX_CHANGELOG_LENGTH = 10_000;
 export const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB per file
 export const MAX_TOTAL_SIZE = 50 * 1024 * 1024; // 50 MB total
-export const MAX_FILE_COUNT = 50;
+export const MAX_FILE_COUNT = 100;
 
 // Agent-specific limits (agents may include compiled binaries)
 export const AGENT_MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB per file
 export const AGENT_MAX_TOTAL_SIZE = 50 * 1024 * 1024; // 50 MB total
-export const AGENT_MAX_FILE_COUNT = 50;
+export const AGENT_MAX_FILE_COUNT = 100;
 
 // Memory-specific limits (same as agent — may include binary files)
 export const MEMORY_MAX_FILE_SIZE = AGENT_MAX_FILE_SIZE;

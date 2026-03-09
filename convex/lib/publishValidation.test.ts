@@ -134,7 +134,7 @@ describe("validateFiles", () => {
         size: 100,
       })),
     ];
-    expect(() => validateFiles(files)).toThrow(/Maximum 50 files/);
+    expect(() => validateFiles(files)).toThrow(/Maximum 100 files/);
   });
 
   it("accepts exactly MAX_FILE_COUNT files", () => {
