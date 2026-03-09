@@ -220,6 +220,8 @@ def _read_dependency_slugs(
     result: list[tuple[str, str]] = []
 
     for spec_str in deps.get("skills", []):
+        if spec_str.strip() == "*":
+            continue  # wildcard — expanded at runtime, not a real dep
         result.append(("skill", extract_slug(spec_str)))
     if kind == "role":
         for spec_str in deps.get("roles", []):
