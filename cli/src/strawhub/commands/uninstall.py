@@ -23,6 +23,11 @@ def uninstall(ctx):
 
 
 def _uninstall_impl(slug, kind, ver, is_global, save=False):
+    from strawhub.paths import _local_root_override
+
+    if is_global and _local_root_override is not None:
+        print_error("--root and --global cannot be used together")
+        raise SystemExit(1)
     if save and is_global:
         print_error("--save cannot be used with --global")
         raise SystemExit(1)

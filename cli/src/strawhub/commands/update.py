@@ -72,6 +72,12 @@ def _save_updated_version(kind: str, slug: str) -> None:
 
 
 def _update_all_impl(is_global, skip_tools=False, yes=False, save=False):
+    from strawhub.paths import _local_root_override
+
+    if is_global and _local_root_override is not None:
+        print_error("--root and --global cannot be used together")
+        raise SystemExit(1)
+
     root = get_root(is_global)
     lockfile = Lockfile.load(get_lockfile_path(root))
 
@@ -93,6 +99,11 @@ def _update_all_impl(is_global, skip_tools=False, yes=False, save=False):
 
 
 def _update_one_impl(slug, kind, is_global, skip_tools=False, yes=False, save=False):
+    from strawhub.paths import _local_root_override
+
+    if is_global and _local_root_override is not None:
+        print_error("--root and --global cannot be used together")
+        raise SystemExit(1)
     if save and is_global:
         print_error("--save cannot be used with --global")
         raise SystemExit(1)
