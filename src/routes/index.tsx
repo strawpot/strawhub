@@ -116,7 +116,7 @@ function HomePage() {
           Get Started
         </h3>
         <code className="rounded bg-gray-900 px-6 py-3 text-sm text-orange-400 inline-block max-w-full overflow-x-auto">
-          strawhub install role implementer
+          strawhub install role pr-reviewer
         </code>
         <p className="text-gray-500 text-sm mt-2">
           One command installs the role and every skill it needs
