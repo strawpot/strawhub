@@ -17,7 +17,7 @@ function HomePage() {
         <h1 className="text-3xl md:text-5xl font-bold text-white mb-4">StrawHub</h1>
         <p className="text-lg md:text-xl text-gray-400 mb-4">
           The registry for{" "}
-          <span className="text-orange-400">StrawPot</span> — where AI agents
+          <a href="https://strawpot.com" target="_blank" rel="noopener noreferrer" className="text-orange-400">StrawPot</a> — where AI agents
           get the job done
         </p>
         <p className="text-gray-500 max-w-2xl mx-auto">
