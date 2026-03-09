@@ -148,6 +148,69 @@ def run_tool_installs(
     return results
 
 
+def run_package_install(
+    root: Path,
+    kind: str,
+    slug: str,
+    yes: bool = False,
+) -> dict | None:
+    """Run metadata.strawpot.install.<os> for a downloaded package.
+
+    This is the package's own install script (e.g. compile a binary),
+    distinct from tool installs which install external dependencies.
+
+    Returns a result dict or None if no install command is defined.
+    """
+    pkg_dir = get_package_dir(root, kind, slug)
+    main_file = {"skill": "SKILL.md", "role": "ROLE.md", "agent": "AGENT.md", "memory": "MEMORY.md"}[kind]
+    md_path = pkg_dir / main_file
+
+    if not md_path.is_file():
+        return None
+
+    parsed = parse_frontmatter(md_path.read_text(encoding="utf-8"))
+    fm = parsed.get("frontmatter", {})
+    install_map = fm.get("metadata", {}).get("strawpot", {}).get("install", {})
+    if not isinstance(install_map, dict):
+        return None
+
+    current_os = detect_os()
+    if current_os is None:
+        return None
+
+    command = install_map.get(current_os)
+    if not command:
+        return None
+
+    if not yes:
+        confirmed = click.confirm(
+            f"  Run install script for {kind} '{slug}'? Command: {command}",
+            default=True,
+        )
+        if not confirmed:
+            return {"package": slug, "status": "declined", "command": command}
+
+    console.print(f"  Running install for {kind} '{slug}': {command}")
+    try:
+        proc = subprocess.run(
+            command,
+            shell=True,  # noqa: S602
+            cwd=str(pkg_dir),
+            env={**__import__("os").environ, "INSTALL_DIR": str(pkg_dir)},
+        )
+        if proc.returncode == 0:
+            console.print(f"  [green]Install complete for '{slug}'[/green]")
+            return {"package": slug, "status": "installed", "command": command}
+        else:
+            print_error(
+                f"Install script for '{slug}' failed (exit code {proc.returncode})."
+            )
+            return {"package": slug, "status": "failed", "command": command}
+    except OSError as e:
+        print_error(f"Failed to run install for '{slug}': {e}")
+        return {"package": slug, "status": "failed", "command": command}
+
+
 def run_tool_installs_for_package(
     root: Path,
     kind: str,

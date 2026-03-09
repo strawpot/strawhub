@@ -19,7 +19,7 @@ from strawhub.paths import (
     get_installed_version,
 )
 from strawhub.project_file import ProjectFile
-from strawhub.tools import run_tool_installs_for_package
+from strawhub.tools import run_package_install, run_tool_installs_for_package
 from strawhub.version_spec import (
     DependencySpec,
     extract_slug,
@@ -272,6 +272,14 @@ def _install_impl(
                 console.print(
                     f"Saved {kind} '{slug}' ({constraint}) to strawpot.toml"
                 )
+
+            # Run package install scripts (non-fatal)
+            if not skip_tools:
+                for dep in installed_deps:
+                    run_package_install(
+                        root, dep["kind"], dep["slug"], yes=yes
+                    )
+                run_package_install(root, kind, slug, yes=yes)
 
             # Run tool installs (non-fatal)
             if not skip_tools:
