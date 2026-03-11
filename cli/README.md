@@ -136,4 +136,4 @@ Settings can also be persisted in `~/.config/strawhub/config.json`.
 
 - **Registry**: <https://strawhub.dev>
 - **Source**: <https://github.com/strawpot/strawhub>
-- **Discord**: <https://discord.gg/buEbvEMC>
+- **Discord**: <https://discord.gg/2BRsCRUrKb>
