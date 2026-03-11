@@ -45,7 +45,7 @@ AI agents are powerful. But every team reinvents the wheel:
 ## Quick Start
 
 ```bash
-pip install strawpot-gui
+pip install strawpot
 
 strawhub install role ai-ceo
 strawpot gui
