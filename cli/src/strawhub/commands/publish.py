@@ -46,7 +46,9 @@ def _publish_impl(path, kind, ver, changelog, tags):
         content = rewrite_frontmatter_name(content, slug)
         name_rewritten = True
 
-    display_name = fm.get("displayName") or fm.get("display_name") or slug
+    display_name = fm.get("displayName") or fm.get("display_name") or " ".join(
+        w.capitalize() for w in slug.split("-")
+    )
     version = ver or fm.get("version")
     if not version:
         print_error(

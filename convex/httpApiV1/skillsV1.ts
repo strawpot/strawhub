@@ -222,8 +222,8 @@ export const publishSkill = httpAction(async (ctx, request) => {
       }
     }
 
-    if (!slug || !displayName || !version) {
-      return errorResponse("slug, displayName, and version are required", 400);
+    if (!slug || !version) {
+      return errorResponse("slug and version are required", 400);
     }
 
     // Validate inputs before storing files

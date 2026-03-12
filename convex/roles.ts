@@ -5,7 +5,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { parseFrontmatter, extractDependencies } from "./lib/frontmatter";
 import { parseDependencySpec, parseVersion, compareVersions } from "./lib/versionSpec";
 import { paginateWithRecovery } from "./lib/pagination";
-import { validateSlug, validateVersion, validateDisplayName, validateChangelog, validateFiles, validateRoleFiles, validateFrontmatterName } from "./lib/publishValidation";
+import { validateSlug, validateVersion, validateDisplayName, validateChangelog, validateFiles, validateRoleFiles, validateFrontmatterName, resolveDisplayName } from "./lib/publishValidation";
 
 /** Resolve version: validate if provided, otherwise auto-increment from latest. */
 function resolveVersion(explicit: string | undefined, latestVersion: string | undefined): string {
@@ -197,7 +197,7 @@ export const listByOwner = query({
 
 const publishArgs = {
   slug: v.string(),
-  displayName: v.string(),
+  displayName: v.optional(v.string()),
   version: v.optional(v.string()),
   changelog: v.string(),
   files: v.array(
@@ -227,7 +227,6 @@ export const publishInternal = internalMutation({
   args: { ...publishArgs, userId: v.id("users") },
   handler: async (ctx, args) => {
     validateSlug(args.slug);
-    validateDisplayName(args.displayName);
     validateChangelog(args.changelog);
     validateFiles(args.files);
     validateRoleFiles(args.files);
@@ -328,13 +327,16 @@ export const publishInternal = internalMutation({
       .withIndex("by_slug", (q) => q.eq("slug", args.slug))
       .first();
 
+    const displayName = resolveDisplayName(args.displayName, role?.displayName, args.slug);
+    validateDisplayName(displayName);
+
     if (role) {
       if (role.ownerUserId !== user._id) throw new Error("You do not own this role");
       if (role.softDeletedAt) throw new Error("Role has been deleted");
     } else {
       const roleId = await ctx.db.insert("roles", {
         slug: args.slug,
-        displayName: args.displayName,
+        displayName,
         summary: typeof parsed.frontmatter.description === "string" ? parsed.frontmatter.description : undefined,
         ownerUserId: user._id,
         tags: {},
@@ -389,7 +391,7 @@ export const publishInternal = internalMutation({
 
     await ctx.db.patch(role._id, {
       latestVersionId: versionId,
-      displayName: args.displayName,
+      displayName,
       summary: typeof parsed.frontmatter.description === "string" ? parsed.frontmatter.description : role.summary,
       tags: currentTags,
       stats: { ...role.stats, versions: role.stats.versions + 1 },
@@ -407,7 +409,6 @@ export const publish = mutation({
   args: publishArgs,
   handler: async (ctx, args) => {
     validateSlug(args.slug);
-    validateDisplayName(args.displayName);
     validateChangelog(args.changelog);
     validateFiles(args.files);
     validateRoleFiles(args.files);
@@ -514,6 +515,9 @@ export const publish = mutation({
       .withIndex("by_slug", (q) => q.eq("slug", args.slug))
       .first();
 
+    const displayName = resolveDisplayName(args.displayName, role?.displayName, args.slug);
+    validateDisplayName(displayName);
+
     if (role) {
       if (role.ownerUserId !== user._id) {
         throw new Error("You do not own this role");
@@ -524,7 +528,7 @@ export const publish = mutation({
     } else {
       const roleId = await ctx.db.insert("roles", {
         slug: args.slug,
-        displayName: args.displayName,
+        displayName,
         summary: typeof parsed.frontmatter.description === "string"
           ? parsed.frontmatter.description
           : undefined,
@@ -588,7 +592,7 @@ export const publish = mutation({
 
     await ctx.db.patch(role._id, {
       latestVersionId: versionId,
-      displayName: args.displayName,
+      displayName,
       summary: typeof parsed.frontmatter.description === "string"
         ? parsed.frontmatter.description
         : role.summary,

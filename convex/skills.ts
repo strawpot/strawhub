@@ -6,7 +6,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { parseFrontmatter, extractDependencies } from "./lib/frontmatter";
 import { parseDependencySpec, parseVersion, compareVersions } from "./lib/versionSpec";
 import { paginateWithRecovery } from "./lib/pagination";
-import { validateSlug, validateVersion, validateDisplayName, validateChangelog, validateFiles, validateSkillFiles, validateFrontmatterName } from "./lib/publishValidation";
+import { validateSlug, validateVersion, validateDisplayName, validateChangelog, validateFiles, validateSkillFiles, validateFrontmatterName, resolveDisplayName } from "./lib/publishValidation";
 
 /** Resolve version: validate if provided, otherwise auto-increment from latest. */
 function resolveVersion(explicit: string | undefined, latestVersion: string | undefined): string {
@@ -215,7 +215,7 @@ export const listByOwner = query({
 
 const publishArgs = {
   slug: v.string(),
-  displayName: v.string(),
+  displayName: v.optional(v.string()),
   version: v.optional(v.string()),
   changelog: v.string(),
   files: v.array(
@@ -251,7 +251,6 @@ export const publishInternal = internalMutation({
   args: { ...publishArgs, userId: v.id("users") },
   handler: async (ctx, args) => {
     validateSlug(args.slug);
-    validateDisplayName(args.displayName);
     validateChangelog(args.changelog);
     validateFiles(args.files);
     validateSkillFiles(args.files);
@@ -322,6 +321,9 @@ export const publishInternal = internalMutation({
       .withIndex("by_slug", (q) => q.eq("slug", args.slug))
       .first();
 
+    const displayName = resolveDisplayName(args.displayName, skill?.displayName, args.slug);
+    validateDisplayName(displayName);
+
     if (skill) {
       if (skill.ownerUserId !== user._id) {
         throw new Error("You do not own this skill");
@@ -332,7 +334,7 @@ export const publishInternal = internalMutation({
     } else {
       const skillId = await ctx.db.insert("skills", {
         slug: args.slug,
-        displayName: args.displayName,
+        displayName,
         summary: typeof parsed.frontmatter.description === "string"
           ? parsed.frontmatter.description
           : undefined,
@@ -398,7 +400,7 @@ export const publishInternal = internalMutation({
 
     await ctx.db.patch(skill._id, {
       latestVersionId: versionId,
-      displayName: args.displayName,
+      displayName,
       summary: typeof parsed.frontmatter.description === "string"
         ? parsed.frontmatter.description
         : skill.summary,
@@ -426,7 +428,6 @@ export const publish = mutation({
   args: publishArgs,
   handler: async (ctx, args) => {
     validateSlug(args.slug);
-    validateDisplayName(args.displayName);
     validateChangelog(args.changelog);
     validateFiles(args.files);
     validateSkillFiles(args.files);
@@ -498,13 +499,16 @@ export const publish = mutation({
       .withIndex("by_slug", (q) => q.eq("slug", args.slug))
       .first();
 
+    const displayName = resolveDisplayName(args.displayName, skill?.displayName, args.slug);
+    validateDisplayName(displayName);
+
     if (skill) {
       if (skill.ownerUserId !== user._id) throw new Error("You do not own this skill");
       if (skill.softDeletedAt) throw new Error("Skill has been deleted");
     } else {
       const skillId = await ctx.db.insert("skills", {
         slug: args.slug,
-        displayName: args.displayName,
+        displayName,
         summary: typeof parsed.frontmatter.description === "string" ? parsed.frontmatter.description : undefined,
         ownerUserId: user._id,
         tags: {},
@@ -550,7 +554,7 @@ export const publish = mutation({
 
     await ctx.db.patch(skill._id, {
       latestVersionId: versionId,
-      displayName: args.displayName,
+      displayName,
       summary: typeof parsed.frontmatter.description === "string" ? parsed.frontmatter.description : skill.summary,
       tags: currentTags,
       stats: { ...skill.stats, versions: skill.stats.versions + 1 },
