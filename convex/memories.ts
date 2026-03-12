@@ -6,7 +6,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { parseFrontmatter } from "./lib/frontmatter";
 import { parseVersion, compareVersions } from "./lib/versionSpec";
 import { paginateWithRecovery } from "./lib/pagination";
-import { validateSlug, validateVersion, validateDisplayName, validateChangelog, validateMemoryFiles, validateFrontmatterName } from "./lib/publishValidation";
+import { validateSlug, validateVersion, validateDisplayName, validateChangelog, validateMemoryFiles, validateFrontmatterName, resolveDisplayName } from "./lib/publishValidation";
 
 /** Resolve version: validate if provided, otherwise auto-increment from latest. */
 function resolveVersion(explicit: string | undefined, latestVersion: string | undefined): string {
@@ -188,7 +188,7 @@ export const listByOwner = query({
 
 const publishArgs = {
   slug: v.string(),
-  displayName: v.string(),
+  displayName: v.optional(v.string()),
   version: v.optional(v.string()),
   changelog: v.string(),
   files: v.array(
@@ -212,7 +212,6 @@ export const publishInternal = internalMutation({
   args: { ...publishArgs, userId: v.id("users") },
   handler: async (ctx, args) => {
     validateSlug(args.slug);
-    validateDisplayName(args.displayName);
     validateChangelog(args.changelog);
     validateMemoryFiles(args.files);
 
@@ -234,13 +233,16 @@ export const publishInternal = internalMutation({
       .withIndex("by_slug", (q) => q.eq("slug", args.slug))
       .first();
 
+    const displayName = resolveDisplayName(args.displayName, memory?.displayName, args.slug);
+    validateDisplayName(displayName);
+
     if (memory) {
       if (memory.ownerUserId !== user._id) throw new Error("You do not own this memory");
       if (memory.softDeletedAt) throw new Error("Memory has been deleted");
     } else {
       const memoryId = await ctx.db.insert("memories", {
         slug: args.slug,
-        displayName: args.displayName,
+        displayName,
         summary: typeof parsed.frontmatter.description === "string" ? parsed.frontmatter.description : undefined,
         ownerUserId: user._id,
         tags: {},
@@ -294,7 +296,7 @@ export const publishInternal = internalMutation({
 
     await ctx.db.patch(memory._id, {
       latestVersionId: versionId,
-      displayName: args.displayName,
+      displayName,
       summary: typeof parsed.frontmatter.description === "string" ? parsed.frontmatter.description : memory.summary,
       tags: currentTags,
       stats: { ...memory.stats, versions: memory.stats.versions + 1 },
@@ -320,7 +322,6 @@ export const publish = mutation({
   args: publishArgs,
   handler: async (ctx, args) => {
     validateSlug(args.slug);
-    validateDisplayName(args.displayName);
     validateChangelog(args.changelog);
     validateMemoryFiles(args.files);
 
@@ -347,6 +348,9 @@ export const publish = mutation({
       .withIndex("by_slug", (q) => q.eq("slug", args.slug))
       .first();
 
+    const displayName = resolveDisplayName(args.displayName, memory?.displayName, args.slug);
+    validateDisplayName(displayName);
+
     if (memory) {
       if (memory.ownerUserId !== user._id) {
         throw new Error("You do not own this memory");
@@ -357,7 +361,7 @@ export const publish = mutation({
     } else {
       const memoryId = await ctx.db.insert("memories", {
         slug: args.slug,
-        displayName: args.displayName,
+        displayName,
         summary: typeof parsed.frontmatter.description === "string"
           ? parsed.frontmatter.description
           : undefined,
@@ -420,7 +424,7 @@ export const publish = mutation({
 
     await ctx.db.patch(memory._id, {
       latestVersionId: versionId,
-      displayName: args.displayName,
+      displayName,
       summary: typeof parsed.frontmatter.description === "string"
         ? parsed.frontmatter.description
         : memory.summary,

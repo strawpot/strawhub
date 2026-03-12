@@ -124,8 +124,8 @@ export const publishAgent = httpAction(async (ctx, request) => {
     const tagsStr = formData.get("customTags") as string | null;
     if (tagsStr) customTags = tagsStr.split(",").map((s) => s.trim()).filter(Boolean);
 
-    if (!slug || !displayName || !version) {
-      return errorResponse("slug, displayName, and version are required", 400);
+    if (!slug || !version) {
+      return errorResponse("slug and version are required", 400);
     }
 
     // Validate inputs before storing files

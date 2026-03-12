@@ -45,6 +45,31 @@ export function validateDisplayName(name: string): void {
   }
 }
 
+/**
+ * Generate a display name from a slug by title-casing hyphen-separated words.
+ * e.g. "github-issues" → "Github Issues"
+ */
+export function displayNameFromSlug(slug: string): string {
+  return slug
+    .split("-")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
+/**
+ * Resolve the display name: use provided value, fall back to existing, or generate from slug.
+ */
+export function resolveDisplayName(
+  provided: string | undefined,
+  existing: string | undefined,
+  slug: string,
+): string {
+  const trimmed = provided?.trim();
+  if (trimmed) return trimmed;
+  if (existing) return existing;
+  return displayNameFromSlug(slug);
+}
+
 export function validateChangelog(changelog: string): void {
   if (changelog.length > MAX_CHANGELOG_LENGTH) {
     throw new Error(`Changelog must be under ${MAX_CHANGELOG_LENGTH} characters`);
