@@ -1,9 +1,5 @@
 {
   "rewrites": [
-    {
-      "source": "/api/v1/:path*",
-      "destination": "https://descriptive-crab-211.convex.site/api/v1/:path*"
-    },
     { "source": "/(.*)", "destination": "/" }
   ]
 }
