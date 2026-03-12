@@ -85,11 +85,7 @@ function UploadPage() {
 
   const [kind, setKind] = useState<"skill" | "role" | "agent" | "memory">(initialKind ?? "role");
   const [slug, setSlug] = useState(updateSlug ?? "");
-  const [displayName, setDisplayName] = useState(
-    updateSlug
-      ? updateSlug.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")
-      : "",
-  );
+  const [displayName, setDisplayName] = useState("");
   const [version, setVersion] = useState("");
   const [changelog, setChangelog] = useState("");
   const [files, setFiles] = useState<UploadFile[]>([]);
@@ -362,7 +358,7 @@ function UploadPage() {
   };
 
   const handlePublish = async () => {
-    if (!slug.trim() || !displayName.trim() || files.length === 0) {
+    if (!slug.trim() || (!isUpdate && !displayName.trim()) || files.length === 0) {
       setError("Slug, display name, and at least one file are required.");
       return;
     }
@@ -472,7 +468,7 @@ function UploadPage() {
       setUploadProgress("Publishing...");
 
       const resolvedDisplayName = isUpdate
-        ? (existing?.displayName ?? displayName.trim())
+        ? (displayName.trim() || (existing?.displayName ?? ""))
         : displayName.trim();
 
       // Ensure the primary markdown file has the correct `name` field in frontmatter
@@ -913,15 +909,10 @@ function UploadPage() {
             <span className="text-sm text-gray-400">Display Name</span>
             <input
               type="text"
-              value={isUpdate ? (existing?.displayName ?? displayName) : displayName}
+              value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              placeholder={kind === "role" ? "My Role" : kind === "agent" ? "My Agent" : kind === "memory" ? "My Memory" : "My Skill"}
-              disabled={isUpdate}
-              className={`mt-1 block w-full rounded border border-gray-700 bg-gray-900 px-3 py-2 text-white placeholder-gray-500 focus:outline-none ${
-                isUpdate
-                  ? "opacity-60 cursor-not-allowed"
-                  : "focus:border-orange-400"
-              }`}
+              placeholder={isUpdate ? (existing?.displayName ?? "Keep existing") : (kind === "role" ? "My Role" : kind === "agent" ? "My Agent" : kind === "memory" ? "My Memory" : "My Skill")}
+              className="mt-1 block w-full rounded border border-gray-700 bg-gray-900 px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-orange-400"
             />
             {isUpdate && (
               <p className="mt-1 text-xs text-gray-500">
