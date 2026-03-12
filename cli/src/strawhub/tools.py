@@ -170,7 +170,9 @@ def run_package_install(
 
     parsed = parse_frontmatter(md_path.read_text(encoding="utf-8"))
     fm = parsed.get("frontmatter", {})
-    install_map = fm.get("metadata", {}).get("strawpot", {}).get("install", {})
+    metadata = fm.get("metadata")
+    sp = metadata.get("strawpot") if isinstance(metadata, dict) else None
+    install_map = sp.get("install", {}) if isinstance(sp, dict) else {}
     if not isinstance(install_map, dict):
         return None
 

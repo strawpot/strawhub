@@ -212,11 +212,13 @@ def extract_dependencies(
     For roles: returns {"skills": [...], "roles": [...]} from a nested object.
     For agents and memories: returns None (no dependency support).
     """
-    deps = (
-        fm.get("metadata", {})
-        .get("strawpot", {})
-        .get("dependencies")
-    )
+    metadata = fm.get("metadata")
+    if not isinstance(metadata, dict):
+        return None
+    strawpot_meta = metadata.get("strawpot")
+    if not isinstance(strawpot_meta, dict):
+        return None
+    deps = strawpot_meta.get("dependencies")
 
     if deps is None or kind in ("agent", "memory"):
         return None
