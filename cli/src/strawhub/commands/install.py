@@ -140,24 +140,18 @@ def _install_impl(
                     _remove_from_scope(root, lockfile, kind, slug)
                 # If not installed, fall through to normal install
             else:
-                # Normal install: skip if slug exists in any scope
-                if _slug_installed_anywhere(kind, slug):
-                    found = _find_slug_anywhere(kind, slug)
-                    if found:
-                        found_root, found_version = found
-                        scope = "local" if found_root == get_local_root() else "global"
-                        console.print(
-                            f"'{slug}' v{found_version} is already installed ({scope})."
-                        )
-                        # Register as direct install if in our scope
-                        if package_exists(root, kind, slug):
-                            existing_ref = PackageRef(
-                                kind=kind, slug=slug, version=found_version
-                            )
-                            if not lockfile.is_direct_install(existing_ref.key):
-                                lockfile.add_package(existing_ref)
-                                lockfile.add_direct_install(existing_ref)
-                                lockfile.save()
+                # Normal install: skip if already installed in the target scope
+                if existing_in_scope:
+                    console.print(
+                        f"'{slug}' v{existing_in_scope} is already installed."
+                    )
+                    existing_ref = PackageRef(
+                        kind=kind, slug=slug, version=existing_in_scope
+                    )
+                    if not lockfile.is_direct_install(existing_ref.key):
+                        lockfile.add_package(existing_ref)
+                        lockfile.add_direct_install(existing_ref)
+                        lockfile.save()
                     return
 
             # Resolve and install dependencies
@@ -698,13 +692,6 @@ def _slug_installed_in_scope(root: Path, kind: str, slug: str) -> str | None:
     return versions[0]
 
 
-def _slug_installed_anywhere(kind: str, slug: str) -> bool:
-    """Check if any version of this slug is installed in either scope."""
-    return bool(
-        find_installed_versions(get_local_root(), kind, slug)
-        or find_installed_versions(get_global_root(), kind, slug)
-    )
-
 
 def _find_slug_anywhere(kind: str, slug: str) -> tuple[Path, str] | None:
     """Find the installed version of a slug, checking local first then global.
@@ -780,6 +767,9 @@ def _download_package(
 
     # Write version marker for local version lookups
     (target_dir / ".version").write_text(target_version + "\n", encoding="utf-8")
+
+    # Track the download
+    client.track_download(kind, slug, version=target_version)
 
 
 # ── Project file install ─────────────────────────────────────────────────────
