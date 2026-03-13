@@ -215,6 +215,18 @@ class StrawHubClient:
         resp = self._request("POST", "/api/v1/memories", data=form_data, files=files)
         return self._handle_response(resp)
 
+    # ── Downloads ──────────────────────────────────────────────────────────────
+
+    def track_download(self, kind: str, slug: str, version: str | None = None) -> None:
+        """Track a download event. Fire-and-forget — errors are silently ignored."""
+        body: dict = {"kind": kind, "slug": slug}
+        if version:
+            body["version"] = version
+        try:
+            self._request("POST", "/api/v1/downloads", json=body)
+        except Exception:
+            pass  # Best-effort, don't fail installs over tracking
+
     # ── Stars ─────────────────────────────────────────────────────────────────
 
     def toggle_star(self, slug: str, kind: str) -> dict:

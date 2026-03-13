@@ -20,6 +20,7 @@ import type * as files from "../files.js";
 import type * as http from "../http.js";
 import type * as httpApiV1_adminV1 from "../httpApiV1/adminV1.js";
 import type * as httpApiV1_agentsV1 from "../httpApiV1/agentsV1.js";
+import type * as httpApiV1_downloadsV1 from "../httpApiV1/downloadsV1.js";
 import type * as httpApiV1_memoriesV1 from "../httpApiV1/memoriesV1.js";
 import type * as httpApiV1_rolesV1 from "../httpApiV1/rolesV1.js";
 import type * as httpApiV1_searchV1 from "../httpApiV1/searchV1.js";
@@ -68,6 +69,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   "httpApiV1/adminV1": typeof httpApiV1_adminV1;
   "httpApiV1/agentsV1": typeof httpApiV1_agentsV1;
+  "httpApiV1/downloadsV1": typeof httpApiV1_downloadsV1;
   "httpApiV1/memoriesV1": typeof httpApiV1_memoriesV1;
   "httpApiV1/rolesV1": typeof httpApiV1_rolesV1;
   "httpApiV1/searchV1": typeof httpApiV1_searchV1;
