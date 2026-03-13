@@ -9,6 +9,7 @@ import { searchAll } from "./httpApiV1/searchV1";
 import { whoami } from "./httpApiV1/whoamiV1";
 
 import { toggleStar } from "./httpApiV1/starsV1";
+import { trackDownload } from "./httpApiV1/downloadsV1";
 import { setUserRole, banUser } from "./httpApiV1/adminV1";
 import { corsResponse } from "./httpApiV1/shared";
 
@@ -101,6 +102,10 @@ http.route({ pathPrefix: "/api/v1/memories/", method: "OPTIONS", handler: corsHa
 // ── Stars ───────────────────────────────────────────────────────────────────
 http.route({ path: "/api/v1/stars/toggle", method: "POST", handler: toggleStar });
 http.route({ path: "/api/v1/stars/toggle", method: "OPTIONS", handler: corsHandler });
+
+// ── Downloads ──────────────────────────────────────────────────────────────
+http.route({ path: "/api/v1/downloads", method: "POST", handler: trackDownload });
+http.route({ path: "/api/v1/downloads", method: "OPTIONS", handler: corsHandler });
 
 // ── Search ──────────────────────────────────────────────────────────────────
 http.route({ path: "/api/v1/search", method: "GET", handler: searchAll });

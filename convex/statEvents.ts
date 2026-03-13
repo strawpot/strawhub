@@ -44,7 +44,7 @@ export const flushStatEvents = internalMutation({
             ...(target as any).stats,
             downloads: (target as any).stats.downloads + delta,
           },
-        });
+        } as any);
       }
     }
 
@@ -54,7 +54,7 @@ export const flushStatEvents = internalMutation({
       if (ver) {
         await ctx.db.patch(ver._id, {
           downloads: ((ver as any).downloads ?? 0) + delta,
-        });
+        } as any);
       }
     }
 
