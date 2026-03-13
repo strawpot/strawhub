@@ -166,7 +166,6 @@ def _install_impl(
                 existing_dep_in_scope = _slug_installed_in_scope(
                     root, dep_kind, dep_slug
                 )
-                existing_dep_anywhere = _find_slug_anywhere(dep_kind, dep_slug)
 
                 if update and recursive and existing_dep_in_scope:
                     # --update --recursive: update dep in target scope if outdated
@@ -207,19 +206,17 @@ def _install_impl(
                             f"  Skipped {dep_kind} '{dep_slug}' "
                             f"v{existing_dep_in_scope} (up to date)"
                         )
-                elif existing_dep_anywhere:
-                    # Skip: already installed in some scope
-                    _, dep_ver = existing_dep_anywhere
-                    if package_exists(root, dep_kind, dep_slug):
-                        dep_ref = PackageRef(
-                            kind=dep_kind, slug=dep_slug, version=dep_ver
-                        )
-                        lockfile.add_package(dep_ref, dependent=root_ref)
+                elif existing_dep_in_scope:
+                    # Skip: already installed in target scope
+                    dep_ref = PackageRef(
+                        kind=dep_kind, slug=dep_slug, version=existing_dep_in_scope
+                    )
+                    lockfile.add_package(dep_ref, dependent=root_ref)
                     installed_deps.append(
-                        {"kind": dep_kind, "slug": dep_slug, "version": dep_ver}
+                        {"kind": dep_kind, "slug": dep_slug, "version": existing_dep_in_scope}
                     )
                     console.print(
-                        f"  Skipped {dep_kind} '{dep_slug}' v{dep_ver}"
+                        f"  Skipped {dep_kind} '{dep_slug}' v{existing_dep_in_scope}"
                         " (already installed)"
                     )
                 else:
@@ -692,17 +689,6 @@ def _slug_installed_in_scope(root: Path, kind: str, slug: str) -> str | None:
     return versions[0]
 
 
-
-def _find_slug_anywhere(kind: str, slug: str) -> tuple[Path, str] | None:
-    """Find the installed version of a slug, checking local first then global.
-
-    Returns (root, version) or None.
-    """
-    for root in (get_local_root(), get_global_root()):
-        version = _slug_installed_in_scope(root, kind, slug)
-        if version:
-            return (root, version)
-    return None
 
 
 def _remove_from_scope(
