@@ -134,7 +134,7 @@ function SkillDetailPage() {
           {skill.latestVersion && skill.zipUrl && (
             <button
               onClick={async () => {
-                trackDownload({ targetKind: "skill", slug: skill.slug, version: skill.latestVersion!.version });
+                trackDownload({ targetKind: "skill", slug: skill.slug, version: skill.latestVersion!.version, userId: currentUser?._id });
                 const res = await fetch(skill.zipUrl!);
                 const blob = await res.blob();
                 const url = URL.createObjectURL(blob);
@@ -375,6 +375,7 @@ function SkillDetailPage() {
         slug={skill.slug}
         targetKind="skill"
         trackDownload={trackDownload}
+        userId={currentUser?._id}
       />
 
       {/* Comments */}
@@ -499,6 +500,7 @@ function DetailTabs({
   slug,
   targetKind,
   trackDownload,
+  userId,
 }: {
   files: Array<{ path: string; size: number; url: string | null }>;
   versions: Array<{
@@ -513,7 +515,8 @@ function DetailTabs({
   latestVersionId: string | undefined;
   slug: string;
   targetKind: "skill" | "role";
-  trackDownload: (args: { targetKind: "skill" | "role"; slug: string; version?: string }) => void;
+  trackDownload: (args: { targetKind: "skill" | "role"; slug: string; version?: string; userId?: string }) => void;
+  userId?: string;
 }) {
   const [tab, setTab] = useState<"files" | "versions">("files");
 
@@ -657,7 +660,7 @@ function DetailTabs({
                 {ver.zipUrl && (
                   <button
                     onClick={async () => {
-                      trackDownload({ targetKind, slug, version: ver.version });
+                      trackDownload({ targetKind, slug, version: ver.version, userId });
                       const res = await fetch(ver.zipUrl!);
                       const blob = await res.blob();
                       const url = URL.createObjectURL(blob);

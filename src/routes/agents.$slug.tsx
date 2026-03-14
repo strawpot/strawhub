@@ -125,7 +125,7 @@ function AgentDetailPage() {
           {agent.latestVersion && agent.zipUrl && (
             <button
               onClick={async () => {
-                trackDownload({ targetKind: "agent", slug: agent.slug, version: agent.latestVersion!.version });
+                trackDownload({ targetKind: "agent", slug: agent.slug, version: agent.latestVersion!.version, userId: currentUser?._id });
                 const res = await fetch(agent.zipUrl!);
                 const blob = await res.blob();
                 const url = URL.createObjectURL(blob);
@@ -324,6 +324,7 @@ function AgentDetailPage() {
         latestVersionId={agent.latestVersionId}
         slug={agent.slug}
         trackDownload={trackDownload}
+        userId={currentUser?._id}
       />
 
       {/* Comments */}
@@ -428,6 +429,7 @@ function AgentDetailTabs({
   latestVersionId,
   slug,
   trackDownload,
+  userId,
 }: {
   files: Array<{ path: string; size: number; url: string | null }>;
   versions: Array<{
@@ -441,7 +443,8 @@ function AgentDetailTabs({
   loadMoreVersions: (numItems: number) => void;
   latestVersionId: string | undefined;
   slug: string;
-  trackDownload: (args: { targetKind: "skill" | "role" | "agent"; slug: string; version?: string }) => void;
+  trackDownload: (args: { targetKind: "skill" | "role" | "agent"; slug: string; version?: string; userId?: string }) => void;
+  userId?: string;
 }) {
   const [tab, setTab] = useState<"files" | "versions">("files");
 
@@ -585,7 +588,7 @@ function AgentDetailTabs({
                 {ver.zipUrl && (
                   <button
                     onClick={async () => {
-                      trackDownload({ targetKind: "agent", slug, version: ver.version });
+                      trackDownload({ targetKind: "agent", slug, version: ver.version, userId });
                       const res = await fetch(ver.zipUrl!);
                       const blob = await res.blob();
                       const url = URL.createObjectURL(blob);
