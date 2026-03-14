@@ -425,21 +425,21 @@ Resolution checks local scope first, then global. Returns the highest installed 
   "slug": "implementer",
   "kind": "role",
   "version": "1.0.0",
-  "path": "/absolute/path/.strawpot/roles/implementer-1.0.0",
+  "path": "/absolute/path/.strawpot/roles/implementer",
   "source": "local",
   "dependencies": [
     {
       "slug": "git-workflow",
       "kind": "skill",
       "version": "1.2.0",
-      "path": "/absolute/path/.strawpot/skills/git-workflow-1.2.0",
+      "path": "/absolute/path/.strawpot/skills/git-workflow",
       "source": "local"
     },
     {
       "slug": "code-review",
       "kind": "skill",
       "version": "2.1.0",
-      "path": "/absolute/path/.strawpot/skills/code-review-2.1.0",
+      "path": "/absolute/path/.strawpot/skills/code-review",
       "source": "global"
     }
   ]
@@ -673,14 +673,17 @@ See [Project File documentation](project-file.md) for full details on workflows 
 ├── strawpot.toml              # Project file (human-editable, committed to VCS)
 └── .strawpot/                 # Local package store
     ├── skills/
-    │   ├── code-review-2.1.0/
+    │   ├── code-review/
     │   │   ├── SKILL.md
+    │   │   ├── .version
     │   │   └── ...
-    │   └── git-workflow-1.2.0/
-    │       └── SKILL.md
+    │   └── git-workflow/
+    │       ├── SKILL.md
+    │       └── .version
     ├── roles/
-    │   └── implementer-1.0.0/
-    │       └── ROLE.md
+    │   └── implementer/
+    │       ├── ROLE.md
+    │       └── .version
     └── strawpot.lock          # Auto-generated lockfile (JSON)
 ```
 

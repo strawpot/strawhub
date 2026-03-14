@@ -107,7 +107,7 @@ name: project-context
 description: "Persistent project context and conventions"
 ```
 
-**File constraints:** Up to 50 files, 10 MB each, 50 MB total. Supports binary files.
+**File constraints:** Up to 100 files, 10 MB each, 50 MB total. Supports binary files.
 
 ## Dependencies
 

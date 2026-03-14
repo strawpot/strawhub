@@ -39,7 +39,7 @@ Embeddings are generated at publish time.
 ### Install (CLI)
 
 Resolves latest version via `GET /api/v1/skills/:slug` or `GET /api/v1/roles/:slug`.
-Downloads file content, extracts into `.strawpot/skills/<slug>-<version>/` or `.strawpot/roles/<slug>-<version>/`.
+Downloads file content, extracts into `.strawpot/skills/<slug>/` or `.strawpot/roles/<slug>/`. The installed version is tracked in a `.version` file within each package directory.
 
 **Skill dependencies** are resolved client-side: the CLI recursively fetches frontmatter and performs a DFS to build a transitive dependency list.
 

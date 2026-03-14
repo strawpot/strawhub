@@ -144,7 +144,7 @@ Agent instructions...
 
 ### Agent file constraints
 
-- Up to 50 files, 10 MB each, 50 MB total
+- Up to 100 files, 10 MB each, 50 MB total
 - Supports binary files (compiled executables)
 
 ## Memories
@@ -177,7 +177,7 @@ Memory contents for the agent...
 
 ### Memory file constraints
 
-- Up to 50 files, 10 MB each, 50 MB total
+- Up to 100 files, 10 MB each, 50 MB total
 - Supports binary files
 
 ## System Tools
@@ -209,12 +209,12 @@ During `strawhub install` / `strawhub update`, the CLI checks if each declared t
 ## File Constraints
 
 ### Skills and Roles
-- Up to 20 files per package, 512 KB each
+- Up to 100 files per package, 512 KB each
 - Allowed extensions: `.md`, `.txt`, `.json`, `.yaml`, `.yml`, `.toml`
 - Roles must contain exactly one file named `ROLE.md`
 
 ### Agents and Memories
-- Up to 50 files per package, 10 MB each, 50 MB total
+- Up to 100 files per package, 10 MB each, 50 MB total
 - Supports binary files (compiled executables, data files)
 
 ## Naming

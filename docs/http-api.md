@@ -66,7 +66,7 @@ payload: { slug, displayName, version, changelog, dependencies?, customTags?, fi
 
 The `dependencies` field is optional JSON: `{"skills": ["security-baseline", "git-workflow==1.0.0"]}`. Skills can only depend on other skills. If omitted, dependencies are read from `metadata.strawpot.dependencies` in the SKILL.md frontmatter.
 
-File constraints: up to 20 files, 512 KB each. Allowed extensions: `.md`, `.txt`, `.json`, `.yaml`, `.yml`, `.toml`.
+File constraints: up to 100 files, 512 KB each. Allowed extensions: `.md`, `.txt`, `.json`, `.yaml`, `.yml`, `.toml`.
 
 Additional constraints:
 - Slug must be unique within skills.
@@ -219,7 +219,7 @@ Content-Type: multipart/form-data
 payload: { slug, displayName, version, changelog, customTags?, files[] }
 ```
 
-File constraints: up to 50 files, 10 MB each, 50 MB total. Supports binary files.
+File constraints: up to 100 files, 10 MB each, 50 MB total. Supports binary files.
 
 ### Get Agent Detail
 
@@ -271,7 +271,7 @@ Content-Type: multipart/form-data
 payload: { slug, displayName, version, changelog, customTags?, files[] }
 ```
 
-File constraints: up to 50 files, 10 MB each, 50 MB total. Supports binary files.
+File constraints: up to 100 files, 10 MB each, 50 MB total. Supports binary files.
 
 ### Get Memory Detail
 
@@ -313,6 +313,21 @@ Content-Type: application/json
 ```
 
 Toggles the star status for the authenticated user. Returns `{ "starred": true }` or `{ "starred": false }`.
+
+---
+
+## Downloads
+
+### Track Download
+
+```
+POST /api/v1/downloads
+Content-Type: application/json
+
+{ "kind": "skill|role|agent|memory", "slug": "...", "version": "..." }
+```
+
+No auth required — download tracking is public (like npm). The `version` field is optional. Downloads are tracked via event sourcing: events are inserted into `statEvents` and flushed into target stats every 15 minutes by a cron job.
 
 ---
 
