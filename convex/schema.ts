@@ -500,8 +500,11 @@ export default defineSchema({
     targetId: v.string(),
     event: v.union(v.literal("download")),
     versionId: v.optional(v.string()),
+    userId: v.optional(v.string()),
     createdAt: v.number(),
-  }).index("by_createdAt", ["createdAt"]),
+  })
+    .index("by_createdAt", ["createdAt"])
+    .index("by_user_target_version", ["userId", "targetId", "versionId"]),
 
   // ── Counters ───────────────────────────────────────────────────────────
 

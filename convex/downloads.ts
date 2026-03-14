@@ -6,12 +6,17 @@ import { mutation } from "./_generated/server";
  * A cron job (every 15 min) flushes accumulated events into the target
  * document's stats, preventing thundering-herd query invalidation on
  * popular items.
+ *
+ * Authenticated downloads are deduplicated per user+target+version:
+ * only the first download of a given version by a given user is counted.
+ * Anonymous downloads are always counted (like npm/PyPI).
  */
 export const trackDownload = mutation({
   args: {
     targetKind: v.union(v.literal("skill"), v.literal("role"), v.literal("agent"), v.literal("memory")),
     slug: v.string(),
     version: v.optional(v.string()),
+    userId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const table = args.targetKind === "skill" ? "skills"
@@ -62,11 +67,26 @@ export const trackDownload = mutation({
       }
     }
 
+    // Deduplicate: skip if this user already downloaded this target+version
+    if (args.userId) {
+      const existing = await ctx.db
+        .query("statEvents")
+        .withIndex("by_user_target_version", (q) =>
+          q
+            .eq("userId", args.userId!)
+            .eq("targetId", target._id)
+            .eq("versionId", versionId),
+        )
+        .first();
+      if (existing) return;
+    }
+
     await ctx.db.insert("statEvents", {
       targetKind: args.targetKind,
       targetId: target._id,
       event: "download",
       versionId,
+      userId: args.userId,
       createdAt: Date.now(),
     });
   },
