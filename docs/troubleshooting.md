@@ -40,7 +40,7 @@ Common causes:
 - **Version not greater**: new versions must be strictly greater than the latest published version
 - **Slug taken**: another user owns the slug — choose a different name
 - **Dependency validation**: one or more declared dependencies don't exist or no published version satisfies the constraint. All issues are reported together
-- **File too large**: max 512 KB per file, max 20 files per package
+- **File too large**: max 10 MB per file, max 100 files per package, 50 MB total
 - **Missing SKILL.md / ROLE.md**: the target directory must contain the required file
 
 ## Install issues

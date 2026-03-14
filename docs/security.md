@@ -66,12 +66,12 @@ All rate limits are per IP address.
 ## Upload constraints
 
 ### Skills and Roles
-- Max 20 files per package, 512 KB each
+- Max 100 files per package, 10 MB each, 50 MB total
 - Allowed extensions: `.md`, `.txt`, `.json`, `.yaml`, `.yml`, `.toml`
 - Roles must contain exactly one file (`ROLE.md`)
 
 ### Agents and Memories
-- Max 50 files per package, 10 MB each, 50 MB total
+- Max 100 files per package, 10 MB each, 50 MB total
 - Supports binary files (compiled executables, data files)
 
 ### All types

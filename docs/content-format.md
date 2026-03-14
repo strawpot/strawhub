@@ -209,7 +209,7 @@ During `strawhub install` / `strawhub update`, the CLI checks if each declared t
 ## File Constraints
 
 ### Skills and Roles
-- Up to 100 files per package, 512 KB each
+- Up to 100 files per package, 10 MB each, 50 MB total
 - Allowed extensions: `.md`, `.txt`, `.json`, `.yaml`, `.yml`, `.toml`
 - Roles must contain exactly one file named `ROLE.md`
 

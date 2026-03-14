@@ -167,7 +167,7 @@ When a consumer (StrawPot CLI) installs a role:
 3. Topological sort with cycle detection
 4. Return install order (leaves first)
 
-The resolution logic exists server-side (handler in `rolesV1.ts`) but is not yet routed as an HTTP endpoint. When wired up, it will return:
+The resolution endpoint is live at `GET /api/v1/roles/:slug/resolve` (and `GET /api/v1/skills/:slug/resolve` for skills). Both enforce a depth limit of 100 levels and a breadth limit of 500 resolved dependencies. Response format:
 
 ```json
 {
