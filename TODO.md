@@ -58,6 +58,36 @@ The `claimSkill` operation is rare, so this is low urgency but worth addressing 
 
 **Files:** `convex/skills.ts` (lines ~685-694, ~728-736)
 
+## Storage URL Generation in Tight Loops (Medium)
+
+`getBySlug` queries call `ctx.storage.getUrl()` per file in a `Promise.all` loop. For packages near the MAX_FILE_COUNT=100 limit, this generates 100 concurrent storage API calls per detail page load.
+
+**Approach:** Either:
+1. Cap the number of files that get URL-resolved (e.g., first 50) and provide a separate endpoint for additional file URLs
+2. Cache storage URLs with a TTL since they don't change frequently
+
+Currently bounded by MAX_FILE_COUNT=100 so not urgent.
+
+**Files:** `convex/skills.ts`, `convex/roles.ts`, `convex/agents.ts`, `convex/memories.ts` (all `getBySlug` queries)
+
+## Tags Field Schema Validation (Medium)
+
+The `tags` field on skills/roles/agents/memories is typed as `v.any()` with no schema validation. A publisher could theoretically create unbounded custom tags, bloating the document.
+
+**Approach:** Replace `v.any()` with a properly typed and size-constrained validator, e.g., `v.record(v.string(), v.id("skillVersions"))` with a max entries check in the publish mutation.
+
+Currently low risk since `customTags` input is a comma-separated string from the form, but the schema should be tightened.
+
+**Files:** `convex/schema.ts` (lines 74, 175, 248, 338)
+
+## Frontend Download Error Handling (Medium)
+
+The download button's `onClick` handler in skill/role/agent detail pages calls `fetch(zipUrl)` with no `.catch()` or error feedback. If the download fails, nothing is shown to the user.
+
+**Approach:** Wrap the fetch in a try/catch and show a toast or error message on failure.
+
+**Files:** `src/routes/skills.$slug.tsx`, `src/routes/roles.$slug.tsx`, `src/routes/agents.$slug.tsx`
+
 ## Revision All SKILL.md
 
 Review and improve all uploaded `SKILL.md` files using the skill-creator tool from Anthropic.
