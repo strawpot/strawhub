@@ -35,6 +35,29 @@ export const check = internalQuery({
 });
 
 /**
+ * Clean up expired rate limit records.
+ * Called by cron to prevent unbounded table growth.
+ */
+export const cleanup = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const now = Date.now();
+    const maxWindowMs = Math.max(...Object.values(RATE_LIMITS).map((r) => r.windowMs));
+    const cutoff = now - maxWindowMs * 2; // 2x window to be safe
+
+    const expired = await ctx.db
+      .query("rateLimits")
+      .filter((q) => q.lt(q.field("windowStart"), cutoff))
+      .take(500);
+
+    for (const record of expired) {
+      await ctx.db.delete(record._id);
+    }
+    return { deleted: expired.length };
+  },
+});
+
+/**
  * Phase 2: Consume a rate limit token (only called after check passes).
  */
 export const consume = internalMutation({

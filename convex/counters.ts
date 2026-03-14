@@ -1,15 +1,25 @@
 import { query } from "./_generated/server";
 
+const COUNTER_NAMES = ["skills", "roles", "agents", "memories"] as const;
+
 /**
  * Get counts for all resource types.
+ * Uses indexed lookups instead of a full table scan.
  */
 export const getCounts = query({
   args: {},
   handler: async (ctx) => {
-    const rows = await ctx.db.query("counters").collect();
     const result: Record<string, number> = {};
+    const rows = await Promise.all(
+      COUNTER_NAMES.map((name) =>
+        ctx.db
+          .query("counters")
+          .withIndex("by_name", (q) => q.eq("name", name))
+          .first(),
+      ),
+    );
     for (const row of rows) {
-      result[row.name] = row.count;
+      if (row) result[row.name] = row.count;
     }
     return result;
   },
