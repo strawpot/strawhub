@@ -9,4 +9,7 @@ const crons = cronJobs();
 // a single batched patch covers all accumulated events.
 crons.interval("flush stat events", { minutes: 15 }, internal.statEvents.flushStatEvents);
 
+// Clean up expired rate limit records every hour to prevent unbounded table growth.
+crons.interval("cleanup rate limits", { hours: 1 }, internal.lib.rateLimit.cleanup);
+
 export default crons;

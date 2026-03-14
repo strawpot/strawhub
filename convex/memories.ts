@@ -72,26 +72,33 @@ export const list = query({
     const ownerDocs = await Promise.all(ownerIds.map((id) => ctx.db.get(id)));
     const ownerMap = new Map(ownerIds.map((id, i) => [id, ownerDocs[i]]));
 
-    const enriched = await Promise.all(
-      paginatedResult.page.map(async (memory) => {
-        const owner = ownerMap.get(memory.ownerUserId);
-        const latestVersion = memory.latestVersionId
-          ? await ctx.db.get(memory.latestVersionId)
-          : null;
-        return {
-          _id: memory._id,
-          slug: memory.slug,
-          displayName: memory.displayName,
-          summary: memory.summary,
-          stats: memory.stats,
-          badges: memory.badges,
-          updatedAt: memory.updatedAt,
-          latestVersionString: latestVersion?.version ?? null,
-          totalSize: latestVersion?.files?.reduce((sum: number, f: { size: number }) => sum + f.size, 0) ?? 0,
-          owner: owner ? { handle: owner.handle, image: owner.image } : null,
-        };
-      }),
-    );
+    // Batch-fetch latest versions to avoid N+1 queries
+    const versionIds = [...new Set(
+      paginatedResult.page
+        .map((m) => m.latestVersionId)
+        .filter((id): id is NonNullable<typeof id> => id != null),
+    )];
+    const versionDocs = await Promise.all(versionIds.map((id) => ctx.db.get(id)));
+    const versionMap = new Map(versionIds.map((id, i) => [id, versionDocs[i]]));
+
+    const enriched = paginatedResult.page.map((memory) => {
+      const owner = ownerMap.get(memory.ownerUserId);
+      const latestVersion = memory.latestVersionId
+        ? versionMap.get(memory.latestVersionId) ?? null
+        : null;
+      return {
+        _id: memory._id,
+        slug: memory.slug,
+        displayName: memory.displayName,
+        summary: memory.summary,
+        stats: memory.stats,
+        badges: memory.badges,
+        updatedAt: memory.updatedAt,
+        latestVersionString: latestVersion?.version ?? null,
+        totalSize: latestVersion?.files?.reduce((sum: number, f: { size: number }) => sum + f.size, 0) ?? 0,
+        owner: owner ? { handle: owner.handle, image: owner.image } : null,
+      };
+    });
 
     return {
       ...paginatedResult,

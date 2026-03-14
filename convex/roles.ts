@@ -72,26 +72,33 @@ export const list = query({
     const ownerDocs = await Promise.all(ownerIds.map((id) => ctx.db.get(id)));
     const ownerMap = new Map(ownerIds.map((id, i) => [id, ownerDocs[i]]));
 
-    const enriched = await Promise.all(
-      paginatedResult.page.map(async (role) => {
-        const owner = ownerMap.get(role.ownerUserId);
-        const latestVersion = role.latestVersionId
-          ? await ctx.db.get(role.latestVersionId)
-          : null;
-        return {
-          _id: role._id,
-          slug: role.slug,
-          displayName: role.displayName,
-          summary: role.summary,
-          stats: role.stats,
-          badges: role.badges,
-          updatedAt: role.updatedAt,
-          latestVersionString: latestVersion?.version ?? null,
-          totalSize: latestVersion?.files?.reduce((sum: number, f: { size: number }) => sum + f.size, 0) ?? 0,
-          owner: owner ? { handle: owner.handle, image: owner.image } : null,
-        };
-      }),
-    );
+    // Batch-fetch latest versions to avoid N+1 queries
+    const versionIds = [...new Set(
+      paginatedResult.page
+        .map((r) => r.latestVersionId)
+        .filter((id): id is NonNullable<typeof id> => id != null),
+    )];
+    const versionDocs = await Promise.all(versionIds.map((id) => ctx.db.get(id)));
+    const versionMap = new Map(versionIds.map((id, i) => [id, versionDocs[i]]));
+
+    const enriched = paginatedResult.page.map((role) => {
+      const owner = ownerMap.get(role.ownerUserId);
+      const latestVersion = role.latestVersionId
+        ? versionMap.get(role.latestVersionId) ?? null
+        : null;
+      return {
+        _id: role._id,
+        slug: role.slug,
+        displayName: role.displayName,
+        summary: role.summary,
+        stats: role.stats,
+        badges: role.badges,
+        updatedAt: role.updatedAt,
+        latestVersionString: latestVersion?.version ?? null,
+        totalSize: latestVersion?.files?.reduce((sum: number, f: { size: number }) => sum + f.size, 0) ?? 0,
+        owner: owner ? { handle: owner.handle, image: owner.image } : null,
+      };
+    });
 
     return {
       ...paginatedResult,

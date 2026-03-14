@@ -105,6 +105,7 @@ export async function handleResolveSkillDeps(ctx: any, request: Request): Promis
 
   // Resolve transitive dependencies (skills only)
   const MAX_DEPTH = 100;
+  const MAX_RESOLVED = 500;
   const resolved: Array<{ kind: "skill"; slug: string; version: string }> = [];
   const resolvedKeys = new Set<string>();
   const visiting = new Set<string>();
@@ -112,6 +113,9 @@ export async function handleResolveSkillDeps(ctx: any, request: Request): Promis
   async function resolveSkill(depSpec: string, depth: number) {
     if (depth > MAX_DEPTH) {
       throw new Error(`Dependency tree too deep (>${MAX_DEPTH} levels)`);
+    }
+    if (resolvedKeys.size >= MAX_RESOLVED) {
+      throw new Error(`Too many dependencies (>${MAX_RESOLVED})`);
     }
     const spec = parseDependencySpec(depSpec);
     if (spec.operator === "wildcard") return; // "*" is not a real package
