@@ -1,5 +1,6 @@
 import type { GitHubFile } from "./githubImport";
 import JSZip from "jszip";
+import { MAX_FILE_COUNT, MAX_TOTAL_SIZE } from "../../convex/lib/publishValidation";
 
 const CLAWHUB_DOWNLOAD_BASE =
   "https://wry-manatee-359.convex.site/api/v1/download";
@@ -288,6 +289,11 @@ export async function fetchFromClawHub(url: string): Promise<GitHubFile[]> {
     if (!file.dir) entries.push({ path, file });
   });
 
+  if (entries.length > MAX_FILE_COUNT) {
+    throw new Error(`Zip contains too many files (${entries.length}, max ${MAX_FILE_COUNT})`);
+  }
+
+  let totalSize = 0;
   for (const { path, file } of entries) {
     // Skip hidden directories and metadata
     if (path.startsWith(".") || path === "_meta.json") continue;
@@ -295,11 +301,15 @@ export async function fetchFromClawHub(url: string): Promise<GitHubFile[]> {
     if (path === "SKILL.md") {
       // Transform SKILL.md frontmatter to add metadata.strawpot
       const text = await file.async("string");
+      totalSize += text.length;
+      if (totalSize > MAX_TOTAL_SIZE) throw new Error(`Zip uncompressed size exceeds ${MAX_TOTAL_SIZE / 1024 / 1024}MB limit`);
       const transformed = transformClawHubFrontmatter(text);
       const blob = new Blob([transformed], { type: "text/markdown" });
       files.push({ path, content: blob });
     } else {
       const blob = await file.async("blob");
+      totalSize += blob.size;
+      if (totalSize > MAX_TOTAL_SIZE) throw new Error(`Zip uncompressed size exceeds ${MAX_TOTAL_SIZE / 1024 / 1024}MB limit`);
       files.push({ path, content: blob });
     }
   }
