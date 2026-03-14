@@ -47,7 +47,7 @@ Four content types with parallel structure:
 
 Markdown instruction modules that agents load into context. Based on the [Agent Skills](https://agentskills.io/) open spec, extended with `metadata.strawpot` for dependencies and tool declarations.
 
-- **Files:** `SKILL.md` (required) + supporting text files (optional, up to 20 files, 512 KB each)
+- **Files:** `SKILL.md` (required) + supporting text files (optional, up to 100 files, 512 KB each)
 - **Dependencies:** flat list of other skill slugs
 - **Allowed file types:** `.md`, `.txt`, `.json`, `.yaml`, `.yml`, `.toml`
 
@@ -63,7 +63,7 @@ Agent behavior definitions — instructions, default agent runtime, and dependen
 
 CLI wrapper binaries that translate StrawPot's protocol into native AI tool interfaces. Agents contain an `AGENT.md` frontmatter file plus compiled binaries per OS.
 
-- **Files:** `AGENT.md` (required) + binary files (up to 50 files, 10 MB each, 50 MB total)
+- **Files:** `AGENT.md` (required) + binary files (up to 100 files, 10 MB each, 50 MB total)
 - **Dependencies:** none (agents are standalone)
 - **Allowed file types:** any (binaries allowed)
 - **Unique fields:** `bin` (OS-specific binary paths), `params`, `tools`, `env`
@@ -72,7 +72,7 @@ CLI wrapper binaries that translate StrawPot's protocol into native AI tool inte
 
 Persistent knowledge banks that store context, patterns, and learned information across agent sessions.
 
-- **Files:** `MEMORY.md` (required) + supporting files (up to 50 files, 10 MB each, 50 MB total)
+- **Files:** `MEMORY.md` (required) + supporting files (up to 100 files, 10 MB each, 50 MB total)
 - **Dependencies:** none (memories are standalone)
 - **Allowed file types:** any (binaries allowed)
 
@@ -179,6 +179,8 @@ Skills, roles, agents, and memories have **separate slug namespaces**. A skill n
 | `reports` | Content moderation reports |
 | `apiTokens` | SHA-256 hashed Bearer tokens for CLI/API auth |
 | `auditLogs` | Moderation action trail |
+| `statEvents` | Event-sourced download tracking (flushed by cron into target stats) |
+| `counters` | Aggregated counters |
 | `rateLimits` | Per-IP/per-token rate limiting buckets |
 
 ### Versioning
@@ -212,7 +214,7 @@ Web UI also supports **GitHub import**: paste a repo URL, files are fetched via 
 
 ### Dependency Resolution
 
-**Skills** — client-side DFS. The CLI recursively fetches frontmatter for each dependency and builds the transitive list.
+**Skills** — server-side resolution via `GET /api/v1/skills/:slug/resolve`, or client-side DFS as fallback. The server recursively fetches frontmatter for each dependency and builds the transitive list.
 
 **Roles** — server-side topological sort via `GET /api/v1/roles/:slug/resolve`. The server walks both skill and role dependencies, detects cycles, and returns a sorted install order (leaves first). The `"*"` wildcard in the `roles` dependency list is filtered out by the CLI before install — it is not a real dependency but a runtime directive expanded by StrawPot.
 
@@ -238,10 +240,10 @@ Searches skills, roles, agents, and memories simultaneously. Falls back to text 
 ### Install (CLI)
 
 ```
-CLI → resolve dependencies → fetch files → extract to ~/.strawpot/{skills,roles,agents,memories}/{slug}-{version}/
+CLI → resolve dependencies → fetch files → extract to ~/.strawpot/{skills,roles,agents,memories}/{slug}/
 ```
 
-Install state tracked via lockfile at `.strawpot/strawpot.lock`. After installation, declared system tools are checked — missing tools trigger OS-specific install commands (with user confirmation).
+Install state tracked via lockfile at `.strawpot/strawpot.lock`. The installed version is stored in a `.version` file within each package directory. After installation, declared system tools are checked — missing tools trigger OS-specific install commands (with user confirmation).
 
 ## Authentication & Authorization
 
@@ -299,7 +301,9 @@ GET    /api/v1/search?q=&kind=     Hybrid search
 GET    /api/v1/whoami              Current user info
 POST   /api/v1/stars/toggle        Toggle star (auth)
 POST   /api/v1/admin/set-role      Set user role (admin)
+POST   /api/v1/downloads           Track download event (public)
 POST   /api/v1/admin/ban-user      Ban/unban user (admin)
+POST   /api/v1/skills/:slug/claim  Claim skill ownership (admin)
 ```
 
 ## Directory Structure
@@ -358,5 +362,11 @@ strawhub/
 **Separate slug namespaces** — Skills, roles, agents, and memories can share the same slug. Keeps the content types independent and avoids naming conflicts across different concerns.
 
 **SHA-256 token hashing** — API tokens are hashed before storage. Raw token shown once at creation. Prevents token exposure from database breaches.
+
+**Event-sourced download tracking** — Downloads are tracked by inserting lightweight events into `statEvents`. A cron job flushes accumulated events every 15 minutes, batch-patching target stats. This prevents thundering-herd query invalidation on popular items. Authenticated downloads are deduplicated per user+target+version; anonymous downloads are always counted.
+
+**Vercel Edge Middleware for API routing** — A middleware (`middleware.ts`) rewrites `/api/v1/*` requests to the Convex site URL, using `VITE_CONVEX_SITE_URL` with a hardcoded production fallback. This enables preview deployments to route API calls to their own Convex backend.
+
+**Optional display name with auto-generation** — `displayName` is optional on publish. If not provided, it falls back to the existing display name (on updates) or is auto-generated by title-casing the slug (e.g., `code-review` → `Code Review`).
 
 **Hybrid search over pure vector** — Combining vector similarity with lexical matching and popularity boost produces better results than any single signal alone. Gracefully degrades when embeddings are unavailable.
