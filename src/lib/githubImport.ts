@@ -83,14 +83,19 @@ export async function fetchFromGitHub(url: string): Promise<GitHubFile[]> {
   }
 
   // Directory listing — recursively fetch all files
+  const MAX_FILES = 100;
+  const MAX_DIR_DEPTH = 10;
   const headers = { Accept: "application/vnd.github.v3+json" };
   const files: GitHubFile[] = [];
 
   async function fetchDir(
     entries: Array<{ type: string; size: number; name: string; path: string; download_url: string }>,
     prefix: string,
+    depth: number = 0,
   ) {
+    if (depth > MAX_DIR_DEPTH) return;
     for (const entry of entries) {
+      if (files.length >= MAX_FILES) return;
       if (entry.name === ".git") continue;
       if (entry.type === "file" && entry.size < 1_000_000) {
         const fileResp = await fetch(entry.download_url);
@@ -104,12 +109,12 @@ export async function fetchFromGitHub(url: string): Promise<GitHubFile[]> {
         if (!dirResp.ok) continue;
         const dirData = await dirResp.json();
         if (Array.isArray(dirData)) {
-          await fetchDir(dirData, prefix ? `${prefix}/${entry.name}` : entry.name);
+          await fetchDir(dirData, prefix ? `${prefix}/${entry.name}` : entry.name, depth + 1);
         }
       }
     }
   }
 
-  await fetchDir(data, "");
+  await fetchDir(data, "", 0);
   return files;
 }

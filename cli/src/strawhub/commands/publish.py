@@ -160,15 +160,27 @@ def publish_memory(path, ver, changelog, tags):
     _publish_impl(path, kind="memory", ver=ver, changelog=changelog, tags=tags)
 
 
+MAX_FILE_COUNT = 100
+MAX_TOTAL_SIZE = 50 * 1024 * 1024  # 50 MB
+
+
 def _collect_files(directory: Path) -> list[tuple[str, tuple[str, bytes, str]]]:
     """Collect all non-hidden files as httpx-compatible upload tuples."""
     files = []
+    total_size = 0
     for file_path in sorted(directory.rglob("*")):
         if file_path.is_file() and not any(
             part.startswith(".") for part in file_path.relative_to(directory).parts
         ):
+            if len(files) >= MAX_FILE_COUNT:
+                raise click.ClickException(f"Too many files (max {MAX_FILE_COUNT})")
             relative = file_path.relative_to(directory).as_posix()
             content = file_path.read_bytes()
+            total_size += len(content)
+            if total_size > MAX_TOTAL_SIZE:
+                raise click.ClickException(
+                    f"Total size exceeds {MAX_TOTAL_SIZE // (1024 * 1024)}MB limit"
+                )
             content_type = (
                 "text/markdown" if file_path.suffix == ".md" else "application/octet-stream"
             )
