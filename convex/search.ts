@@ -127,14 +127,14 @@ interface SearchResult {
   score: number;
 }
 
-function tokenize(text: string): string[] {
+export function tokenize(text: string): string[] {
   return text
     .toLowerCase()
     .split(/[\s\-_./]+/)
     .filter((t) => t.length > 0);
 }
 
-function computeLexicalBoost(
+export function computeLexicalBoost(
   queryTokens: string[],
   slug: string,
   displayName: string,
