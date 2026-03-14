@@ -66,7 +66,7 @@ payload: { slug, displayName, version, changelog, dependencies?, customTags?, fi
 
 The `dependencies` field is optional JSON: `{"skills": ["security-baseline", "git-workflow==1.0.0"]}`. Skills can only depend on other skills. If omitted, dependencies are read from `metadata.strawpot.dependencies` in the SKILL.md frontmatter.
 
-File constraints: up to 100 files, 512 KB each. Allowed extensions: `.md`, `.txt`, `.json`, `.yaml`, `.yml`, `.toml`.
+File constraints: up to 100 files, 10 MB each, 50 MB total. Allowed extensions: `.md`, `.txt`, `.json`, `.yaml`, `.yml`, `.toml`.
 
 Additional constraints:
 - Slug must be unique within skills.

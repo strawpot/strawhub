@@ -47,7 +47,7 @@ Four content types with parallel structure:
 
 Markdown instruction modules that agents load into context. Based on the [Agent Skills](https://agentskills.io/) open spec, extended with `metadata.strawpot` for dependencies and tool declarations.
 
-- **Files:** `SKILL.md` (required) + supporting text files (optional, up to 100 files, 512 KB each)
+- **Files:** `SKILL.md` (required) + supporting text files (optional, up to 100 files, 10 MB each, 50 MB total)
 - **Dependencies:** flat list of other skill slugs
 - **Allowed file types:** `.md`, `.txt`, `.json`, `.yaml`, `.yml`, `.toml`
 
