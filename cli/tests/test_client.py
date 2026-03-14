@@ -181,6 +181,32 @@ class TestDeletePackage:
         client.delete_role.assert_called_once_with("x")
 
 
+class TestTrackDownload:
+    def test_fire_and_forget_swallows_errors(self, client):
+        """track_download silently ignores errors — never raises."""
+        client._request = MagicMock(side_effect=Exception("network error"))
+        # Should not raise
+        client.track_download("skill", "my-skill", version="1.0.0")
+
+    def test_sends_correct_payload(self, client):
+        client._request = MagicMock(return_value={"ok": True})
+        client.track_download("agent", "my-agent", version="2.0.0")
+        client._request.assert_called_once_with(
+            "POST",
+            "/api/v1/downloads",
+            json={"kind": "agent", "slug": "my-agent", "version": "2.0.0"},
+        )
+
+    def test_omits_version_when_none(self, client):
+        client._request = MagicMock(return_value={"ok": True})
+        client.track_download("skill", "my-skill")
+        client._request.assert_called_once_with(
+            "POST",
+            "/api/v1/downloads",
+            json={"kind": "skill", "slug": "my-skill"},
+        )
+
+
 class TestContextManager:
     def test_context_manager(self):
         with patch("strawhub.client.get_api_url", return_value="https://fake.test"):
