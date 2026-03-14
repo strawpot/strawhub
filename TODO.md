@@ -34,29 +34,21 @@ Popular items receive many concurrent star/unstar operations, all patching the s
 
 **Files:** `convex/stars.ts`, `convex/statEvents.ts`
 
-## Starred IDs Pagination Cap (Medium)
+## Frontend Download Error Handling (Medium)
 
-Frontend listing pages load starred IDs with `initialNumItems: 1000`. Users who star 1000+ items won't see correct star indicators on listing pages.
+The download button's `onClick` handler in skill/role/agent detail pages calls `fetch(zipUrl)` with no `.catch()` or error feedback. If the download fails, nothing is shown to the user.
 
-**Approach:** Either:
-1. Paginate through all starred IDs on the frontend (load more pages until `isDone`)
-2. Move the `isStarred` check to the backend `list` query (join against `stars` table using the current user)
+**Approach:** Wrap the fetch in a try/catch and show a toast or error message on failure.
 
-Option 2 is cleaner but requires passing the user context into list queries.
+**Files:** `src/routes/skills.$slug.tsx`, `src/routes/roles.$slug.tsx`, `src/routes/agents.$slug.tsx`
 
-**Files:** `src/routes/skills.index.tsx`, `src/routes/roles.index.tsx`, `src/routes/agents.index.tsx`, `src/routes/memories.index.tsx`, optionally `convex/skills.ts` (list query)
+## CLI Tool Install Subprocess Without Timeout (Medium)
 
-## AuthAccounts Query Without Index (Medium)
+`subprocess.run(spec.command, shell=True)` in tool installation has no timeout. A broken or malicious install script could hang the CLI indefinitely.
 
-The `claimSkill` mutation queries `authAccounts` using `.filter()` (full table scan) to find a user's GitHub account. The `authAccounts` table is owned by `@convex-dev/auth` so custom indexes can't be added directly.
+**Approach:** Add `timeout=300` (5 min) to `subprocess.run` calls and catch `subprocess.TimeoutExpired`.
 
-**Approach:** Either:
-1. Cache the user's GitHub provider account ID on the `users` table during auth signup/link, avoiding the need to query `authAccounts` at claim time
-2. Check if `@convex-dev/auth` exposes a utility to look up accounts by userId+provider efficiently
-
-The `claimSkill` operation is rare, so this is low urgency but worth addressing if the `authAccounts` table grows large.
-
-**Files:** `convex/skills.ts` (lines ~685-694, ~728-736)
+**Files:** `cli/src/strawhub/tools.py` (lines ~133-146)
 
 ## Revision All SKILL.md
 
