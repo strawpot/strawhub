@@ -88,6 +88,38 @@ The download button's `onClick` handler in skill/role/agent detail pages calls `
 
 **Files:** `src/routes/skills.$slug.tsx`, `src/routes/roles.$slug.tsx`, `src/routes/agents.$slug.tsx`
 
+## Unbounded Comment Rendering on Detail Pages (Medium)
+
+Comments on detail pages use `initialNumItems: 20` with load-more pagination, but all loaded comments render in the DOM without virtualization. A page with 1000+ comments (after repeated load-more clicks) causes memory usage and reflow lag.
+
+**Approach:** Add a fixed-height scrollable container with `overflow-y: auto`, or implement virtual scrolling for large comment lists.
+
+**Files:** `src/routes/skills.$slug.tsx`, `src/routes/roles.$slug.tsx`, `src/routes/agents.$slug.tsx`
+
+## CLI Lockfile Orphan Collection Loop (Medium)
+
+`collect_orphans()` uses a `while changed` loop to cascade orphan removal. A malformed lockfile with circular dependency references in the "dependents" list could cause an infinite loop.
+
+**Approach:** Add a max iteration limit (e.g., 100) and exit with an error if exceeded.
+
+**Files:** `cli/src/strawhub/lockfile.py` (lines ~127-148)
+
+## CLI rglob Traversal Before File Count Check (Medium)
+
+`_collect_files()` uses `directory.rglob("*")` which traverses the entire directory tree before `MAX_FILE_COUNT` is enforced. Publishing a directory containing `node_modules` or similar large trees could hang during enumeration.
+
+**Approach:** Implement early-exit recursion with a depth counter (like the frontend upload does) instead of `rglob`.
+
+**Files:** `cli/src/strawhub/commands/publish.py` (lines ~172-189)
+
+## CLI Tool Install Subprocess Without Timeout (Medium)
+
+`subprocess.run(spec.command, shell=True)` in tool installation has no timeout. A broken or malicious install script could hang the CLI indefinitely.
+
+**Approach:** Add `timeout=300` (5 min) to `subprocess.run` calls and catch `subprocess.TimeoutExpired`.
+
+**Files:** `cli/src/strawhub/tools.py` (lines ~133-146)
+
 ## Revision All SKILL.md
 
 Review and improve all uploaded `SKILL.md` files using the skill-creator tool from Anthropic.
