@@ -160,6 +160,7 @@ def publish_memory(path, ver, changelog, tags):
     _publish_impl(path, kind="memory", ver=ver, changelog=changelog, tags=tags)
 
 
+# Keep in sync with convex/lib/publishValidation.ts
 MAX_FILE_COUNT = 100
 MAX_TOTAL_SIZE = 50 * 1024 * 1024  # 50 MB
 

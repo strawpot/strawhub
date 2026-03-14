@@ -14,6 +14,7 @@ export const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB per file
 export const MAX_TOTAL_SIZE = 50 * 1024 * 1024; // 50 MB total
 export const MAX_FILE_COUNT = 100;
 export const MAX_DEPENDENCIES = 50; // max skill/role deps per package
+export const MAX_DIR_DEPTH = 10; // max directory recursion depth
 
 // Agent-specific limits (agents may include compiled binaries)
 export const AGENT_MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB per file

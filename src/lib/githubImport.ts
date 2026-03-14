@@ -1,3 +1,5 @@
+import { MAX_FILE_COUNT, MAX_DIR_DEPTH } from "../../convex/lib/publishValidation";
+
 export interface GitHubFile {
   path: string;
   content: Blob;
@@ -83,8 +85,6 @@ export async function fetchFromGitHub(url: string): Promise<GitHubFile[]> {
   }
 
   // Directory listing — recursively fetch all files
-  const MAX_FILES = 100;
-  const MAX_DIR_DEPTH = 10;
   const headers = { Accept: "application/vnd.github.v3+json" };
   const files: GitHubFile[] = [];
 
@@ -95,7 +95,7 @@ export async function fetchFromGitHub(url: string): Promise<GitHubFile[]> {
   ) {
     if (depth > MAX_DIR_DEPTH) return;
     for (const entry of entries) {
-      if (files.length >= MAX_FILES) return;
+      if (files.length >= MAX_FILE_COUNT) return;
       if (entry.name === ".git") continue;
       if (entry.type === "file" && entry.size < 1_000_000) {
         const fileResp = await fetch(entry.download_url);

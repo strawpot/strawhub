@@ -10,11 +10,9 @@ import { fetchFromGitHub } from "../lib/githubImport";
 import { fetchFromClawHub } from "../lib/clawhubImport";
 import JSZip from "jszip";
 import { isBinaryByMagicBytes, containsNullBytes } from "../../convex/lib/binaryDetection";
+import { MAX_FILE_COUNT, MAX_DIR_DEPTH } from "../../convex/lib/publishValidation";
 
 type UploadSearch = { mode?: "import"; updateSlug?: string; kind?: "skill" | "role" | "agent" | "memory" };
-
-const DIR_MAX_FILES = 100;
-const DIR_MAX_DEPTH = 10;
 
 /** Recursively read all files from a dropped directory entry. */
 async function readDirectoryRecursively(
@@ -22,7 +20,7 @@ async function readDirectoryRecursively(
   basePath: string = "",
   depth: number = 0,
 ): Promise<Array<{ file: File; path: string }>> {
-  if (depth > DIR_MAX_DEPTH) return [];
+  if (depth > MAX_DIR_DEPTH) return [];
 
   const entries = await new Promise<FileSystemEntry[]>((resolve, reject) => {
     const all: FileSystemEntry[] = [];
@@ -41,7 +39,7 @@ async function readDirectoryRecursively(
 
   const results: Array<{ file: File; path: string }> = [];
   for (const entry of entries) {
-    if (results.length >= DIR_MAX_FILES) break;
+    if (results.length >= MAX_FILE_COUNT) break;
     // Skip hidden files/directories
     if (entry.name.startsWith(".")) continue;
     const entryPath = basePath ? `${basePath}/${entry.name}` : entry.name;
@@ -59,7 +57,7 @@ async function readDirectoryRecursively(
       results.push(...sub);
     }
   }
-  return results.slice(0, DIR_MAX_FILES);
+  return results.slice(0, MAX_FILE_COUNT);
 }
 
 export const Route = createFileRoute("/upload")({
