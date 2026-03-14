@@ -125,7 +125,7 @@ function MemoryDetailPage() {
           {memory.latestVersion && memory.zipUrl && (
             <button
               onClick={async () => {
-                trackDownload({ targetKind: "memory", slug: memory.slug, version: memory.latestVersion!.version });
+                trackDownload({ targetKind: "memory", slug: memory.slug, version: memory.latestVersion!.version, userId: currentUser?._id });
                 const res = await fetch(memory.zipUrl!);
                 const blob = await res.blob();
                 const url = URL.createObjectURL(blob);
@@ -324,6 +324,7 @@ function MemoryDetailPage() {
         latestVersionId={memory.latestVersionId}
         slug={memory.slug}
         trackDownload={trackDownload}
+        userId={currentUser?._id}
       />
 
       {/* Comments */}
@@ -428,6 +429,7 @@ function MemoryDetailTabs({
   latestVersionId,
   slug,
   trackDownload,
+  userId,
 }: {
   files: Array<{ path: string; size: number; url: string | null }>;
   versions: Array<{
@@ -441,7 +443,8 @@ function MemoryDetailTabs({
   loadMoreVersions: (numItems: number) => void;
   latestVersionId: string | undefined;
   slug: string;
-  trackDownload: (args: { targetKind: "skill" | "role" | "agent" | "memory"; slug: string; version?: string }) => void;
+  trackDownload: (args: { targetKind: "skill" | "role" | "agent" | "memory"; slug: string; version?: string; userId?: string }) => void;
+  userId?: string;
 }) {
   const [tab, setTab] = useState<"files" | "versions">("files");
 
@@ -585,7 +588,7 @@ function MemoryDetailTabs({
                 {ver.zipUrl && (
                   <button
                     onClick={async () => {
-                      trackDownload({ targetKind: "memory", slug, version: ver.version });
+                      trackDownload({ targetKind: "memory", slug, version: ver.version, userId });
                       const res = await fetch(ver.zipUrl!);
                       const blob = await res.blob();
                       const url = URL.createObjectURL(blob);
