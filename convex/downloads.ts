@@ -27,7 +27,7 @@ export const trackDownload = mutation({
       .query(table)
       .withIndex("by_slug", (q: any) => q.eq("slug", args.slug))
       .first();
-    if (!target) return;
+    if (!target) return { found: false };
 
     // Resolve version ID if provided
     let versionId: string | undefined;
@@ -78,7 +78,7 @@ export const trackDownload = mutation({
             .eq("versionId", versionId),
         )
         .first();
-      if (existing) return;
+      if (existing) return { found: true };
     }
 
     await ctx.db.insert("statEvents", {
@@ -89,5 +89,6 @@ export const trackDownload = mutation({
       userId: args.userId,
       createdAt: Date.now(),
     });
+    return { found: true };
   },
 });

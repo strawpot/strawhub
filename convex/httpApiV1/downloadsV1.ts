@@ -44,12 +44,16 @@ export const trackDownload = httpAction(async (ctx, request) => {
     }
   }
 
-  await ctx.runMutation(api.downloads.trackDownload, {
+  const result = await ctx.runMutation(api.downloads.trackDownload, {
     targetKind: kind as "skill" | "role" | "agent" | "memory",
     slug,
     version,
     userId,
   });
+
+  if (result && !result.found) {
+    return errorResponse(`${kind} '${slug}' not found`, 404);
+  }
 
   return jsonResponse({ ok: true });
 });
