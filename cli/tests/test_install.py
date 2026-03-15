@@ -5,10 +5,12 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from strawhub.commands.install import (
+    _install_impl,
     _resolve_deps,
     _slug_installed_in_scope,
     _download_package,
 )
+from strawhub.errors import NotFoundError
 
 
 class TestResolveDepsWildcard:
@@ -66,6 +68,36 @@ class TestResolveDepsWildcard:
         client = MagicMock()
         result = _resolve_deps(client, "memory", "my-mem", {})
         assert result == []
+
+
+class TestInstallNotFound:
+    def test_nonexistent_slug_exits_with_error(self, tmp_path):
+        """Installing a slug that doesn't exist prints an error and exits 1."""
+        mock_client = MagicMock()
+        mock_client.__enter__ = MagicMock(return_value=mock_client)
+        mock_client.__exit__ = MagicMock(return_value=False)
+        mock_client.get_info.side_effect = NotFoundError("Not found")
+
+        with patch("strawhub.commands.install.StrawHubClient", return_value=mock_client), \
+             patch("strawhub.commands.install.get_root", return_value=tmp_path), \
+             patch("strawhub.commands.install.get_lockfile_path", return_value=tmp_path / "lockfile.json"):
+            with pytest.raises(SystemExit) as exc_info:
+                _install_impl("imu", kind="role", is_global=False)
+            assert exc_info.value.code == 1
+
+    def test_nonexistent_slug_does_not_track_download(self, tmp_path):
+        """When slug doesn't exist, track_download should never be called."""
+        mock_client = MagicMock()
+        mock_client.__enter__ = MagicMock(return_value=mock_client)
+        mock_client.__exit__ = MagicMock(return_value=False)
+        mock_client.get_info.side_effect = NotFoundError("Not found")
+
+        with patch("strawhub.commands.install.StrawHubClient", return_value=mock_client), \
+             patch("strawhub.commands.install.get_root", return_value=tmp_path), \
+             patch("strawhub.commands.install.get_lockfile_path", return_value=tmp_path / "lockfile.json"):
+            with pytest.raises(SystemExit):
+                _install_impl("imu", kind="role", is_global=False)
+            mock_client.track_download.assert_not_called()
 
 
 class TestSlugInstalledInScope:
