@@ -218,11 +218,14 @@ class StrawHubClient:
     # ── Downloads ──────────────────────────────────────────────────────────────
 
     def track_download(self, kind: str, slug: str, version: str | None = None) -> None:
-        """Track a download event. Temporarily raises on error to debug repeated downloads."""
+        """Track a download event. Fire-and-forget — errors are silently ignored."""
         body: dict = {"kind": kind, "slug": slug}
         if version:
             body["version"] = version
-        self._request("POST", "/api/v1/downloads", json=body)
+        try:
+            self._request("POST", "/api/v1/downloads", json=body)
+        except Exception:
+            pass  # Best-effort, don't fail installs over tracking
 
     # ── Stars ─────────────────────────────────────────────────────────────────
 
