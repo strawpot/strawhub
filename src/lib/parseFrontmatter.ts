@@ -92,6 +92,14 @@ function parseBlock(
     const value = rawValue.trim();
     i++;
 
+    if (value === ">" || value === "|") {
+      // YAML folded (>) or literal (|) scalar — collect indented lines
+      const parsed = parseMultilineScalar(lines, i, indent, value === ">");
+      result[key] = parsed.result;
+      i = parsed.nextIdx;
+      continue;
+    }
+
     if (value) {
       result[key] = parseInlineValue(value);
       continue;
@@ -126,6 +134,42 @@ function parseBlock(
     }
   }
 
+  return { result, nextIdx: i };
+}
+
+function parseMultilineScalar(
+  lines: string[],
+  startIdx: number,
+  parentIndent: number,
+  folded: boolean,
+): { result: string; nextIdx: number } {
+  const parts: string[] = [];
+  let i = startIdx;
+
+  while (i < lines.length) {
+    const line = lines[i];
+    const trimmed = line.trim();
+
+    // Blank line within the scalar — preserved as paragraph break in folded mode
+    if (!trimmed) {
+      if (parts.length > 0) parts.push("");
+      i++;
+      continue;
+    }
+
+    const indent = getIndent(line);
+    if (indent <= parentIndent) break;
+
+    parts.push(trimmed);
+    i++;
+  }
+
+  // Remove trailing empty parts
+  while (parts.length > 0 && parts[parts.length - 1] === "") {
+    parts.pop();
+  }
+
+  const result = folded ? parts.join(" ") : parts.join("\n");
   return { result, nextIdx: i };
 }
 
