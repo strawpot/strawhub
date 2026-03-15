@@ -229,6 +229,53 @@ Body.
     expect(result.frontmatter.tags).toEqual(["coding"]);
   });
 
+  it("parses folded scalar (>)", () => {
+    const text = `---
+name: session-recap
+description: >
+  ALWAYS invoke this skill
+  unconditionally, without exception.
+  Never skip the recap.
+---
+Body.
+`;
+    const result = parseFrontmatter(text);
+    expect(result.frontmatter.description).toBe(
+      "ALWAYS invoke this skill unconditionally, without exception. Never skip the recap.",
+    );
+  });
+
+  it("parses literal scalar (|)", () => {
+    const text = `---
+name: test
+notes: |
+  Line one.
+  Line two.
+  Line three.
+---
+Body.
+`;
+    const result = parseFrontmatter(text);
+    expect(result.frontmatter.notes).toBe(
+      "Line one.\nLine two.\nLine three.",
+    );
+  });
+
+  it("folded scalar stops at next key at same indent", () => {
+    const text = `---
+name: test
+description: >
+  First line
+  second line.
+version: 1.0.0
+---
+Body.
+`;
+    const result = parseFrontmatter(text);
+    expect(result.frontmatter.description).toBe("First line second line.");
+    expect(result.frontmatter.version).toBe("1.0.0");
+  });
+
   it("skips blank lines in frontmatter", () => {
     const text = `---
 name: test
