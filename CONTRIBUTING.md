@@ -1,5 +1,36 @@
 # Contributing to StrawHub
 
+## Architecture at a Glance
+
+StrawHub is a three-tier monorepo: React frontend, Convex backend, Python CLI.
+
+```
+┌─────────────────────────────────────────────────────┐
+│  src/           Convex client (real-time queries)   │  ← React SPA
+│  convex/        DB + file storage + HTTP API        │  ← Serverless backend
+│  cli/           REST API client (Bearer token)      │  ← Python CLI (PyPI)
+└─────────────────────────────────────────────────────┘
+```
+
+**Key files to understand first:**
+
+| File | What it does |
+|------|-------------|
+| `convex/schema.ts` | Single source of truth for the database schema |
+| `convex/lib/publishValidation.ts` | All publish-time constraints (slug, version, file limits) |
+| `convex/http.ts` | HTTP route definitions — maps URLs to handlers |
+| `convex/httpApiV1/` | REST API v1 handler implementations |
+| `cli/src/strawhub/cli.py` | CLI entry point — all commands registered here |
+| `cli/src/strawhub/resolver.py` | Dependency resolution (client-side DFS for skills) |
+| `cli/src/strawhub/client.py` | HTTP client that talks to the REST API |
+| `src/routes/` | Frontend pages (file-based routing via TanStack Router) |
+
+**Content types** — Five parallel types: skills, roles, agents, memories, integrations. Each has its own DB tables, API endpoints, and CLI subcommands. Roles and skills form the dependency graph (core); agents, memories, and integrations are standalone extensions.
+
+**Where validation lives** — Constraints are enforced server-side in `convex/lib/publishValidation.ts`. The CLI `validate` command mirrors these checks client-side in `cli/src/strawhub/commands/validate.py`. Keep them in sync.
+
+See [DESIGN.md](DESIGN.md) for the full architecture.
+
 ## Tech Stack
 
 - **Frontend**: Vite + React 19 + TanStack Router + Tailwind CSS v4
@@ -94,8 +125,23 @@ Set `VITE_CONVEX_URL` in the Vercel dashboard (Settings > Environment Variables)
 
 The CLI is published on [PyPI](https://pypi.org/project/strawhub/). See [docs/cli.md](docs/cli.md) for the full command reference.
 
+```bash
+# Run CLI tests
+cd cli && python -m pytest tests/ -v
+```
+
 ## API
 
 See [docs/http-api.md](docs/http-api.md) for the full HTTP API reference.
 
 Authenticated endpoints require an `Authorization: Bearer <token>` header. Create tokens from the Settings page.
+
+## Where to Start
+
+**Adding a new content type** — Follow the pattern of any existing type (e.g., `integrations`). You'll need: DB tables in `schema.ts`, queries/mutations in `convex/`, API handlers in `httpApiV1/`, frontend routes in `src/routes/`, and CLI subcommands.
+
+**Adding a CLI command** — Create a file in `cli/src/strawhub/commands/`, register it in `cli.py`, add tests in `cli/tests/`, and document it in `docs/cli.md`.
+
+**Modifying validation rules** — Update `convex/lib/publishValidation.ts` (server-side) and `cli/src/strawhub/commands/validate.py` (client-side) together.
+
+**Frontend pages** — Each content type has three routes: `{type}.tsx` (layout), `{type}.index.tsx` (list), `{type}.$slug.tsx` (detail). Follow the existing pattern.

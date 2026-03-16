@@ -39,9 +39,36 @@ Three-tier monorepo: React frontend, Convex backend, Python CLI.
 
 **CLI** (`cli/`) — Python Click-based CLI published to PyPI as `strawhub`. Communicates with the backend exclusively through the REST API using Bearer token auth.
 
+## Open vs Hosted Boundary
+
+StrawHub has two layers: an **open package format** and a **hosted registry service**.
+
+### Open layer (format + CLI)
+
+Everything needed to create, validate, and install packages locally:
+
+- **Package format** — YAML frontmatter + Markdown body in `SKILL.md`, `ROLE.md`, `AGENT.md`, `MEMORY.md`, or `INTEGRATION.md`. Plain files, no proprietary encoding.
+- **Dependency spec** — Skills declare flat dependency lists; roles declare structured `skills` + `roles` dependencies. Resolution is deterministic and can run client-side.
+- **File constraints** — Max 100 files, 10 MB each, 50 MB total. Slug format: lowercase alphanumeric + hyphens, max 64 chars. Semver versioning.
+- **CLI** — `strawhub validate` checks a package locally. `strawhub install` / `publish` / `resolve` work against any registry endpoint (override via `STRAWHUB_API_URL`).
+
+The format and CLI are MIT-licensed. Anyone can build tools that produce or consume StrawHub packages without depending on strawhub.dev.
+
+### Hosted layer (strawhub.dev)
+
+The registry service adds discovery, trust, and namespace management:
+
+- **Search & discovery** — Hybrid vector + lexical search, download rankings, curated tags
+- **Namespace ownership** — First publisher owns the slug per content type. Only the owner can push new versions.
+- **Trust signals** — VirusTotal malware scanning, download stats, star counts, moderation reports
+- **Authentication** — GitHub OAuth for web, Bearer tokens for API/CLI
+- **Moderation** — Admin soft-delete, user bans, audit logging
+
+The hosted layer runs on Convex (serverless backend) + Vercel (frontend). It is the default registry but not the only possible one — the CLI's `STRAWHUB_API_URL` env var can point to any compatible endpoint.
+
 ## Content Model
 
-Five content types with parallel structure:
+Five content types, split into **core** (roles and skills — the dependency graph) and **extensions** (agents, memories, integrations — standalone packages):
 
 ### Skills
 

@@ -1,6 +1,8 @@
 # TODO
 
-## Download Deduplication
+## P0 — Data Integrity
+
+### Download Deduplication
 
 Prevent the same user/IP from inflating download counts by downloading the same item repeatedly.
 
@@ -8,7 +10,7 @@ Prevent the same user/IP from inflating download counts by downloading the same 
 
 Reference: ClawHub uses `downloadDedupes` table with compound index on `(skillId, identityHash, hourStart)`.
 
-## Stats Reconciliation Cron
+### Stats Reconciliation Cron
 
 Add a periodic reconciliation job that recounts stars and comments from source tables and corrects any drift in denormalized `stats` fields on skill/role/agent documents.
 
@@ -24,7 +26,7 @@ Run hourly or daily via cron.
 
 Reference: ClawHub's `reconcileSkillStarCounts` mutation.
 
-## Star Counter OCC Contention (High)
+### Star Counter OCC Contention
 
 Popular items receive many concurrent star/unstar operations, all patching the same `stats.stars` field on the skill/role/agent document. This causes Convex OCC (Optimistic Concurrency Control) retries under load.
 
@@ -34,7 +36,15 @@ Popular items receive many concurrent star/unstar operations, all patching the s
 
 **Files:** `convex/stars.ts`, `convex/statEvents.ts`
 
-## Frontend Download Error Handling (Medium)
+## P1 — Developer Experience
+
+### CLI `validate` Command
+
+Client-side validation of a package directory before publishing. Checks frontmatter schema, file constraints, slug format, and content type rules without requiring authentication or a network call.
+
+**Status:** Planned (this sprint).
+
+### Frontend Download Error Handling
 
 The download button's `onClick` handler in skill/role/agent detail pages calls `fetch(zipUrl)` with no `.catch()` or error feedback. If the download fails, nothing is shown to the user.
 
@@ -42,7 +52,9 @@ The download button's `onClick` handler in skill/role/agent detail pages calls `
 
 **Files:** `src/routes/skills.$slug.tsx`, `src/routes/roles.$slug.tsx`, `src/routes/agents.$slug.tsx`
 
-## CLI Tool Install Subprocess Without Timeout (Medium)
+## P2 — Reliability
+
+### CLI Tool Install Subprocess Without Timeout
 
 `subprocess.run(spec.command, shell=True)` in tool installation has no timeout. A broken or malicious install script could hang the CLI indefinitely.
 
@@ -50,6 +62,8 @@ The download button's `onClick` handler in skill/role/agent detail pages calls `
 
 **Files:** `cli/src/strawhub/tools.py` (lines ~133-146)
 
-## Revision All SKILL.md
+## P3 — Content Quality
+
+### Revision All SKILL.md
 
 Review and improve all uploaded `SKILL.md` files using the skill-creator tool from Anthropic.
