@@ -47,7 +47,7 @@ from strawhub.project_file import ProjectFile
 )
 @click.pass_context
 def update(ctx, update_all, is_global, skip_tools, yes, save):
-    """Update installed skills/roles/agents/memories to their latest versions."""
+    """Update installed skills/roles/agents/memories/integrations to their latest versions."""
     if save and is_global:
         print_error("--save cannot be used with --global")
         raise SystemExit(1)
@@ -55,7 +55,7 @@ def update(ctx, update_all, is_global, skip_tools, yes, save):
         _update_all_impl(is_global, skip_tools=skip_tools, yes=yes, save=save)
         return
     if ctx.invoked_subcommand is None:
-        click.echo("Specify 'skill <slug>', 'role <slug>', 'agent <slug>', 'memory <slug>', or use --all.")
+        click.echo("Specify 'skill <slug>', 'role <slug>', 'agent <slug>', 'memory <slug>', 'integration <slug>', or use --all.")
         ctx.exit(1)
 
 
@@ -157,3 +157,10 @@ def update_agent(slug, is_global, save):
 def update_memory(slug, is_global, save):
     """Update an installed memory to its latest version."""
     _update_one_impl(slug, kind="memory", is_global=is_global, save=save)
+
+
+@update.command("integration")
+@click.argument("slug")
+def update_integration(slug):
+    """Update an installed integration to its latest version (always global)."""
+    _update_one_impl(slug, kind="integration", is_global=True)

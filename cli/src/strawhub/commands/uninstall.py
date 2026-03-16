@@ -16,7 +16,7 @@ from strawhub.project_file import ProjectFile
 @click.group(invoke_without_command=True)
 @click.pass_context
 def uninstall(ctx):
-    """Remove an installed skill, role, agent, or memory and clean up orphaned dependencies."""
+    """Remove an installed skill, role, agent, memory, or integration and clean up orphaned dependencies."""
     if ctx.invoked_subcommand is None:
         click.echo(ctx.get_help())
         ctx.exit(1)
@@ -115,6 +115,14 @@ def uninstall_agent(slug, ver, is_global, save):
 def uninstall_memory(slug, ver, is_global, save):
     """Remove an installed memory and clean up orphaned dependencies."""
     _uninstall_impl(slug, kind="memory", ver=ver, is_global=is_global, save=save)
+
+
+@uninstall.command("integration")
+@click.argument("slug")
+@click.option("--version", "ver", default=None, help="Specific version to remove (removes all versions if omitted)")
+def uninstall_integration(slug, ver):
+    """Remove an installed integration (always global)."""
+    _uninstall_impl(slug, kind="integration", ver=ver, is_global=True)
 
 
 def _find_targets(
