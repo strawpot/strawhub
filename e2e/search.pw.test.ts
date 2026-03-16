@@ -4,7 +4,7 @@ test.describe("Search page", () => {
   test("shows prompt when query is too short", async ({ page }) => {
     await page.goto("/search");
     const input = page.locator(
-      'input[placeholder="Search roles, skills, agents, and memories..."]',
+      'input[placeholder="Search roles, skills, agents, memories, and integrations..."]',
     );
     await input.fill("a");
     await expect(
@@ -22,6 +22,7 @@ test.describe("Search page", () => {
       "Skills",
       "Agents",
       "Memories",
+      "Integrations",
     ]);
   });
 
