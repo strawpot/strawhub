@@ -59,36 +59,41 @@ That's it. StrawHub resolves every skill and sub-role your AI CEO needs. StrawPo
 ┌──────────────────────────────────────────────────────┐
 │                       StrawHub                       │
 │                                                      │
-│   Skills          Roles          Memories            │
-│  ┌──────────┐   ┌──────────┐   ┌──────────┐          │
-│  │git-wflow │   │ai-ceo    │   │proj-ctx  │          │
-│  │code-rev  │   │pm        │   │patterns  │          │
-│  │py-test   │   │implmtr   │   │decisions │          │
-│  │debugging │   │reviewer  │   │lessons   │          │
-│  └──────────┘   └──────────┘   └──────────┘          │
+│   ┌─── Core ──────────────────────────────────────┐  │
+│   │  Roles            Skills                      │  │
+│   │  ┌──────────┐    ┌──────────┐                 │  │
+│   │  │ai-ceo    │    │git-wflow │                 │  │
+│   │  │pm        │    │code-rev  │                 │  │
+│   │  │implmtr   │    │py-test   │                 │  │
+│   │  │reviewer  │    │debugging │                 │  │
+│   │  └──────────┘    └──────────┘                 │  │
+│   └───────────────────────────────────────────────┘  │
 │                                                      │
-│   Agents                    Integrations             │
-│  ┌──────────────────────┐  ┌──────────────────────┐  │
-│  │claude-code · codex   │  │telegram · slack      │  │
-│  │gemini                │  │discord               │  │
-│  └──────────────────────┘  └──────────────────────┘  │
+│   ┌─── Extensions ────────────────────────────────┐  │
+│   │  Agents          Memories      Integrations   │  │
+│   │  ┌──────────┐   ┌──────────┐  ┌──────────┐    │  │
+│   │  │claude    │   │proj-ctx  │  │telegram  │    │  │
+│   │  │codex     │   │patterns  │  │slack     │    │  │
+│   │  │gemini    │   │decisions │  │discord   │    │  │
+│   │  └──────────┘   └──────────┘  └──────────┘    │  │
+│   └───────────────────────────────────────────────┘  │
 └──────────────────────────────────────────────────────┘
 ```
-
-### Skills — what agents can do
-Atomic capabilities: writing code, reviewing PRs, running tests, searching docs.
 
 ### Roles — what agents are
 Job definitions that bundle skills. An `ai-ceo` depends on `pm`, `implementer`, and `reviewer` — StrawPot handles the delegation.
 
-### Memories — what agents remember
-Persistent knowledge banks: project context, code patterns, past decisions. Install shared context from StrawHub so new agents start smart.
+### Skills — what agents can do
+Atomic capabilities: writing code, reviewing PRs, running tests, searching docs. Roles compose skills; skills are the building blocks.
 
 ### Agents — where agents run
 Runtime wrappers for Claude Code, Codex, Gemini, or your own CLI.
 
+### Memories — what agents remember
+Persistent knowledge banks: project context, code patterns, past decisions.
+
 ### Integrations — how agents connect
-Adapters that bridge StrawPot to external services like Telegram, Slack, or Discord. Always installed globally.
+Adapters that bridge StrawPot to external services like Telegram, Slack, or Discord.
 
 ## Everything Is a Markdown File
 
@@ -162,6 +167,7 @@ Skills use client-side DFS. Roles use server-side topological sort with cycle de
 # Install
 strawhub install role ai-ceo
 strawhub install skill git-workflow
+strawhub install agent strawpot-claude-code
 strawhub install memory project-context
 strawhub install integration telegram
 
@@ -170,7 +176,8 @@ strawhub search "code review"
 strawhub info role ai-ceo
 strawhub list
 
-# Publish
+# Validate & Publish
+strawhub validate skill ./my-skill/
 strawhub publish role ./my-role/
 strawhub publish skill ./my-skill/
 

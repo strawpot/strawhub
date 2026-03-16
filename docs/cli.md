@@ -24,6 +24,7 @@ strawhub [--version] [--help] <command>
 | [`info`](#info) | Show detailed information about a package |
 | [`list`](#list) | List available skills, roles, agents, and memories |
 | [`resolve`](#resolve) | Resolve a package to its installed path and dependencies |
+| [`validate`](#validate) | Validate a package directory before publishing |
 | [`publish`](#publish) | Publish a package to the registry |
 | [`install-tools`](#install-tools) | Install system tools declared by packages |
 | [`star`](#star) / [`unstar`](#unstar) | Star or unstar a package |
@@ -478,6 +479,42 @@ Resolution checks local scope first, then global. Returns the highest installed 
 strawhub resolve skill code-review
 strawhub resolve role implementer --version 1.0.0
 strawhub resolve skill git-workflow --global
+```
+
+---
+
+## Validation
+
+### `validate`
+
+Validate a package directory before publishing. Checks frontmatter schema, file constraints, slug format, and content-type-specific rules — all offline, no auth required.
+
+```bash
+strawhub validate skill [<path>]
+strawhub validate role [<path>]
+strawhub validate agent [<path>]
+strawhub validate memory [<path>]
+strawhub validate integration [<path>]
+```
+
+Defaults to the current directory if `<path>` is omitted.
+
+**Checks performed:**
+
+- Required main file exists (`SKILL.md`, `ROLE.md`, etc.)
+- `name` field present and valid slug format (lowercase alphanumeric + hyphens, max 64 chars)
+- `description` field present
+- `version` field (if present) is valid semver (`X.Y.Z`)
+- File count within limit (max 100)
+- File sizes within limits (10 MB each, 50 MB total)
+- Content-type rules: roles must be exactly one file; skills only allow text file extensions
+- Dependency slugs are valid format
+
+**Examples:**
+
+```bash
+strawhub validate skill ./my-skill/      # validate before publishing
+strawhub validate role .                  # validate current directory
 ```
 
 ---
