@@ -1,9 +1,54 @@
+import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { usePaginatedQuery } from "convex/react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { api } from "../../convex/_generated/api";
 import { useSEO } from "../lib/useSEO";
+
+function CollapsibleSection({
+  title,
+  count,
+  headingLevel = "h2",
+  children,
+}: {
+  title: string;
+  count: number;
+  headingLevel?: "h2" | "h3";
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(true);
+  const Tag = headingLevel;
+  const headingClass =
+    headingLevel === "h2"
+      ? "text-xl font-semibold text-white"
+      : "text-sm font-medium text-gray-400";
+
+  return (
+    <section className="space-y-3">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-2 group w-full text-left"
+      >
+        <svg
+          className={`h-4 w-4 text-gray-500 transition-transform ${open ? "rotate-90" : ""}`}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+        </svg>
+        <Tag className={headingClass}>
+          {title}{" "}
+          <span className="text-gray-500 font-normal text-sm">({count})</span>
+        </Tag>
+      </button>
+      {open && children}
+    </section>
+  );
+}
 
 export const Route = createFileRoute("/dashboard")({
   component: DashboardPage,
@@ -124,8 +169,7 @@ function UserContent({ userId }: { userId: string; handle?: string }) {
     <div className="space-y-8">
       {/* Roles */}
       {hasRoles && (
-        <section className="space-y-3">
-          <h2 className="text-xl font-semibold text-white">Roles</h2>
+        <CollapsibleSection title="Roles" count={roles.length}>
           <div className="space-y-3">
             {roles.map((r) => (
               <div
@@ -182,13 +226,12 @@ function UserContent({ userId }: { userId: string; handle?: string }) {
               <p className="text-center text-sm text-gray-500 py-2">Loading more...</p>
             )}
           </div>
-        </section>
+        </CollapsibleSection>
       )}
 
       {/* Skills */}
       {hasSkills && (
-        <section className="space-y-3">
-          <h2 className="text-xl font-semibold text-white">Skills</h2>
+        <CollapsibleSection title="Skills" count={skills.length}>
           <div className="space-y-3">
             {skills.map((s) => (
               <div
@@ -245,13 +288,12 @@ function UserContent({ userId }: { userId: string; handle?: string }) {
               <p className="text-center text-sm text-gray-500 py-2">Loading more...</p>
             )}
           </div>
-        </section>
+        </CollapsibleSection>
       )}
 
       {/* Agents */}
       {hasAgents && (
-        <section className="space-y-3">
-          <h2 className="text-xl font-semibold text-white">Agents</h2>
+        <CollapsibleSection title="Agents" count={agents.length}>
           <div className="space-y-3">
             {agents.map((a) => (
               <div
@@ -308,13 +350,12 @@ function UserContent({ userId }: { userId: string; handle?: string }) {
               <p className="text-center text-sm text-gray-500 py-2">Loading more...</p>
             )}
           </div>
-        </section>
+        </CollapsibleSection>
       )}
 
       {/* Memories */}
       {hasMemories && (
-        <section className="space-y-3">
-          <h2 className="text-xl font-semibold text-white">Memories</h2>
+        <CollapsibleSection title="Memories" count={memories.length}>
           <div className="space-y-3">
             {memories.map((m) => (
               <div
@@ -371,13 +412,12 @@ function UserContent({ userId }: { userId: string; handle?: string }) {
               <p className="text-center text-sm text-gray-500 py-2">Loading more...</p>
             )}
           </div>
-        </section>
+        </CollapsibleSection>
       )}
 
       {/* Integrations */}
       {hasIntegrations && (
-        <section className="space-y-3">
-          <h2 className="text-xl font-semibold text-white">Integrations</h2>
+        <CollapsibleSection title="Integrations" count={integrations.length}>
           <div className="space-y-3">
             {integrations.map((ig) => (
               <div
@@ -434,7 +474,7 @@ function UserContent({ userId }: { userId: string; handle?: string }) {
               <p className="text-center text-sm text-gray-500 py-2">Loading more...</p>
             )}
           </div>
-        </section>
+        </CollapsibleSection>
       )}
     </div>
   );
@@ -471,8 +511,7 @@ function StarredContent() {
       <h2 className="text-xl font-semibold text-white">Starred</h2>
 
       {hasRoles && (
-        <section className="space-y-3">
-          <h3 className="text-sm font-medium text-gray-400">Roles</h3>
+        <CollapsibleSection title="Roles" count={starredRoles.length} headingLevel="h3">
           <div className="space-y-3">
             {starredRoles.map((r) => (
               <div
@@ -516,12 +555,11 @@ function StarredContent() {
               </div>
             ))}
           </div>
-        </section>
+        </CollapsibleSection>
       )}
 
       {hasSkills && (
-        <section className="space-y-3">
-          <h3 className="text-sm font-medium text-gray-400">Skills</h3>
+        <CollapsibleSection title="Skills" count={starredSkills.length} headingLevel="h3">
           <div className="space-y-3">
             {starredSkills.map((s) => (
               <div
@@ -565,12 +603,11 @@ function StarredContent() {
               </div>
             ))}
           </div>
-        </section>
+        </CollapsibleSection>
       )}
 
       {hasAgents && (
-        <section className="space-y-3">
-          <h3 className="text-sm font-medium text-gray-400">Agents</h3>
+        <CollapsibleSection title="Agents" count={starredAgents.length} headingLevel="h3">
           <div className="space-y-3">
             {starredAgents.map((a) => (
               <div
@@ -614,12 +651,11 @@ function StarredContent() {
               </div>
             ))}
           </div>
-        </section>
+        </CollapsibleSection>
       )}
 
       {hasMemories && (
-        <section className="space-y-3">
-          <h3 className="text-sm font-medium text-gray-400">Memories</h3>
+        <CollapsibleSection title="Memories" count={starredMemories.length} headingLevel="h3">
           <div className="space-y-3">
             {starredMemories.map((m) => (
               <div
@@ -663,12 +699,11 @@ function StarredContent() {
               </div>
             ))}
           </div>
-        </section>
+        </CollapsibleSection>
       )}
 
       {hasIntegrations && (
-        <section className="space-y-3">
-          <h3 className="text-sm font-medium text-gray-400">Integrations</h3>
+        <CollapsibleSection title="Integrations" count={starredIntegrations.length} headingLevel="h3">
           <div className="space-y-3">
             {starredIntegrations.map((ig) => (
               <div
@@ -712,7 +747,7 @@ function StarredContent() {
               </div>
             ))}
           </div>
-        </section>
+        </CollapsibleSection>
       )}
 
       {starredStatus === "CanLoadMore" && (
