@@ -5,6 +5,7 @@ import { listSkills, handleGetSkill, handleGetSkillFile, handleResolveSkillDeps,
 import { listRoles, handleGetRole, handleGetRoleFile, handleResolveRoleDeps, publishRole, handleDeleteRole } from "./httpApiV1/rolesV1";
 import { listAgents, handleGetAgent, handleGetAgentFile, publishAgent, handleDeleteAgent } from "./httpApiV1/agentsV1";
 import { listMemories, handleGetMemory, handleGetMemoryFile, publishMemory, handleDeleteMemory } from "./httpApiV1/memoriesV1";
+import { listIntegrations, handleGetIntegration, handleGetIntegrationFile, publishIntegration, handleDeleteIntegration } from "./httpApiV1/integrationsV1";
 import { searchAll } from "./httpApiV1/searchV1";
 import { whoami } from "./httpApiV1/whoamiV1";
 
@@ -98,6 +99,23 @@ const memorySlugDeleteDispatcher = httpAction(async (ctx, request) => {
 http.route({ pathPrefix: "/api/v1/memories/", method: "GET", handler: memorySlugDispatcher });
 http.route({ pathPrefix: "/api/v1/memories/", method: "DELETE", handler: memorySlugDeleteDispatcher });
 http.route({ pathPrefix: "/api/v1/memories/", method: "OPTIONS", handler: corsHandler });
+
+// ── Integrations ─────────────────────────────────────────────────────────────
+http.route({ path: "/api/v1/integrations", method: "GET", handler: listIntegrations });
+http.route({ path: "/api/v1/integrations", method: "POST", handler: publishIntegration });
+http.route({ path: "/api/v1/integrations", method: "OPTIONS", handler: corsHandler });
+
+const integrationSlugDispatcher = httpAction(async (ctx, request) => {
+  const parts = new URL(request.url).pathname.split("/");
+  if (parts[5] === "file") return handleGetIntegrationFile(ctx, request);
+  return handleGetIntegration(ctx, request);
+});
+const integrationSlugDeleteDispatcher = httpAction(async (ctx, request) => {
+  return handleDeleteIntegration(ctx, request);
+});
+http.route({ pathPrefix: "/api/v1/integrations/", method: "GET", handler: integrationSlugDispatcher });
+http.route({ pathPrefix: "/api/v1/integrations/", method: "DELETE", handler: integrationSlugDeleteDispatcher });
+http.route({ pathPrefix: "/api/v1/integrations/", method: "OPTIONS", handler: corsHandler });
 
 // ── Stars ───────────────────────────────────────────────────────────────────
 http.route({ path: "/api/v1/stars/toggle", method: "POST", handler: toggleStar });

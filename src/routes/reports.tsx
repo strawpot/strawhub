@@ -125,7 +125,7 @@ function ReportCard({
 }: {
   report: {
     _id: any;
-    targetKind: "skill" | "role" | "agent" | "memory";
+    targetKind: "skill" | "role" | "agent" | "memory" | "integration";
     targetName: string;
     targetSlug: string | null;
     description: string;

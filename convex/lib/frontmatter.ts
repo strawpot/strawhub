@@ -230,9 +230,9 @@ export function extractName(fm: Record<string, unknown>): string | undefined {
  */
 export function extractDependencies(
   fm: Record<string, unknown>,
-  kind: "skill" | "role" | "agent" | "memory",
+  kind: "skill" | "role" | "agent" | "memory" | "integration",
 ): { skills?: string[]; roles?: string[] } | undefined {
-  if (kind === "agent" || kind === "memory") return undefined;
+  if (kind === "agent" || kind === "memory" || kind === "integration") return undefined;
 
   const meta = fm.metadata as Record<string, unknown> | undefined;
   const strawpot = meta?.strawpot as Record<string, unknown> | undefined;
