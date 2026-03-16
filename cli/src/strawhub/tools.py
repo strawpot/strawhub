@@ -162,7 +162,7 @@ def run_package_install(
     Returns a result dict or None if no install command is defined.
     """
     pkg_dir = get_package_dir(root, kind, slug)
-    main_file = {"skill": "SKILL.md", "role": "ROLE.md", "agent": "AGENT.md", "memory": "MEMORY.md"}[kind]
+    main_file = {"skill": "SKILL.md", "role": "ROLE.md", "agent": "AGENT.md", "memory": "MEMORY.md", "integration": "INTEGRATION.md"}[kind]
     md_path = pkg_dir / main_file
 
     if not md_path.is_file():
@@ -223,7 +223,7 @@ def run_tool_installs_for_package(
 ) -> list[dict]:
     """Extract tools from a downloaded package and run installs."""
     pkg_dir = get_package_dir(root, kind, slug)
-    main_file = {"skill": "SKILL.md", "role": "ROLE.md", "agent": "AGENT.md", "memory": "MEMORY.md"}[kind]
+    main_file = {"skill": "SKILL.md", "role": "ROLE.md", "agent": "AGENT.md", "memory": "MEMORY.md", "integration": "INTEGRATION.md"}[kind]
     md_path = pkg_dir / main_file
 
     if not md_path.is_file():

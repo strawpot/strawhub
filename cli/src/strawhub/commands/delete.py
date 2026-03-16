@@ -8,7 +8,7 @@ from strawhub.errors import NotFoundError, StrawHubError
 @click.group(invoke_without_command=True)
 @click.pass_context
 def delete(ctx):
-    """Delete (soft-delete) a skill, role, agent, or memory from the registry (moderator/admin only)."""
+    """Delete (soft-delete) a skill, role, agent, memory, or integration from the registry (moderator/admin only)."""
     if ctx.invoked_subcommand is None:
         click.echo(ctx.get_help())
         ctx.exit(1)
@@ -68,3 +68,11 @@ def delete_agent(slug, yes):
 def delete_memory(slug, yes):
     """Delete a memory from the registry."""
     _delete_impl(slug, kind="memory", yes=yes)
+
+
+@delete.command("integration")
+@click.argument("slug")
+@click.option("--yes", is_flag=True, default=False, help="Skip confirmation prompt")
+def delete_integration(slug, yes):
+    """Delete an integration from the registry."""
+    _delete_impl(slug, kind="integration", yes=yes)

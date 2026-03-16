@@ -25,7 +25,7 @@ from pathlib import Path
 
 @dataclass(frozen=True)
 class PackageRef:
-    kind: str  # "skill", "role", "agent", or "memory"
+    kind: str  # "skill", "role", "agent", "memory", or "integration"
     slug: str
     version: str
 
