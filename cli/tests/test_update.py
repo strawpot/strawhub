@@ -94,3 +94,18 @@ class TestUpdateAllImpl:
         with patch("strawhub.paths._local_root_override", "/tmp/x"):
             with pytest.raises(SystemExit):
                 _update_all_impl(is_global=True)
+
+
+class TestUpdateIntegration:
+    @patch("strawhub.commands.update._install_impl")
+    def test_integration_always_global(self, mock_install):
+        """update integration always uses is_global=True."""
+        _update_one_impl("telegram", kind="integration", is_global=True)
+        mock_install.assert_called_once_with(
+            "telegram",
+            kind="integration",
+            is_global=True,
+            skip_tools=False,
+            yes=False,
+            update=True,
+        )

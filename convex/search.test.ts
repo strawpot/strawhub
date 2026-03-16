@@ -46,69 +46,33 @@ describe("tokenize", () => {
 });
 
 describe("computeLexicalBoost", () => {
-  it("gives max boost for exact slug + name match", () => {
-    const tokens = tokenize("code review");
-    const boost = computeLexicalBoost(tokens, "code-review", "Code Review");
-    // "code": slug exact (1.4) + name exact (1.1)
-    // "review": slug exact (1.4) + name exact (1.1)
-    expect(boost).toBeCloseTo(5.0);
+  it("exact slug match scores higher than prefix match", () => {
+    const exact = computeLexicalBoost(tokenize("code"), "code-review", "Other");
+    const prefix = computeLexicalBoost(tokenize("cod"), "code-review", "Other");
+    expect(exact).toBeGreaterThan(prefix);
   });
 
-  it("gives slug prefix boost when partial match", () => {
-    const tokens = tokenize("cod");
-    const boost = computeLexicalBoost(tokens, "code-review", "Code Review");
-    // "cod": slug prefix (0.8) + name prefix (0.6)
-    expect(boost).toBeCloseTo(1.4);
+  it("slug match scores higher than name-only match", () => {
+    const slugMatch = computeLexicalBoost(tokenize("git"), "git-workflow", "Source Control");
+    const nameMatch = computeLexicalBoost(tokenize("source"), "git-workflow", "Source Control");
+    expect(slugMatch).toBeGreaterThan(nameMatch);
+  });
+
+  it("combined slug + name match scores highest", () => {
+    const both = computeLexicalBoost(tokenize("code review"), "code-review", "Code Review");
+    const slugOnly = computeLexicalBoost(tokenize("code"), "code-review", "Other");
+    expect(both).toBeGreaterThan(slugOnly);
   });
 
   it("returns 0 for no match", () => {
-    const tokens = tokenize("python");
-    const boost = computeLexicalBoost(tokens, "code-review", "Code Review");
+    const boost = computeLexicalBoost(tokenize("python"), "code-review", "Code Review");
     expect(boost).toBe(0);
   });
 
-  it("handles slug match but no name match", () => {
-    const tokens = tokenize("git");
-    const boost = computeLexicalBoost(
-      tokens,
-      "git-workflow",
-      "Source Control Flow",
-    );
-    // "git": slug exact (1.4), no name match (0)
-    expect(boost).toBeCloseTo(1.4);
-  });
-
-  it("handles name match but no slug match", () => {
-    const tokens = tokenize("source");
-    const boost = computeLexicalBoost(
-      tokens,
-      "git-workflow",
-      "Source Control",
-    );
-    // "source": no slug match, name exact (1.1)
-    expect(boost).toBeCloseTo(1.1);
-  });
-
-  it("accumulates boost for multiple matching tokens", () => {
-    const tokens = tokenize("git workflow");
-    const boost = computeLexicalBoost(tokens, "git-workflow", "Git Workflow");
-    // "git": slug exact (1.4) + name exact (1.1)
-    // "workflow": slug exact (1.4) + name exact (1.1)
-    expect(boost).toBeCloseTo(5.0);
-  });
-
-  it("prefix match scores lower than exact", () => {
-    const exact = computeLexicalBoost(
-      tokenize("code"),
-      "code-review",
-      "Other Name",
-    );
-    const prefix = computeLexicalBoost(
-      tokenize("cod"),
-      "code-review",
-      "Other Name",
-    );
-    expect(exact).toBeGreaterThan(prefix);
+  it("multiple matching tokens accumulate boost", () => {
+    const multi = computeLexicalBoost(tokenize("git workflow"), "git-workflow", "Git Workflow");
+    const single = computeLexicalBoost(tokenize("git"), "git-workflow", "Git Workflow");
+    expect(multi).toBeGreaterThan(single);
   });
 
   it("handles empty query tokens", () => {

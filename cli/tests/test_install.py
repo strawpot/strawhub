@@ -162,3 +162,31 @@ class TestDownloadPackage:
 
         assert (tmp_path / "agents" / "my-agent" / "AGENT.md").read_bytes() == b"binary content"
         client.get_agent_file.assert_called_once()
+
+
+class TestInstallIntegrationGlobalOnly:
+    def test_integrations_have_no_deps(self):
+        """Integrations are standalone — resolve returns empty list."""
+        client = MagicMock()
+        result = _resolve_deps(client, "integration", "telegram", {})
+        assert result == []
+
+    def test_integration_uses_binary_download(self, tmp_path):
+        """Integrations use get_integration_file (binary)."""
+        client = MagicMock()
+        client.get_info.return_value = (
+            "integration",
+            {
+                "latestVersion": {
+                    "version": "1.0.0",
+                    "files": [{"path": "INTEGRATION.md"}],
+                },
+            },
+        )
+        client.get_integration_file.return_value = b"adapter content"
+        client.track_download = MagicMock()
+
+        _download_package(client, "integration", "telegram", "1.0.0", tmp_path)
+
+        assert (tmp_path / "integrations" / "telegram" / "INTEGRATION.md").read_bytes() == b"adapter content"
+        client.get_integration_file.assert_called_once()
