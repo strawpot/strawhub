@@ -2,7 +2,7 @@
 
 npm for AI agents.
 
-Browse, install, and publish the roles, skills, agents, and memories that power your AI workforce — **[strawhub.dev](https://strawhub.dev)**
+Browse, install, and publish the roles, skills, agents, memories, and integrations that power your AI workforce — **[strawhub.dev](https://strawhub.dev)**
 
 <p align="center">
   <a href="https://github.com/strawpot/strawhub/actions/workflows/ci.yml?branch=main"><img src="https://img.shields.io/github/actions/workflow/status/strawpot/strawhub/ci.yml?branch=main&style=for-the-badge" alt="CI"></a>
@@ -56,22 +56,23 @@ That's it. StrawHub resolves every skill and sub-role your AI CEO needs. StrawPo
 ## What's Inside
 
 ```
-┌─────────────────────────────────────────────┐
-│                  StrawHub                   │
-│                                             │
-│   Skills          Roles          Memories   │
-│  ┌──────────┐   ┌──────────┐   ┌──────────┐ │
-│  │git-wflow │   │ai-ceo    │   │proj-ctx  │ │
-│  │code-rev  │   │pm        │   │patterns  │ │
-│  │py-test   │   │implmtr   │   │decisions │ │
-│  │debugging │   │reviewer  │   │lessons   │ │
-│  └──────────┘   └──────────┘   └──────────┘ │
-│                                             │
-│   Agents                                    │
-│  ┌──────────────────────────────┐           │
-│  │strawpot-claude-code · codex · gemini  │           │
-│  └──────────────────────────────┘           │
-└─────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────┐
+│                       StrawHub                       │
+│                                                      │
+│   Skills          Roles          Memories            │
+│  ┌──────────┐   ┌──────────┐   ┌──────────┐          │
+│  │git-wflow │   │ai-ceo    │   │proj-ctx  │          │
+│  │code-rev  │   │pm        │   │patterns  │          │
+│  │py-test   │   │implmtr   │   │decisions │          │
+│  │debugging │   │reviewer  │   │lessons   │          │
+│  └──────────┘   └──────────┘   └──────────┘          │
+│                                                      │
+│   Agents                    Integrations             │
+│  ┌──────────────────────┐  ┌──────────────────────┐  │
+│  │claude-code · codex   │  │telegram · slack      │  │
+│  │gemini                │  │discord               │  │
+│  └──────────────────────┘  └──────────────────────┘  │
+└──────────────────────────────────────────────────────┘
 ```
 
 ### Skills — what agents can do
@@ -85,6 +86,9 @@ Persistent knowledge banks: project context, code patterns, past decisions. Inst
 
 ### Agents — where agents run
 Runtime wrappers for Claude Code, Codex, Gemini, or your own CLI.
+
+### Integrations — how agents connect
+Adapters that bridge StrawPot to external services like Telegram, Slack, or Discord. Always installed globally.
 
 ## Everything Is a Markdown File
 
@@ -159,6 +163,7 @@ Skills use client-side DFS. Roles use server-side topological sort with cycle de
 strawhub install role ai-ceo
 strawhub install skill git-workflow
 strawhub install memory project-context
+strawhub install integration telegram
 
 # Discover
 strawhub search "code review"
@@ -179,7 +184,7 @@ strawhub whoami
 | Project | What it does |
 |---------|-------------|
 | [**StrawPot**](https://strawpot.com) | Runtime — runs role-based AI agents locally |
-| [**StrawHub**](https://strawhub.dev) | Registry — distributes roles, skills, agents, and memories |
+| [**StrawHub**](https://strawhub.dev) | Registry — distributes roles, skills, agents, memories, and integrations |
 | [**Denden**](https://github.com/strawpot/denden) | Transport — gRPC bridge between agents and the orchestrator |
 
 ```

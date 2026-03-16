@@ -1,6 +1,6 @@
 # Content Format
 
-StrawHub hosts four content types: **skills**, **roles**, **agents**, and **memories**. All use markdown files with YAML frontmatter. Agents and memories also support binary files.
+StrawHub hosts five content types: **skills**, **roles**, **agents**, **memories**, and **integrations**. All use markdown files with YAML frontmatter. Agents, memories, and integrations also support binary files.
 
 ## Skills
 
@@ -179,6 +179,43 @@ Memory contents for the agent...
 
 - Up to 100 files, 10 MB each, 50 MB total
 - Supports binary files
+
+## Integrations
+
+An integration is an adapter package that connects StrawPot to an external service (e.g., Telegram, Slack, Discord). Integrations are **global-only** — they always install to `~/.strawpot/integrations/`.
+
+- **Required:** `INTEGRATION.md` — YAML frontmatter + markdown body
+- **Optional:** supporting files (binaries, config, data)
+
+### INTEGRATION.md
+
+```yaml
+---
+name: telegram
+description: "Telegram bot adapter for StrawPot"
+---
+
+# Telegram Integration
+
+Integration instructions and configuration...
+```
+
+### Integration frontmatter fields
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `name` | Yes | Package slug (lowercase, URL-safe) |
+| `description` | Yes | One-line summary |
+| `version` | No | Semver version (auto-incremented if omitted) |
+
+### Integration file constraints
+
+- Up to 100 files, 10 MB each, 50 MB total
+- Supports binary files
+
+### Scope
+
+Integrations are always installed globally (`~/.strawpot/integrations/` or `$STRAWPOT_HOME/integrations/`). The `--global` flag is not needed or accepted — it is implicit. Integrations have no transitive dependencies.
 
 ## System Tools
 
