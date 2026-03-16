@@ -4,7 +4,7 @@ export interface JsonLdInput {
   displayName: string;
   summary?: string | null;
   slug: string;
-  kind: "skills" | "roles" | "agents" | "memories";
+  kind: "skills" | "roles" | "agents" | "memories" | "integrations";
   owner?: {
     displayName?: string | null;
     handle?: string | null;

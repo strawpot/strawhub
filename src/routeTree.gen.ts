@@ -19,16 +19,19 @@ import { Route as ScanQueueRouteImport } from './routes/scan-queue'
 import { Route as RolesRouteImport } from './routes/roles'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as MemoriesRouteImport } from './routes/memories'
+import { Route as IntegrationsRouteImport } from './routes/integrations'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AgentsRouteImport } from './routes/agents'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SkillsIndexRouteImport } from './routes/skills.index'
 import { Route as RolesIndexRouteImport } from './routes/roles.index'
 import { Route as MemoriesIndexRouteImport } from './routes/memories.index'
+import { Route as IntegrationsIndexRouteImport } from './routes/integrations.index'
 import { Route as AgentsIndexRouteImport } from './routes/agents.index'
 import { Route as SkillsSlugRouteImport } from './routes/skills.$slug'
 import { Route as RolesSlugRouteImport } from './routes/roles.$slug'
 import { Route as MemoriesSlugRouteImport } from './routes/memories.$slug'
+import { Route as IntegrationsSlugRouteImport } from './routes/integrations.$slug'
 import { Route as AgentsSlugRouteImport } from './routes/agents.$slug'
 
 const UsersRoute = UsersRouteImport.update({
@@ -81,6 +84,11 @@ const MemoriesRoute = MemoriesRouteImport.update({
   path: '/memories',
   getParentRoute: () => rootRouteImport,
 } as any)
+const IntegrationsRoute = IntegrationsRouteImport.update({
+  id: '/integrations',
+  path: '/integrations',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -111,6 +119,11 @@ const MemoriesIndexRoute = MemoriesIndexRouteImport.update({
   path: '/',
   getParentRoute: () => MemoriesRoute,
 } as any)
+const IntegrationsIndexRoute = IntegrationsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => IntegrationsRoute,
+} as any)
 const AgentsIndexRoute = AgentsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -131,6 +144,11 @@ const MemoriesSlugRoute = MemoriesSlugRouteImport.update({
   path: '/$slug',
   getParentRoute: () => MemoriesRoute,
 } as any)
+const IntegrationsSlugRoute = IntegrationsSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => IntegrationsRoute,
+} as any)
 const AgentsSlugRoute = AgentsSlugRouteImport.update({
   id: '/$slug',
   path: '/$slug',
@@ -141,6 +159,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/agents': typeof AgentsRouteWithChildren
   '/dashboard': typeof DashboardRoute
+  '/integrations': typeof IntegrationsRouteWithChildren
   '/memories': typeof MemoriesRouteWithChildren
   '/reports': typeof ReportsRoute
   '/roles': typeof RolesRouteWithChildren
@@ -152,10 +171,12 @@ export interface FileRoutesByFullPath {
   '/upload': typeof UploadRoute
   '/users': typeof UsersRoute
   '/agents/$slug': typeof AgentsSlugRoute
+  '/integrations/$slug': typeof IntegrationsSlugRoute
   '/memories/$slug': typeof MemoriesSlugRoute
   '/roles/$slug': typeof RolesSlugRoute
   '/skills/$slug': typeof SkillsSlugRoute
   '/agents/': typeof AgentsIndexRoute
+  '/integrations/': typeof IntegrationsIndexRoute
   '/memories/': typeof MemoriesIndexRoute
   '/roles/': typeof RolesIndexRoute
   '/skills/': typeof SkillsIndexRoute
@@ -171,10 +192,12 @@ export interface FileRoutesByTo {
   '/upload': typeof UploadRoute
   '/users': typeof UsersRoute
   '/agents/$slug': typeof AgentsSlugRoute
+  '/integrations/$slug': typeof IntegrationsSlugRoute
   '/memories/$slug': typeof MemoriesSlugRoute
   '/roles/$slug': typeof RolesSlugRoute
   '/skills/$slug': typeof SkillsSlugRoute
   '/agents': typeof AgentsIndexRoute
+  '/integrations': typeof IntegrationsIndexRoute
   '/memories': typeof MemoriesIndexRoute
   '/roles': typeof RolesIndexRoute
   '/skills': typeof SkillsIndexRoute
@@ -184,6 +207,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/agents': typeof AgentsRouteWithChildren
   '/dashboard': typeof DashboardRoute
+  '/integrations': typeof IntegrationsRouteWithChildren
   '/memories': typeof MemoriesRouteWithChildren
   '/reports': typeof ReportsRoute
   '/roles': typeof RolesRouteWithChildren
@@ -195,10 +219,12 @@ export interface FileRoutesById {
   '/upload': typeof UploadRoute
   '/users': typeof UsersRoute
   '/agents/$slug': typeof AgentsSlugRoute
+  '/integrations/$slug': typeof IntegrationsSlugRoute
   '/memories/$slug': typeof MemoriesSlugRoute
   '/roles/$slug': typeof RolesSlugRoute
   '/skills/$slug': typeof SkillsSlugRoute
   '/agents/': typeof AgentsIndexRoute
+  '/integrations/': typeof IntegrationsIndexRoute
   '/memories/': typeof MemoriesIndexRoute
   '/roles/': typeof RolesIndexRoute
   '/skills/': typeof SkillsIndexRoute
@@ -209,6 +235,7 @@ export interface FileRouteTypes {
     | '/'
     | '/agents'
     | '/dashboard'
+    | '/integrations'
     | '/memories'
     | '/reports'
     | '/roles'
@@ -220,10 +247,12 @@ export interface FileRouteTypes {
     | '/upload'
     | '/users'
     | '/agents/$slug'
+    | '/integrations/$slug'
     | '/memories/$slug'
     | '/roles/$slug'
     | '/skills/$slug'
     | '/agents/'
+    | '/integrations/'
     | '/memories/'
     | '/roles/'
     | '/skills/'
@@ -239,10 +268,12 @@ export interface FileRouteTypes {
     | '/upload'
     | '/users'
     | '/agents/$slug'
+    | '/integrations/$slug'
     | '/memories/$slug'
     | '/roles/$slug'
     | '/skills/$slug'
     | '/agents'
+    | '/integrations'
     | '/memories'
     | '/roles'
     | '/skills'
@@ -251,6 +282,7 @@ export interface FileRouteTypes {
     | '/'
     | '/agents'
     | '/dashboard'
+    | '/integrations'
     | '/memories'
     | '/reports'
     | '/roles'
@@ -262,10 +294,12 @@ export interface FileRouteTypes {
     | '/upload'
     | '/users'
     | '/agents/$slug'
+    | '/integrations/$slug'
     | '/memories/$slug'
     | '/roles/$slug'
     | '/skills/$slug'
     | '/agents/'
+    | '/integrations/'
     | '/memories/'
     | '/roles/'
     | '/skills/'
@@ -275,6 +309,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AgentsRoute: typeof AgentsRouteWithChildren
   DashboardRoute: typeof DashboardRoute
+  IntegrationsRoute: typeof IntegrationsRouteWithChildren
   MemoriesRoute: typeof MemoriesRouteWithChildren
   ReportsRoute: typeof ReportsRoute
   RolesRoute: typeof RolesRouteWithChildren
@@ -359,6 +394,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MemoriesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/integrations': {
+      id: '/integrations'
+      path: '/integrations'
+      fullPath: '/integrations'
+      preLoaderRoute: typeof IntegrationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard': {
       id: '/dashboard'
       path: '/dashboard'
@@ -401,6 +443,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MemoriesIndexRouteImport
       parentRoute: typeof MemoriesRoute
     }
+    '/integrations/': {
+      id: '/integrations/'
+      path: '/'
+      fullPath: '/integrations/'
+      preLoaderRoute: typeof IntegrationsIndexRouteImport
+      parentRoute: typeof IntegrationsRoute
+    }
     '/agents/': {
       id: '/agents/'
       path: '/'
@@ -429,6 +478,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MemoriesSlugRouteImport
       parentRoute: typeof MemoriesRoute
     }
+    '/integrations/$slug': {
+      id: '/integrations/$slug'
+      path: '/$slug'
+      fullPath: '/integrations/$slug'
+      preLoaderRoute: typeof IntegrationsSlugRouteImport
+      parentRoute: typeof IntegrationsRoute
+    }
     '/agents/$slug': {
       id: '/agents/$slug'
       path: '/$slug'
@@ -451,6 +507,20 @@ const AgentsRouteChildren: AgentsRouteChildren = {
 
 const AgentsRouteWithChildren =
   AgentsRoute._addFileChildren(AgentsRouteChildren)
+
+interface IntegrationsRouteChildren {
+  IntegrationsSlugRoute: typeof IntegrationsSlugRoute
+  IntegrationsIndexRoute: typeof IntegrationsIndexRoute
+}
+
+const IntegrationsRouteChildren: IntegrationsRouteChildren = {
+  IntegrationsSlugRoute: IntegrationsSlugRoute,
+  IntegrationsIndexRoute: IntegrationsIndexRoute,
+}
+
+const IntegrationsRouteWithChildren = IntegrationsRoute._addFileChildren(
+  IntegrationsRouteChildren,
+)
 
 interface MemoriesRouteChildren {
   MemoriesSlugRoute: typeof MemoriesSlugRoute
@@ -495,6 +565,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AgentsRoute: AgentsRouteWithChildren,
   DashboardRoute: DashboardRoute,
+  IntegrationsRoute: IntegrationsRouteWithChildren,
   MemoriesRoute: MemoriesRouteWithChildren,
   ReportsRoute: ReportsRoute,
   RolesRoute: RolesRouteWithChildren,

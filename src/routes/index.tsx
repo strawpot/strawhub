@@ -26,7 +26,7 @@ function HomePage() {
         </p>
       </section>
 
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         <Link
           to="/roles"
           className="block rounded-lg border border-orange-400/30 bg-orange-400/5 p-5 md:p-8 hover:border-orange-400/50 transition-colors"
@@ -68,6 +68,17 @@ function HomePage() {
           <p className="text-gray-400">
             Persistent memory banks that store knowledge, context, and learned
             patterns across agent sessions.
+          </p>
+        </Link>
+
+        <Link
+          to="/integrations"
+          className="block rounded-lg border border-gray-800 p-5 md:p-8 hover:border-gray-600 transition-colors"
+        >
+          <h2 className="text-2xl font-bold text-white mb-2">Integrations</h2>
+          <p className="text-gray-400">
+            Adapters that connect agents to chat platforms, APIs, and community
+            services like Slack, Discord, or GitHub.
           </p>
         </Link>
       </section>
