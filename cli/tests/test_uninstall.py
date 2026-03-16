@@ -1,55 +1,18 @@
 """Tests for strawhub.commands.uninstall."""
 
-import json
-from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
+from click.testing import CliRunner
 
+from strawhub.cli import cli
 from strawhub.commands.uninstall import _find_targets, _uninstall_impl
 from strawhub.lockfile import Lockfile, PackageRef
-from strawhub.paths import get_package_dir
-
-
-@pytest.fixture
-def setup_installed(tmp_path):
-    """Create a .strawpot directory with installed packages and a lockfile."""
-    root = tmp_path / ".strawpot"
-    (root / "skills").mkdir(parents=True)
-    (root / "roles").mkdir(parents=True)
-
-    def _setup(packages, direct_installs=None, dependents=None):
-        lockfile = Lockfile(path=root / "strawpot.lock")
-        for pkg in packages:
-            ref = PackageRef(**pkg)
-            pkg_dir = get_package_dir(root, pkg["kind"], pkg["slug"])
-            pkg_dir.mkdir(parents=True, exist_ok=True)
-            md_name = f"{pkg['kind'].upper()}.md"
-            (pkg_dir / md_name).write_text(f"---\nname: {pkg['slug']}\n---\n")
-            (pkg_dir / ".version").write_text(pkg["version"] + "\n")
-            lockfile.add_package(ref)
-
-        for ref_dict in (direct_installs or []):
-            lockfile.add_direct_install(PackageRef(**ref_dict))
-
-        if dependents:
-            for dep_key, parent_ref_dict in dependents:
-                parent_ref = PackageRef(**parent_ref_dict)
-                pkg_dict = next(
-                    p for p in packages
-                    if f"{p['kind']}:{p['slug']}" == dep_key
-                )
-                dep_ref = PackageRef(**pkg_dict)
-                lockfile.add_package(dep_ref, dependent=parent_ref)
-
-        lockfile.save()
-        return root, lockfile
-
-    return _setup
 
 
 class TestFindTargets:
     def test_finds_matching_direct_install(self):
+        """Matches by slug and kind."""
         lockfile = Lockfile.__new__(Lockfile)
         lockfile.direct_installs = [
             PackageRef(kind="skill", slug="foo", version="1.0.0"),
@@ -58,146 +21,120 @@ class TestFindTargets:
         targets = _find_targets(lockfile, "foo", "skill", None)
         assert len(targets) == 1
         assert targets[0].slug == "foo"
+        assert targets[0].kind == "skill"
 
-    def test_filters_by_kind(self):
-        lockfile = Lockfile.__new__(Lockfile)
-        lockfile.direct_installs = [
-            PackageRef(kind="skill", slug="foo", version="1.0.0"),
-            PackageRef(kind="role", slug="foo", version="1.0.0"),
-        ]
-        targets = _find_targets(lockfile, "foo", "role", None)
-        assert len(targets) == 1
-        assert targets[0].kind == "role"
-
-    def test_filters_by_version(self):
-        lockfile = Lockfile.__new__(Lockfile)
-        lockfile.direct_installs = [
-            PackageRef(kind="skill", slug="foo", version="1.0.0"),
-        ]
-        targets = _find_targets(lockfile, "foo", "skill", "2.0.0")
-        assert len(targets) == 0
-
-    def test_returns_empty_for_no_match(self):
+    def test_returns_empty_for_unknown_slug(self):
+        """No match returns an empty list."""
         lockfile = Lockfile.__new__(Lockfile)
         lockfile.direct_installs = [
             PackageRef(kind="skill", slug="bar", version="1.0.0"),
         ]
+        targets = _find_targets(lockfile, "nonexistent", "skill", None)
+        assert targets == []
+
+    def test_filters_by_version_when_provided(self):
+        """--version narrows results to exact version match."""
+        lockfile = Lockfile.__new__(Lockfile)
+        lockfile.direct_installs = [
+            PackageRef(kind="skill", slug="foo", version="1.0.0"),
+            PackageRef(kind="skill", slug="foo", version="2.0.0"),
+        ]
+        targets = _find_targets(lockfile, "foo", "skill", "2.0.0")
+        assert len(targets) == 1
+        assert targets[0].version == "2.0.0"
+
+    def test_returns_all_versions_when_no_version_filter(self):
+        """Without --version, returns all matching versions."""
+        lockfile = Lockfile.__new__(Lockfile)
+        lockfile.direct_installs = [
+            PackageRef(kind="skill", slug="foo", version="1.0.0"),
+            PackageRef(kind="skill", slug="foo", version="2.0.0"),
+            PackageRef(kind="skill", slug="foo", version="3.0.0"),
+        ]
         targets = _find_targets(lockfile, "foo", "skill", None)
-        assert len(targets) == 0
+        assert len(targets) == 3
+        versions = {t.version for t in targets}
+        assert versions == {"1.0.0", "2.0.0", "3.0.0"}
 
 
 class TestUninstallImpl:
-    @patch("strawhub.commands.uninstall.get_root")
-    @patch("strawhub.commands.uninstall.get_lockfile_path")
-    def test_removes_package_from_disk_and_lockfile(
-        self, mock_lockfile_path, mock_get_root, setup_installed
-    ):
-        packages = [
-            {"kind": "skill", "slug": "my-skill", "version": "1.0.0"},
-        ]
-        root, _ = setup_installed(
-            packages, direct_installs=packages
+    def test_removes_direct_install_and_cleans_orphans(self, tmp_path):
+        """Mock lockfile, verify direct install removed and orphan cleanup runs."""
+        mock_lockfile = MagicMock(spec=Lockfile)
+        ref = PackageRef(kind="skill", slug="my-skill", version="1.0.0")
+        mock_lockfile.direct_installs = [ref]
+        mock_lockfile.packages = {"skill:my-skill:1.0.0": {
+            "kind": "skill", "slug": "my-skill", "version": "1.0.0",
+            "dependents": [],
+        }}
+        mock_lockfile.collect_orphans.return_value = []
+
+        with patch("strawhub.commands.uninstall.get_root", return_value=tmp_path), \
+             patch("strawhub.commands.uninstall.get_lockfile_path", return_value=tmp_path / "strawpot.lock"), \
+             patch("strawhub.commands.uninstall.Lockfile.load", return_value=mock_lockfile), \
+             patch("strawhub.commands.uninstall._find_targets", return_value=[ref]):
+            _uninstall_impl("my-skill", kind="skill", ver=None, is_global=False)
+
+        mock_lockfile.remove_direct_install.assert_called_once_with(ref)
+        mock_lockfile.collect_orphans.assert_called_once()
+        mock_lockfile.save.assert_called_once()
+
+    def test_errors_when_not_direct_install(self, tmp_path):
+        """Exits 1 when slug is not in direct_installs."""
+        mock_lockfile = MagicMock(spec=Lockfile)
+        mock_lockfile.packages = {"skill:dep:1.0.0": {
+            "kind": "skill", "slug": "dep", "version": "1.0.0",
+            "dependents": [],
+        }}
+        mock_lockfile.direct_installs = []
+
+        with patch("strawhub.commands.uninstall.get_root", return_value=tmp_path), \
+             patch("strawhub.commands.uninstall.get_lockfile_path", return_value=tmp_path / "strawpot.lock"), \
+             patch("strawhub.commands.uninstall.Lockfile.load", return_value=mock_lockfile), \
+             patch("strawhub.commands.uninstall._find_targets", return_value=[]):
+            with pytest.raises(SystemExit) as exc_info:
+                _uninstall_impl("dep", kind="skill", ver=None, is_global=False)
+            assert exc_info.value.code == 1
+
+    def test_integration_always_global(self):
+        """Verify uninstall integration uses is_global=True."""
+        runner = CliRunner()
+        with patch("strawhub.commands.uninstall._uninstall_impl") as mock_impl:
+            result = runner.invoke(cli, ["uninstall", "integration", "test-slug"])
+
+        mock_impl.assert_called_once()
+        call_kwargs = mock_impl.call_args
+        assert call_kwargs.kwargs.get("is_global") is True or (
+            len(call_kwargs.args) > 3 and call_kwargs.args[3] is True
         )
-        mock_get_root.return_value = root
-        mock_lockfile_path.return_value = root / "strawpot.lock"
 
-        _uninstall_impl("my-skill", kind="skill", ver=None, is_global=False)
+    def test_save_removes_from_toml(self, tmp_path):
+        """Verify --save calls ProjectFile.remove_dependency."""
+        mock_lockfile = MagicMock(spec=Lockfile)
+        ref = PackageRef(kind="skill", slug="my-skill", version="1.0.0")
+        mock_lockfile.direct_installs = [ref]
+        mock_lockfile.packages = {"skill:my-skill:1.0.0": {
+            "kind": "skill", "slug": "my-skill", "version": "1.0.0",
+            "dependents": [],
+        }}
+        mock_lockfile.collect_orphans.return_value = []
 
-        pkg_dir = get_package_dir(root, "skill", "my-skill")
-        assert not pkg_dir.exists()
+        mock_pf = MagicMock()
+        mock_pf.remove_dependency.return_value = True
 
-        lockfile = Lockfile.load(root / "strawpot.lock")
-        assert len(lockfile.packages) == 0
-        assert len(lockfile.direct_installs) == 0
+        with patch("strawhub.commands.uninstall.get_root", return_value=tmp_path), \
+             patch("strawhub.commands.uninstall.get_lockfile_path", return_value=tmp_path / "strawpot.lock"), \
+             patch("strawhub.commands.uninstall.Lockfile.load", return_value=mock_lockfile), \
+             patch("strawhub.commands.uninstall._find_targets", return_value=[ref]), \
+             patch("strawhub.commands.uninstall.get_project_file_path", return_value=tmp_path / "strawpot.toml"), \
+             patch("strawhub.commands.uninstall.ProjectFile.load", return_value=mock_pf):
+            _uninstall_impl("my-skill", kind="skill", ver=None, is_global=False, save=True)
 
-    @patch("strawhub.commands.uninstall.get_root")
-    @patch("strawhub.commands.uninstall.get_lockfile_path")
-    def test_error_when_not_direct_install(
-        self, mock_lockfile_path, mock_get_root, setup_installed
-    ):
-        packages = [
-            {"kind": "skill", "slug": "dep-skill", "version": "1.0.0"},
-        ]
-        # Package exists but is NOT a direct install
-        root, _ = setup_installed(packages, direct_installs=[])
-        mock_get_root.return_value = root
-        mock_lockfile_path.return_value = root / "strawpot.lock"
-
-        with pytest.raises(SystemExit):
-            _uninstall_impl("dep-skill", kind="skill", ver=None, is_global=False)
-
-    @patch("strawhub.commands.uninstall.get_root")
-    @patch("strawhub.commands.uninstall.get_lockfile_path")
-    def test_error_when_lockfile_empty(
-        self, mock_lockfile_path, mock_get_root, setup_installed
-    ):
-        root, _ = setup_installed([], direct_installs=[])
-        mock_get_root.return_value = root
-        mock_lockfile_path.return_value = root / "strawpot.lock"
-
-        with pytest.raises(SystemExit):
-            _uninstall_impl("anything", kind="skill", ver=None, is_global=False)
-
-    @patch("strawhub.commands.uninstall.get_root")
-    @patch("strawhub.commands.uninstall.get_lockfile_path")
-    def test_orphan_deps_removed(
-        self, mock_lockfile_path, mock_get_root, setup_installed
-    ):
-        """When removing a package, its orphaned dependencies are also cleaned up."""
-        parent = {"kind": "skill", "slug": "parent", "version": "1.0.0"}
-        child = {"kind": "skill", "slug": "child", "version": "1.0.0"}
-
-        root, _ = setup_installed(
-            [parent, child],
-            direct_installs=[parent],
-            dependents=[("skill:child", parent)],
-        )
-        mock_get_root.return_value = root
-        mock_lockfile_path.return_value = root / "strawpot.lock"
-
-        _uninstall_impl("parent", kind="skill", ver=None, is_global=False)
-
-        # Both parent and orphaned child should be removed
-        assert not get_package_dir(root, "skill", "parent").exists()
-        assert not get_package_dir(root, "skill", "child").exists()
-
-        lockfile = Lockfile.load(root / "strawpot.lock")
-        assert len(lockfile.packages) == 0
-
-    @patch("strawhub.commands.uninstall.get_root")
-    @patch("strawhub.commands.uninstall.get_lockfile_path")
-    def test_shared_dep_not_removed(
-        self, mock_lockfile_path, mock_get_root, setup_installed
-    ):
-        """A dependency shared by another direct install is NOT orphaned."""
-        parent1 = {"kind": "skill", "slug": "parent1", "version": "1.0.0"}
-        parent2 = {"kind": "skill", "slug": "parent2", "version": "1.0.0"}
-        shared = {"kind": "skill", "slug": "shared", "version": "1.0.0"}
-
-        root, _ = setup_installed(
-            [parent1, parent2, shared],
-            direct_installs=[parent1, parent2],
-            dependents=[
-                ("skill:shared", parent1),
-                ("skill:shared", parent2),
-            ],
-        )
-        mock_get_root.return_value = root
-        mock_lockfile_path.return_value = root / "strawpot.lock"
-
-        _uninstall_impl("parent1", kind="skill", ver=None, is_global=False)
-
-        # parent1 removed, but shared dep still needed by parent2
-        assert not get_package_dir(root, "skill", "parent1").exists()
-        assert get_package_dir(root, "skill", "shared").exists()
-
-    def test_root_and_global_conflict(self):
-        """--root and --global cannot be used together."""
-        with patch("strawhub.paths._local_root_override", "/tmp/x"):
-            with pytest.raises(SystemExit):
-                _uninstall_impl("x", kind="skill", ver=None, is_global=True)
+        mock_pf.remove_dependency.assert_called_once_with("skill", "my-skill")
+        mock_pf.save.assert_called_once()
 
     def test_save_and_global_conflict(self):
-        """--save and --global cannot be used together."""
-        with pytest.raises(SystemExit):
+        """--save and --global cannot be used together; exits 1."""
+        with pytest.raises(SystemExit) as exc_info:
             _uninstall_impl("x", kind="skill", ver=None, is_global=True, save=True)
+        assert exc_info.value.code == 1

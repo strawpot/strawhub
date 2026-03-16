@@ -1,6 +1,6 @@
 # StrawHub Design
 
-StrawHub is the public registry for [StrawPot](https://strawpot.com) agent skills, roles, agents, and memories. Users discover, publish, and install reusable agent components through a web UI, REST API, or Python CLI.
+StrawHub is the public registry for [StrawPot](https://strawpot.com) agent skills, roles, agents, memories, and integrations. Users discover, publish, and install reusable agent components through a web UI, REST API, or Python CLI.
 
 ## System Architecture
 
@@ -41,7 +41,7 @@ Three-tier monorepo: React frontend, Convex backend, Python CLI.
 
 ## Content Model
 
-Four content types with parallel structure:
+Five content types with parallel structure:
 
 ### Skills
 
@@ -76,9 +76,18 @@ Persistent knowledge banks that store context, patterns, and learned information
 - **Dependencies:** none (memories are standalone)
 - **Allowed file types:** any (binaries allowed)
 
+### Integrations
+
+Adapter packages that connect StrawPot to external services (e.g., Telegram, Slack). Integrations are **global-only** — they always install to `~/.strawpot/integrations/`.
+
+- **Files:** `INTEGRATION.md` (required) + supporting files (up to 100 files, 10 MB each, 50 MB total)
+- **Dependencies:** none (integrations are standalone)
+- **Allowed file types:** any (binaries allowed)
+- **Scope:** global only (`~/.strawpot` or `STRAWPOT_HOME`)
+
 ### Frontmatter
 
-All four types use YAML frontmatter for metadata. The `name` field is the package slug and must match the slug used for publishing.
+All five types use YAML frontmatter for metadata. The `name` field is the package slug and must match the slug used for publishing.
 
 ```yaml
 # SKILL.md
@@ -151,9 +160,17 @@ description: "Persistent project context and conventions"
 ---
 ```
 
+```yaml
+# INTEGRATION.md
+---
+name: telegram
+description: "Telegram bot adapter for StrawPot"
+---
+```
+
 ### Namespacing
 
-Skills, roles, agents, and memories have **separate slug namespaces**. A skill named `foo`, a role named `foo`, an agent named `foo`, and a memory named `foo` can all coexist. Slug ownership is enforced per-type — only the original publisher can push new versions.
+Skills, roles, agents, memories, and integrations have **separate slug namespaces**. A skill named `foo`, a role named `foo`, an agent named `foo`, a memory named `foo`, and an integration named `foo` can all coexist. Slug ownership is enforced per-type — only the original publisher can push new versions.
 
 ## Data Model
 
@@ -173,6 +190,9 @@ Skills, roles, agents, and memories have **separate slug namespaces**. A skill n
 | `memories` | Memory registry entries (parallel structure to skills/roles/agents) |
 | `memoryVersions` | Versioned memory bundles with supporting files |
 | `memoryEmbeddings` | Vector embeddings for memory search |
+| `integrations` | Integration registry entries (parallel structure to skills/roles/agents/memories) |
+| `integrationVersions` | Versioned integration bundles with supporting files |
+| `integrationEmbeddings` | Vector embeddings for integration search |
 | `users` | GitHub OAuth profiles: handle, display name, bio, role (admin/moderator/user) |
 | `stars` | Polymorphic favorites (skill, role, agent, or memory) |
 | `comments` | User comments on skills/roles/agents/memories |
@@ -235,12 +255,12 @@ Hybrid search combining three signals:
 2. **Lexical matching** — tokenized keyword matching against name/description
 3. **Popularity boost** — log of download count
 
-Searches skills, roles, agents, and memories simultaneously. Falls back to text scan if embeddings are unavailable. Soft-deleted content is excluded.
+Searches skills, roles, agents, memories, and integrations simultaneously. Falls back to text scan if embeddings are unavailable. Soft-deleted content is excluded.
 
 ### Install (CLI)
 
 ```
-CLI → resolve dependencies → fetch files → extract to ~/.strawpot/{skills,roles,agents,memories}/{slug}/
+CLI → resolve dependencies → fetch files → extract to ~/.strawpot/{skills,roles,agents,memories,integrations}/{slug}/
 ```
 
 Install state tracked via lockfile at `.strawpot/strawpot.lock`. The installed version is stored in a `.version` file within each package directory. After installation, declared system tools are checked — missing tools trigger OS-specific install commands (with user confirmation).
@@ -297,6 +317,12 @@ GET    /api/v1/memories/:slug/file   Raw file content (binary)
 POST   /api/v1/memories              Publish memory (auth, multipart)
 DELETE /api/v1/memories/:slug        Delete memory (admin)
 
+GET    /api/v1/integrations              List integrations
+GET    /api/v1/integrations/:slug        Integration detail
+GET    /api/v1/integrations/:slug/file   Raw file content (binary)
+POST   /api/v1/integrations              Publish integration (auth, multipart)
+DELETE /api/v1/integrations/:slug        Delete integration (admin)
+
 GET    /api/v1/search?q=&kind=     Hybrid search
 GET    /api/v1/whoami              Current user info
 POST   /api/v1/stars/toggle        Toggle star (auth)
@@ -321,6 +347,7 @@ strawhub/
 │   ├── roles.ts                # Role queries/mutations
 │   ├── agents.ts               # Agent queries/mutations
 │   ├── memories.ts             # Memory queries/mutations
+│   ├── integrations.ts         # Integration queries/mutations
 │   ├── search.ts               # Hybrid search logic
 │   ├── users.ts                # User management
 │   ├── httpApiV1/              # REST API v1 handlers
@@ -359,7 +386,7 @@ strawhub/
 
 **Convex as sole backend** — Database, file storage, auth, HTTP endpoints, and background jobs all run on Convex. No separate server infrastructure to manage or deploy.
 
-**Separate slug namespaces** — Skills, roles, agents, and memories can share the same slug. Keeps the content types independent and avoids naming conflicts across different concerns.
+**Separate slug namespaces** — Skills, roles, agents, memories, and integrations can share the same slug. Keeps the content types independent and avoids naming conflicts across different concerns.
 
 **SHA-256 token hashing** — API tokens are hashed before storage. Raw token shown once at creation. Prevents token exposure from database breaches.
 

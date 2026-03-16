@@ -38,7 +38,7 @@ strawhub [--version] [--help] <command>
 
 ### `install`
 
-Install a skill or role with all dependencies. When called without a subcommand, installs all dependencies declared in `strawpot.toml`.
+Install a package with all dependencies. When called without a subcommand, installs all dependencies declared in `strawpot.toml`.
 
 #### Bare install (from project file)
 
@@ -71,9 +71,14 @@ $ strawhub install
 ```bash
 strawhub install skill <slug> [options]
 strawhub install role <slug> [options]
+strawhub install agent <slug> [options]
+strawhub install memory <slug> [options]
+strawhub install integration <slug> [options]
 ```
 
-Installs a skill or role from the StrawHub registry. Dependencies are resolved automatically — for skills via client-side frontmatter parsing, for roles via the server-side resolve endpoint.
+Installs a package from the StrawHub registry. Dependencies are resolved automatically — for skills via client-side frontmatter parsing, for roles via the server-side resolve endpoint. Agents, memories, and integrations are standalone (no dependencies).
+
+> **Integrations** are always global — `--global`, `--save`, and `--save-exact` flags are not available. Integrations install to `~/.strawpot/integrations/`.
 
 | Option | Description |
 |--------|-------------|
@@ -141,12 +146,17 @@ strawhub install skill code-review --save-exact
 
 ### `uninstall`
 
-Remove an installed skill or role and clean up orphaned dependencies.
+Remove an installed package and clean up orphaned dependencies.
 
 ```bash
 strawhub uninstall skill <slug> [options]
 strawhub uninstall role <slug> [options]
+strawhub uninstall agent <slug> [options]
+strawhub uninstall memory <slug> [options]
+strawhub uninstall integration <slug> [options]
 ```
+
+> **Integrations** are always global — `--global` and `--save` flags are not available.
 
 | Option | Description |
 |--------|-------------|
@@ -187,13 +197,18 @@ strawhub uninstall skill code-review --save
 
 ### `update`
 
-Update installed skills and roles to their latest versions.
+Update installed packages to their latest versions.
 
 ```bash
 strawhub update skill <slug> [options]
 strawhub update role <slug> [options]
+strawhub update agent <slug> [options]
+strawhub update memory <slug> [options]
+strawhub update integration <slug>
 strawhub update --all [options]
 ```
+
+> **Integrations** are always global — `--global` and `--save` flags are not available.
 
 | Option | Description |
 |--------|-------------|
@@ -314,7 +329,7 @@ strawhub install-tools --global
 Search for skills, roles, agents, and memories in the registry.
 
 ```bash
-strawhub search <query> [--kind skill|role|agent|memory|all] [--limit N] [--json]
+strawhub search <query> [--kind skill|role|agent|memory|integration|all] [--limit N] [--json]
 ```
 
 | Argument | Description |
@@ -323,7 +338,7 @@ strawhub search <query> [--kind skill|role|agent|memory|all] [--limit N] [--json
 
 | Option | Description |
 |--------|-------------|
-| `--kind` | Filter by type: `skill`, `role`, `agent`, `memory`, or `all` (default: `all`) |
+| `--kind` | Filter by type: `skill`, `role`, `agent`, `memory`, `integration`, or `all` (default: `all`) |
 | `--limit` | Maximum results, 1–100 (default: `20`) |
 | `--json` | Output raw JSON |
 
@@ -339,13 +354,14 @@ strawhub search "agent" --json
 
 ### `info`
 
-Show detailed information about a skill, role, agent, or memory.
+Show detailed information about a package.
 
 ```bash
 strawhub info skill <slug> [--file PATH] [--json]
 strawhub info role <slug> [--file PATH] [--json]
 strawhub info agent <slug> [--file PATH] [--json]
 strawhub info memory <slug> [--file PATH] [--json]
+strawhub info integration <slug> [--file PATH] [--json]
 ```
 
 | Argument | Description |
@@ -354,7 +370,7 @@ strawhub info memory <slug> [--file PATH] [--json]
 
 | Option | Description |
 |--------|-------------|
-| `--file <path>` | View raw content of a specific file (e.g. `SKILL.md`, `ROLE.md`, `AGENT.md`, `MEMORY.md`) |
+| `--file <path>` | View raw content of a specific file (e.g. `SKILL.md`, `ROLE.md`, `AGENT.md`, `MEMORY.md`, `INTEGRATION.md`) |
 | `--json` | Output raw JSON |
 
 Without `--file`, displays a formatted summary: name, owner, description, latest version, published date, changelog, files, dependencies, and download/star counts.
@@ -366,6 +382,7 @@ strawhub info skill code-review
 strawhub info role implementer --json
 strawhub info agent claude-code
 strawhub info memory project-context
+strawhub info integration telegram
 strawhub info skill code-review --file SKILL.md
 ```
 
@@ -373,15 +390,15 @@ strawhub info skill code-review --file SKILL.md
 
 ### `list`
 
-List available skills, roles, agents, and memories from the registry.
+List available packages from the registry.
 
 ```bash
-strawhub list [--kind skills|roles|agents|memories|all] [--limit N] [--sort updated|downloads|stars] [--json]
+strawhub list [--kind skills|roles|agents|memories|integrations|all] [--limit N] [--sort updated|downloads|stars] [--json]
 ```
 
 | Option | Description |
 |--------|-------------|
-| `--kind` | Filter by type: `skills`, `roles`, `agents`, `memories`, or `all` (default: `all`) |
+| `--kind` | Filter by type: `skills`, `roles`, `agents`, `memories`, `integrations`, or `all` (default: `all`) |
 | `--limit` | Maximum results, 1–200 (default: `50`) |
 | `--sort` | Sort order: `updated`, `downloads`, or `stars` (default: `updated`) |
 | `--json` | Output raw JSON |
@@ -469,13 +486,14 @@ strawhub resolve skill git-workflow --global
 
 ### `publish`
 
-Publish a skill, role, agent, or memory to the StrawHub registry. Requires authentication (`strawhub login`).
+Publish a package to the StrawHub registry. Requires authentication (`strawhub login`).
 
 ```bash
 strawhub publish skill [<path>] [--version <ver>] [--changelog <text>] [--tag <tag>]...
 strawhub publish role [<path>] [--version <ver>] [--changelog <text>] [--tag <tag>]...
 strawhub publish agent [<path>] [--version <ver>] [--changelog <text>] [--tag <tag>]...
 strawhub publish memory [<path>] [--version <ver>] [--changelog <text>] [--tag <tag>]...
+strawhub publish integration [<path>] [--version <ver>] [--changelog <text>] [--tag <tag>]...
 ```
 
 | Argument | Description |
@@ -488,7 +506,7 @@ strawhub publish memory [<path>] [--version <ver>] [--changelog <text>] [--tag <
 | `--changelog <text>` | Changelog text for this version |
 | `--tag <tag>` | Custom tag (can be specified multiple times) |
 
-The directory must contain the appropriate main file (`SKILL.md`, `ROLE.md`, `AGENT.md`, or `MEMORY.md`) with valid YAML frontmatter including at least `name` (the slug). All files in the directory are included in the published package (dotfiles are skipped).
+The directory must contain the appropriate main file (`SKILL.md`, `ROLE.md`, `AGENT.md`, `MEMORY.md`, or `INTEGRATION.md`) with valid YAML frontmatter including at least `name` (the slug). All files in the directory are included in the published package (dotfiles are skipped).
 
 **Frontmatter requirements:**
 
@@ -521,6 +539,9 @@ strawhub publish agent ./my-agent --version 1.0.0
 
 # Publish a memory
 strawhub publish memory ./my-memory --version 1.0.0
+
+# Publish an integration
+strawhub publish integration ./my-integration --version 1.0.0
 ```
 
 ---
@@ -529,7 +550,7 @@ strawhub publish memory ./my-memory --version 1.0.0
 
 ### `star`
 
-Star a skill, role, agent, or memory. Requires authentication.
+Star a package. Requires authentication.
 
 ```bash
 strawhub star skill <slug>
@@ -540,7 +561,7 @@ strawhub star memory <slug>
 
 ### `unstar`
 
-Remove a star from a skill, role, agent, or memory. Requires authentication.
+Remove a star from a package. Requires authentication.
 
 ```bash
 strawhub unstar skill <slug>
@@ -591,13 +612,14 @@ These commands require admin privileges.
 
 ### `delete`
 
-Soft-delete a skill, role, agent, or memory from the registry.
+Soft-delete a package from the registry.
 
 ```bash
 strawhub delete skill <slug> [--yes]
 strawhub delete role <slug> [--yes]
 strawhub delete agent <slug> [--yes]
 strawhub delete memory <slug> [--yes]
+strawhub delete integration <slug> [--yes]
 ```
 
 | Option | Description |
@@ -695,6 +717,10 @@ See [Project File documentation](project-file.md) for full details on workflows 
 │   └── ...
 ├── roles/
 │   └── ...
+├── integrations/              # Integrations are always global
+│   └── telegram/
+│       ├── INTEGRATION.md
+│       └── .version
 └── strawpot.lock
 ```
 
@@ -702,7 +728,7 @@ See [Project File documentation](project-file.md) for full details on workflows 
 
 ### Scope resolution
 
-- **Install**: defaults to local (`.strawpot/`). Use `--global` for global.
+- **Install**: defaults to local (`.strawpot/`). Use `--global` for global. **Exception:** integrations are always global.
 - **Resolve**: checks local first, then global. Local takes priority.
 - **Project file**: local only. `--save` flags are incompatible with `--global`.
 

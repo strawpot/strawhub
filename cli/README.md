@@ -6,7 +6,7 @@
 
 Command-line client for [StrawHub](https://strawhub.dev), the public registry for [StrawPot](https://strawpot.com) agents.
 
-Discover, install, publish, and manage reusable **skills**, **roles**, **agents**, and **memories** — with recursive dependency resolution.
+Discover, install, publish, and manage reusable **skills**, **roles**, **agents**, **memories**, and **integrations** — with recursive dependency resolution.
 
 ## Installation
 
@@ -73,6 +73,9 @@ See the [project file documentation](../docs/project-file.md) for full details.
 | `update --all --save` | Update all and save new versions to `strawpot.toml` |
 | `init` | Create `strawpot.toml` from currently installed packages |
 | `install-tools` | Install system tools declared by installed packages |
+| `install integration <slug>` | Install an integration (always global) |
+| `uninstall integration <slug>` | Uninstall an integration |
+| `update integration <slug>` | Update an integration |
 
 ### Discovery
 

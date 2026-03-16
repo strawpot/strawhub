@@ -111,7 +111,7 @@ Additional constraints:
 
 ## Search
 
-### Search Skills, Roles, Agents, and Memories
+### Search Skills, Roles, Agents, Memories, and Integrations
 
 ```
 GET /api/v1/search?q=review&kind=all&limit=20
@@ -119,7 +119,7 @@ GET /api/v1/search?q=review&kind=all&limit=20
 
 Query params:
 - `q` (required) — search query
-- `kind` (`all` | `skill` | `role` | `agent` | `memory`, default `all`)
+- `kind` (`all` | `skill` | `role` | `agent` | `memory` | `integration`, default `all`)
 - `limit` (1-100, default 20)
 
 Uses hybrid ranking: vector similarity + lexical matching + popularity boost.
@@ -300,6 +300,58 @@ Soft-deletes a memory. Requires moderator or admin role.
 
 ---
 
+## Integrations
+
+### List Integrations
+
+```
+GET /api/v1/integrations?limit=50&sort=updated
+```
+
+Query params:
+- `limit` (1-200, default 50)
+- `sort` (`updated` | `downloads` | `stars`)
+
+Response shape matches List Skills.
+
+### Publish Integration (auth required)
+
+```
+POST /api/v1/integrations
+Content-Type: multipart/form-data
+
+payload: { slug, displayName, version, changelog, customTags?, files[] }
+```
+
+File constraints: up to 100 files, 10 MB each, 50 MB total. Supports binary files.
+
+### Get Integration Detail
+
+```
+GET /api/v1/integrations/:slug
+```
+
+Returns full detail for a single integration (public).
+
+### Get Integration File
+
+```
+GET /api/v1/integrations/:slug/file?path=INTEGRATION.md
+```
+
+Returns the raw file content for an integration. `path` defaults to `INTEGRATION.md`.
+
+### Delete Integration (auth required)
+
+```
+DELETE /api/v1/integrations/:slug
+Authorization: Bearer sh_xxxxx
+```
+
+Soft-deletes an integration. Requires moderator or admin role.
+
+---
+
 ## Stars
 
 ### Toggle Star (auth required)
@@ -309,7 +361,7 @@ POST /api/v1/stars/toggle
 Authorization: Bearer sh_xxxxx
 Content-Type: application/json
 
-{ "slug": "git-workflow", "kind": "skill|role|agent|memory" }
+{ "slug": "git-workflow", "kind": "skill|role|agent|memory|integration" }
 ```
 
 Toggles the star status for the authenticated user. Returns `{ "starred": true }` or `{ "starred": false }`.
@@ -324,7 +376,7 @@ Toggles the star status for the authenticated user. Returns `{ "starred": true }
 POST /api/v1/downloads
 Content-Type: application/json
 
-{ "kind": "skill|role|agent|memory", "slug": "...", "version": "..." }
+{ "kind": "skill|role|agent|memory|integration", "slug": "...", "version": "..." }
 ```
 
 No auth required — download tracking is public (like npm). The `version` field is optional. Downloads are tracked via event sourcing: events are inserted into `statEvents` and flushed into target stats every 15 minutes by a cron job.
