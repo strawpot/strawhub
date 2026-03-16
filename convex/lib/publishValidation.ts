@@ -26,6 +26,11 @@ export const MEMORY_MAX_FILE_SIZE = AGENT_MAX_FILE_SIZE;
 export const MEMORY_MAX_TOTAL_SIZE = AGENT_MAX_TOTAL_SIZE;
 export const MEMORY_MAX_FILE_COUNT = AGENT_MAX_FILE_COUNT;
 
+// Integration-specific limits (same as agent — adapters may include binaries)
+export const INTEGRATION_MAX_FILE_SIZE = AGENT_MAX_FILE_SIZE;
+export const INTEGRATION_MAX_TOTAL_SIZE = AGENT_MAX_TOTAL_SIZE;
+export const INTEGRATION_MAX_FILE_COUNT = AGENT_MAX_FILE_COUNT;
+
 export function validateSlug(slug: string): void {
   if (!slug || slug.length > MAX_SLUG_LENGTH) {
     throw new Error(`Slug must be 1-${MAX_SLUG_LENGTH} characters`);
@@ -178,6 +183,39 @@ export function validateMemoryFiles(
   if (totalSize > MEMORY_MAX_TOTAL_SIZE) {
     throw new Error(
       `Total upload size exceeds ${MEMORY_MAX_TOTAL_SIZE / 1024 / 1024}MB limit`,
+    );
+  }
+}
+
+/**
+ * Validate an integration upload: must include INTEGRATION.md, allows binaries.
+ */
+export function validateIntegrationFiles(
+  files: Array<{ path: string; size: number }>,
+): void {
+  if (files.length === 0) {
+    throw new Error("At least one file is required");
+  }
+  if (files.length > INTEGRATION_MAX_FILE_COUNT) {
+    throw new Error(`Maximum ${INTEGRATION_MAX_FILE_COUNT} files allowed`);
+  }
+  if (!files.some((f) => f.path === "INTEGRATION.md")) {
+    throw new Error("Integration uploads must include an INTEGRATION.md file");
+  }
+
+  let totalSize = 0;
+  for (const file of files) {
+    if (file.size > INTEGRATION_MAX_FILE_SIZE) {
+      throw new Error(
+        `File '${file.path}' exceeds ${INTEGRATION_MAX_FILE_SIZE / 1024 / 1024}MB limit`,
+      );
+    }
+    totalSize += file.size;
+  }
+
+  if (totalSize > INTEGRATION_MAX_TOTAL_SIZE) {
+    throw new Error(
+      `Total upload size exceeds ${INTEGRATION_MAX_TOTAL_SIZE / 1024 / 1024}MB limit`,
     );
   }
 }

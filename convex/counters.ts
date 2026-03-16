@@ -1,6 +1,6 @@
 import { query } from "./_generated/server";
 
-const COUNTER_NAMES = ["skills", "roles", "agents", "memories"] as const;
+const COUNTER_NAMES = ["skills", "roles", "agents", "memories", "integrations"] as const;
 
 /**
  * Get counts for all resource types.

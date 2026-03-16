@@ -23,8 +23,8 @@ export const toggleStar = httpAction(async (ctx, request) => {
 
   const { slug, kind } = body;
   if (!slug || !kind) return errorResponse("slug and kind are required", 400);
-  if (kind !== "skill" && kind !== "role" && kind !== "agent" && kind !== "memory") {
-    return errorResponse("kind must be 'skill', 'role', 'agent', or 'memory'", 400);
+  if (kind !== "skill" && kind !== "role" && kind !== "agent" && kind !== "memory" && kind !== "integration") {
+    return errorResponse("kind must be 'skill', 'role', 'agent', 'memory', or 'integration'", 400);
   }
 
   // Look up the target by slug to get its _id

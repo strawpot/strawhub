@@ -24,7 +24,7 @@ export const trackDownload = httpAction(async (ctx, request) => {
     return errorResponse("kind and slug are required", 400);
   }
 
-  const validKinds = ["skill", "role", "agent", "memory"];
+  const validKinds = ["skill", "role", "agent", "memory", "integration"];
   if (!validKinds.includes(kind)) {
     return errorResponse(`kind must be one of: ${validKinds.join(", ")}`, 400);
   }
@@ -45,7 +45,7 @@ export const trackDownload = httpAction(async (ctx, request) => {
   }
 
   const result = await ctx.runMutation(api.downloads.trackDownload, {
-    targetKind: kind as "skill" | "role" | "agent" | "memory",
+    targetKind: kind as "skill" | "role" | "agent" | "memory" | "integration",
     slug,
     version,
     userId,

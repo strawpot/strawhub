@@ -190,6 +190,59 @@ export const flagMemory = internalMutation({
   },
 });
 
+export const getIntegrationVersionFiles = internalQuery({
+  args: { versionId: v.id("integrationVersions") },
+  handler: async (ctx, args) => {
+    const version = await ctx.db.get(args.versionId);
+    if (!version) return null;
+    return (version.files ?? []) as Array<{
+      path: string;
+      size: number;
+      storageId: string;
+      sha256: string;
+      contentType?: string;
+    }>;
+  },
+});
+
+export const setIntegrationScanStatus = internalMutation({
+  args: {
+    versionId: v.id("integrationVersions"),
+    scanStatus: scanStatusLiterals,
+    scanResult: scanResultValidator,
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.versionId, {
+      scanStatus: args.scanStatus,
+      scanResult: args.scanResult,
+    });
+  },
+});
+
+export const flagIntegration = internalMutation({
+  args: {
+    integrationId: v.id("integrations"),
+    versionId: v.id("integrationVersions"),
+    scanResult: v.object({
+      analysisId: v.optional(v.string()),
+      positives: v.optional(v.number()),
+      total: v.optional(v.number()),
+      scanDate: v.optional(v.number()),
+      permalink: v.optional(v.string()),
+      errorMessage: v.optional(v.string()),
+    }),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.versionId, {
+      scanStatus: "flagged" as const,
+      scanResult: args.scanResult,
+    });
+    await ctx.db.patch(args.integrationId, {
+      moderationStatus: "hidden" as const,
+    });
+  },
+});
+
 // ─── Moderator Scan Queue ────────────────────────────────────────────────────
 
 /**
@@ -322,7 +375,45 @@ export const listPendingScans = query({
       };
     });
 
-    const items = [...skillItems, ...agentItems, ...memoryItems];
+    // Collect rate_limited and error integration versions using index
+    const integrationRateLimited = await ctx.db
+      .query("integrationVersions")
+      .withIndex("by_scanStatus", (q) => q.eq("scanStatus", "rate_limited"))
+      .take(20);
+
+    const integrationErrored = await ctx.db
+      .query("integrationVersions")
+      .withIndex("by_scanStatus", (q) => q.eq("scanStatus", "error"))
+      .take(20);
+
+    const integrationVersions = [...integrationRateLimited, ...integrationErrored]
+      .filter((ver) => !ver.softDeletedAt);
+
+    // Batch-fetch parent integrations to avoid N+1
+    const integrationDocs = await Promise.all(
+      integrationVersions.map((ver) => ctx.db.get(ver.integrationId)),
+    );
+
+    const integrationItems = integrationVersions.map((ver, i) => {
+      const integ = integrationDocs[i];
+      if (!integ || integ.softDeletedAt) return null;
+
+      const isLatest = integ.latestVersionId === ver._id;
+      return {
+        _id: ver._id,
+        kind: "integration" as const,
+        parentId: ver.integrationId,
+        slug: integ.slug,
+        displayName: integ.displayName,
+        version: ver.version,
+        scanStatus: ver.scanStatus as string,
+        scanResult: ver.scanResult,
+        priority: isLatest ? ("high" as const) : ("low" as const),
+        createdAt: ver.createdAt,
+      };
+    });
+
+    const items = [...skillItems, ...agentItems, ...memoryItems, ...integrationItems];
 
     // Filter nulls, sort: high priority first, then by creation date desc
     return items
@@ -448,6 +539,45 @@ export const retriggerMemoryScan = mutation({
       memoryId: version.memoryId,
       zipStorageId: version.zipStorageId,
       zipFileName: `${memory.slug}-v${version.version}.zip`,
+    });
+  },
+});
+
+/**
+ * Retrigger a VirusTotal scan for an integration version.
+ * Admin/moderator only. Only allowed for rate_limited or error versions.
+ */
+export const retriggerIntegrationScan = mutation({
+  args: { versionId: v.id("integrationVersions") },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const user = await ctx.db.get(userId);
+    if (user?.role !== "admin" && user?.role !== "moderator") {
+      throw new Error("Not authorized");
+    }
+
+    const version = await ctx.db.get(args.versionId);
+    if (!version) throw new Error("Version not found");
+
+    if (version.scanStatus !== "rate_limited" && version.scanStatus !== "error") {
+      throw new Error("Can only retrigger scans for rate_limited or errored versions");
+    }
+
+    const integration = await ctx.db.get(version.integrationId);
+    if (!integration) throw new Error("Integration not found");
+
+    await ctx.db.patch(args.versionId, {
+      scanStatus: "pending",
+      scanResult: undefined,
+    });
+
+    await ctx.scheduler.runAfter(0, internal.virusTotalScanActions.submitIntegrationScan, {
+      versionId: args.versionId,
+      integrationId: version.integrationId,
+      zipStorageId: version.zipStorageId,
+      zipFileName: `${integration.slug}-v${version.version}.zip`,
     });
   },
 });

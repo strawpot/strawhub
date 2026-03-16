@@ -14,7 +14,7 @@ export const searchAll = httpAction(async (ctx, request) => {
   if (!query) return errorResponse("Query parameter 'q' is required", 400);
 
   const limit = Math.min(parseInt(params.get("limit") ?? "20", 10), 100);
-  const kind = (params.get("kind") ?? "all") as "skill" | "role" | "agent" | "memory" | "all";
+  const kind = (params.get("kind") ?? "all") as "skill" | "role" | "agent" | "memory" | "integration" | "all";
 
   const results = await ctx.runQuery(api.search.search, {
     query,

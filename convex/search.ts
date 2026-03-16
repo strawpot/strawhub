@@ -9,7 +9,7 @@ export const search = query({
   args: {
     query: v.string(),
     limit: v.optional(v.number()),
-    kind: v.optional(v.union(v.literal("skill"), v.literal("role"), v.literal("agent"), v.literal("memory"), v.literal("all"))),
+    kind: v.optional(v.union(v.literal("skill"), v.literal("role"), v.literal("agent"), v.literal("memory"), v.literal("integration"), v.literal("all"))),
   },
   handler: async (ctx, args) => {
     const limit = Math.min(args.limit ?? 20, 100);
@@ -110,6 +110,29 @@ export const search = query({
       }
     }
 
+    if (kind === "all" || kind === "integration") {
+      const matched = await ctx.db
+        .query("integrations")
+        .withSearchIndex("search", (q) =>
+          q.search("displayName", args.query).eq("softDeletedAt", undefined),
+        )
+        .take(limit);
+
+      for (const integration of matched) {
+        const lexicalBoost = computeLexicalBoost(queryTokens, integration.slug, integration.displayName);
+        const popularityBoost = Math.log(Math.max(integration.stats.downloads, 1)) * 0.08;
+
+        results.push({
+          kind: "integration",
+          slug: integration.slug,
+          displayName: integration.displayName,
+          summary: integration.summary,
+          stats: integration.stats,
+          score: lexicalBoost + popularityBoost,
+        });
+      }
+    }
+
     // Sort by score descending
     results.sort((a, b) => b.score - a.score);
     return results.slice(0, limit);
@@ -119,7 +142,7 @@ export const search = query({
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 interface SearchResult {
-  kind: "skill" | "role" | "agent" | "memory";
+  kind: "skill" | "role" | "agent" | "memory" | "integration";
   slug: string;
   displayName: string;
   summary?: string;

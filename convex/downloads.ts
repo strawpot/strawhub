@@ -13,7 +13,7 @@ import { mutation } from "./_generated/server";
  */
 export const trackDownload = mutation({
   args: {
-    targetKind: v.union(v.literal("skill"), v.literal("role"), v.literal("agent"), v.literal("memory")),
+    targetKind: v.union(v.literal("skill"), v.literal("role"), v.literal("agent"), v.literal("memory"), v.literal("integration")),
     slug: v.string(),
     version: v.optional(v.string()),
     userId: v.optional(v.string()),

@@ -93,7 +93,7 @@ function ScanQueueCard({
 }: {
   item: {
     _id: any;
-    kind: "skill" | "agent" | "memory";
+    kind: "skill" | "agent" | "memory" | "integration";
     slug: string;
     displayName: string;
     version: string;
