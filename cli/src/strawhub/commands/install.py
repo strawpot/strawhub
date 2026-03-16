@@ -46,7 +46,7 @@ from strawhub.version_spec import (
 )
 @click.pass_context
 def install(ctx, skip_tools, yes):
-    """Install a skill, role, agent, or memory with all dependencies.
+    """Install a skill, role, agent, memory, or integration with all dependencies.
 
     When called without a subcommand, installs all dependencies from
     strawpot.toml in the current directory.
@@ -646,6 +646,86 @@ def install_memory(slug, is_global, skip_tools, yes, update, ver, force, save, s
     )
 
 
+@install.command("integration")
+@click.argument("slug")
+@click.option(
+    "--global",
+    "is_global",
+    is_flag=True,
+    default=False,
+    help="Install to global directory (~/.strawpot or STRAWPOT_HOME)",
+)
+@click.option(
+    "--skip-tools",
+    is_flag=True,
+    default=False,
+    help="Skip running system tool install commands",
+)
+@click.option(
+    "--yes",
+    "-y",
+    is_flag=True,
+    default=False,
+    help="Automatically confirm tool install commands without prompting",
+)
+@click.option(
+    "--update",
+    is_flag=True,
+    default=False,
+    help="Update to the latest version if already installed",
+)
+@click.option(
+    "--version",
+    "ver",
+    default=None,
+    help="Install a specific version",
+)
+@click.option(
+    "--force",
+    is_flag=True,
+    default=False,
+    help="With --version, force replace an existing installation",
+)
+@click.option(
+    "--save",
+    is_flag=True,
+    default=False,
+    help="Save dependency to strawpot.toml with ^X.Y.Z constraint",
+)
+@click.option(
+    "--save-exact",
+    is_flag=True,
+    default=False,
+    help="Save dependency to strawpot.toml with ==X.Y.Z constraint",
+)
+def install_integration(slug, is_global, skip_tools, yes, update, ver, force, save, save_exact):
+    """Install an integration."""
+    if force and not ver:
+        print_error("--force requires --version")
+        raise SystemExit(1)
+    if update and ver:
+        print_error("--update and --version cannot be used together")
+        raise SystemExit(1)
+    if save and save_exact:
+        print_error("--save and --save-exact cannot be used together")
+        raise SystemExit(1)
+    if (save or save_exact) and is_global:
+        print_error("--save/--save-exact cannot be used with --global")
+        raise SystemExit(1)
+    _install_impl(
+        slug,
+        kind="integration",
+        is_global=is_global,
+        skip_tools=skip_tools,
+        yes=yes,
+        update=update,
+        version=ver,
+        force=force,
+        save=save,
+        save_exact=save_exact,
+    )
+
+
 # ── Dependency resolution ─────────────────────────────────────────────────────
 
 
@@ -657,8 +737,8 @@ def _resolve_deps(
     Uses the server-side /resolve endpoint for both skills and roles.
     Dependencies are just slugs; always resolves to latest version.
     """
-    if kind in ("agent", "memory"):
-        # Agents and memories are standalone — no transitive dependencies
+    if kind in ("agent", "memory", "integration"):
+        # Agents, memories, and integrations are standalone — no transitive dependencies
         return []
     elif kind == "role":
         console.print("Resolving dependencies...")
@@ -743,6 +823,9 @@ def _download_package(
             out_file.write_bytes(content_bytes)
         elif kind == "memory":
             content_bytes = client.get_memory_file(slug, path=file_path, version=version)
+            out_file.write_bytes(content_bytes)
+        elif kind == "integration":
+            content_bytes = client.get_integration_file(slug, path=file_path, version=version)
             out_file.write_bytes(content_bytes)
         elif kind == "skill":
             content = client.get_skill_file(slug, path=file_path, version=version)

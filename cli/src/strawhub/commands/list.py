@@ -10,7 +10,7 @@ from strawhub.errors import StrawHubError
 @click.command("list")
 @click.option(
     "--kind",
-    type=click.Choice(["skills", "roles", "agents", "memories", "all"]),
+    type=click.Choice(["skills", "roles", "agents", "memories", "integrations", "all"]),
     default="all",
 )
 @click.option("--limit", type=int, default=50, help="Max results (1-200)")
@@ -21,7 +21,7 @@ from strawhub.errors import StrawHubError
 )
 @click.option("--json", "as_json", is_flag=True, default=False, help="Output as JSON")
 def list_cmd(kind, limit, sort, as_json):
-    """List skills, roles, agents, and/or memories."""
+    """List skills, roles, agents, memories, and/or integrations."""
     with StrawHubClient() as client:
         try:
             result = {}
@@ -68,6 +68,17 @@ def list_cmd(kind, limit, sort, as_json):
                         print_list_table(items, "memory")
                     elif kind == "memories":
                         console.print("No memories found.")
+
+            if kind in ("integrations", "all"):
+                data = client.list_integrations(limit=limit, sort=sort)
+                if as_json:
+                    result["integrations"] = data.get("items", [])
+                else:
+                    items = data.get("items", [])
+                    if items:
+                        print_list_table(items, "integration")
+                    elif kind == "integrations":
+                        console.print("No integrations found.")
 
             if as_json:
                 console.print_json(json.dumps(result))

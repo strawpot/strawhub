@@ -163,6 +163,29 @@ class StrawHubClient:
             self._handle_response(resp)
         return resp.content
 
+    def list_integrations(self, limit: int = 50, sort: str = "updated") -> dict:
+        resp = self._request("GET",
+            "/api/v1/integrations", params={"limit": limit, "sort": sort}
+        )
+        return self._handle_response(resp)
+
+    def get_integration(self, slug: str, version: str | None = None) -> dict:
+        params = {}
+        if version:
+            params["version"] = version
+        resp = self._request("GET", f"/api/v1/integrations/{slug}", params=params or None)
+        return self._handle_response(resp)
+
+    def get_integration_file(self, slug: str, path: str = "INTEGRATION.md", version: str | None = None) -> bytes:
+        """Get integration file content as bytes (supports binary files)."""
+        params: dict = {"path": path}
+        if version:
+            params["version"] = version
+        resp = self._request("GET", f"/api/v1/integrations/{slug}/file", params=params)
+        if resp.status_code >= 400:
+            self._handle_response(resp)
+        return resp.content
+
     def list_memories(self, limit: int = 50, sort: str = "updated") -> dict:
         resp = self._request("GET",
             "/api/v1/memories", params={"limit": limit, "sort": sort}
@@ -195,6 +218,8 @@ class StrawHubClient:
             return ("agent", self.get_agent(slug, version=version))
         if kind == "memory":
             return ("memory", self.get_memory(slug, version=version))
+        if kind == "integration":
+            return ("integration", self.get_integration(slug, version=version))
         return ("role", self.get_role(slug, version=version))
 
     # ── Publish ────────────────────────────────────────────────────────────────
@@ -213,6 +238,10 @@ class StrawHubClient:
 
     def publish_memory(self, form_data: dict, files: list) -> dict:
         resp = self._request("POST", "/api/v1/memories", data=form_data, files=files)
+        return self._handle_response(resp)
+
+    def publish_integration(self, form_data: dict, files: list) -> dict:
+        resp = self._request("POST", "/api/v1/integrations", data=form_data, files=files)
         return self._handle_response(resp)
 
     # ── Downloads ──────────────────────────────────────────────────────────────
@@ -253,6 +282,10 @@ class StrawHubClient:
         resp = self._request("DELETE", f"/api/v1/memories/{slug}")
         return self._handle_response(resp)
 
+    def delete_integration(self, slug: str) -> dict:
+        resp = self._request("DELETE", f"/api/v1/integrations/{slug}")
+        return self._handle_response(resp)
+
     def delete_package(self, slug: str, kind: str) -> dict:
         if kind == "skill":
             return self.delete_skill(slug)
@@ -260,6 +293,8 @@ class StrawHubClient:
             return self.delete_agent(slug)
         if kind == "memory":
             return self.delete_memory(slug)
+        if kind == "integration":
+            return self.delete_integration(slug)
         return self.delete_role(slug)
 
     # ── Admin ─────────────────────────────────────────────────────────────────

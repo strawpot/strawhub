@@ -123,7 +123,7 @@ def resolve(
         best_version, best_path, best_source = pkg_candidates[0]
 
         # Read frontmatter to get dependency slugs
-        main_file = {"skill": "SKILL.md", "role": "ROLE.md", "agent": "AGENT.md", "memory": "MEMORY.md"}[pkg_kind]
+        main_file = {"skill": "SKILL.md", "role": "ROLE.md", "agent": "AGENT.md", "memory": "MEMORY.md", "integration": "INTEGRATION.md"}[pkg_kind]
         main_path = Path(best_path) / main_file
         deps_slugs = _read_dependency_slugs(main_path, pkg_kind)
 
@@ -178,8 +178,8 @@ def _build_index(
     index: dict[tuple[str, str], list[tuple[str, str, str]]] = {}
 
     for scope, root in [("local", local_root), ("global", global_root)]:
-        for kind in ["skill", "role", "agent", "memory"]:
-            subdir = root / {"skill": "skills", "role": "roles", "agent": "agents", "memory": "memories"}[kind]
+        for kind in ["skill", "role", "agent", "memory", "integration"]:
+            subdir = root / {"skill": "skills", "role": "roles", "agent": "agents", "memory": "memories", "integration": "integrations"}[kind]
             if not subdir.is_dir():
                 continue
             for entry in subdir.iterdir():

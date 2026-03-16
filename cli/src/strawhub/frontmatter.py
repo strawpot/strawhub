@@ -220,7 +220,7 @@ def extract_dependencies(
         return None
     deps = strawpot_meta.get("dependencies")
 
-    if deps is None or kind in ("agent", "memory"):
+    if deps is None or kind in ("agent", "memory", "integration"):
         return None
 
     if kind == "skill" and isinstance(deps, list):

@@ -13,6 +13,7 @@ _KIND_SUBDIRS = {
     "role": "roles",
     "agent": "agents",
     "memory": "memories",
+    "integration": "integrations",
 }
 
 # Module-level override set by ``--root`` CLI option.
@@ -76,6 +77,10 @@ def get_agents_dir(root: Path) -> Path:
 
 def get_memories_dir(root: Path) -> Path:
     return root / "memories"
+
+
+def get_integrations_dir(root: Path) -> Path:
+    return root / "integrations"
 
 
 def get_lockfile_path(root: Path) -> Path:
