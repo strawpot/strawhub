@@ -13,12 +13,12 @@ const PAGE_SIZE = 20;
 function SearchPage() {
   useSEO({
     title: "Search - StrawHub",
-    description: "Search for roles, skills, agents, and memories on StrawHub.",
+    description: "Search for roles, skills, agents, memories, and integrations on StrawHub.",
     url: "/search",
   });
 
   const [query, setQuery] = useState("");
-  const [kind, setKind] = useState<"all" | "skill" | "role" | "agent" | "memory">("all");
+  const [kind, setKind] = useState<"all" | "skill" | "role" | "agent" | "memory" | "integration">("all");
   const results = useQuery(
     api.search.search,
     query.length >= 2 ? { query, limit: 100, kind } : "skip",
@@ -61,12 +61,12 @@ function SearchPage() {
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search roles, skills, agents, and memories..."
+          placeholder="Search roles, skills, agents, memories, and integrations..."
           className="flex-1 rounded border border-gray-700 bg-gray-900 px-4 py-2 text-white placeholder-gray-500 focus:border-orange-400 focus:outline-none"
         />
         <select
           value={kind}
-          onChange={(e) => setKind(e.target.value as "all" | "skill" | "role" | "agent" | "memory")}
+          onChange={(e) => setKind(e.target.value as "all" | "skill" | "role" | "agent" | "memory" | "integration")}
           className="rounded border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-gray-300"
         >
           <option value="all">All</option>
@@ -74,6 +74,7 @@ function SearchPage() {
           <option value="skill">Skills</option>
           <option value="agent">Agents</option>
           <option value="memory">Memories</option>
+          <option value="integration">Integrations</option>
         </select>
       </div>
 
@@ -103,7 +104,7 @@ function SearchPage() {
 function SearchResultCard({ result }: { result: any }) {
   return (
     <Link
-      to={result.kind === "skill" ? "/skills/$slug" : result.kind === "role" ? "/roles/$slug" : result.kind === "agent" ? "/agents/$slug" : "/memories/$slug"}
+      to={result.kind === "skill" ? "/skills/$slug" : result.kind === "role" ? "/roles/$slug" : result.kind === "agent" ? "/agents/$slug" : result.kind === "integration" ? "/integrations/$slug" : "/memories/$slug"}
       params={{ slug: result.slug }}
       className="block rounded-lg border border-gray-800 p-4 hover:border-gray-600 transition-colors"
     >
