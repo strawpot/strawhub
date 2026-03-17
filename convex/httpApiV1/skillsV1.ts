@@ -237,7 +237,7 @@ export const publishSkill = httpAction(async (ctx, request) => {
     try {
       validateSlug(slug);
       validateVersion(version);
-      validateDisplayName(displayName);
+      if (displayName) validateDisplayName(displayName);
       validateChangelog(changelog);
     } catch (e: any) {
       return errorResponse(e.message, 400);
