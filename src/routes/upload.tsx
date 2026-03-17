@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useAuthActions } from "@convex-dev/auth/react";
-import { useState, useRef, useCallback, useMemo } from "react";
+import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import { api } from "../../convex/_generated/api";
 import { useSEO } from "../lib/useSEO";
 import { parseFrontmatter } from "../lib/parseFrontmatter";
@@ -130,6 +130,13 @@ function UploadPage() {
   const isOwnedByOther = !!(existing && currentUser && existing.ownerUserId !== currentUser._id);
   const isUpdate = !!existing && !isOwnedByOther;
 
+  // When we detect this is an update, populate displayName from the existing record
+  useEffect(() => {
+    if (isUpdate && existing?.displayName) {
+      setDisplayName(existing.displayName);
+    }
+  }, [isUpdate, existing?.displayName]);
+
   const slugError = (() => {
     const s = slug.trim();
     if (!s) return null;
@@ -241,11 +248,11 @@ function UploadPage() {
           if (frontmatter.name && typeof frontmatter.name === "string") {
             setSlug(frontmatter.name);
             // Use explicit displayName from frontmatter if present;
-            // otherwise generate from slug only for new packages (not updates)
+            // otherwise generate from slug (useEffect will overwrite for updates)
             const fmDisplayName = frontmatter.displayName ?? frontmatter.display_name;
             if (typeof fmDisplayName === "string" && fmDisplayName.trim()) {
               setDisplayName(fmDisplayName.trim());
-            } else if (!updateSlug) {
+            } else {
               setDisplayName(
                 frontmatter.name
                   .split("-")
@@ -261,7 +268,7 @@ function UploadPage() {
         });
       }
     },
-    [kind, updateSlug],
+    [kind],
   );
 
   const handleDrop = useCallback(
