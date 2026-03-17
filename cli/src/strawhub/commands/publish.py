@@ -46,9 +46,7 @@ def _publish_impl(path, kind, ver, changelog, tags):
         content = rewrite_frontmatter_name(content, slug)
         name_rewritten = True
 
-    display_name = fm.get("displayName") or fm.get("display_name") or " ".join(
-        w.capitalize() for w in slug.split("-")
-    )
+    display_name = fm.get("displayName") or fm.get("display_name") or ""
     version = ver or fm.get("version")
     if not version:
         print_error(
@@ -90,10 +88,11 @@ def _publish_impl(path, kind, ver, changelog, tags):
     # Build form data
     form_data = {
         "slug": slug,
-        "displayName": display_name,
         "version": version,
         "changelog": changelog,
     }
+    if display_name:
+        form_data["displayName"] = display_name
     if tags:
         form_data["customTags"] = ",".join(tags)
     if dependencies_json:

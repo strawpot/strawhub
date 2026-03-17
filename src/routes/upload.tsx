@@ -240,12 +240,19 @@ function UploadPage() {
           const { frontmatter } = parseFrontmatter(text);
           if (frontmatter.name && typeof frontmatter.name === "string") {
             setSlug(frontmatter.name);
-            setDisplayName(
-              frontmatter.name
-                .split("-")
-                .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-                .join(" "),
-            );
+            // Use explicit displayName from frontmatter if present;
+            // otherwise generate from slug only for new packages (not updates)
+            const fmDisplayName = frontmatter.displayName ?? frontmatter.display_name;
+            if (typeof fmDisplayName === "string" && fmDisplayName.trim()) {
+              setDisplayName(fmDisplayName.trim());
+            } else if (!updateSlug) {
+              setDisplayName(
+                frontmatter.name
+                  .split("-")
+                  .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
+                  .join(" "),
+              );
+            }
           }
           const meta = frontmatter.metadata as Record<string, unknown> | undefined;
           if (meta?.version) {
@@ -254,7 +261,7 @@ function UploadPage() {
         });
       }
     },
-    [kind],
+    [kind, updateSlug],
   );
 
   const handleDrop = useCallback(
