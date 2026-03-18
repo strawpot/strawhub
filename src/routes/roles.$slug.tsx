@@ -329,14 +329,6 @@ function RoleDetailPage() {
         userId={currentUser?._id}
       />
 
-      {/* Comments */}
-      <CommentsSection
-        targetId={role._id}
-        targetKind="role"
-        commentCount={role.stats.comments}
-        currentUser={currentUser}
-      />
-
       {/* Skill Dependencies */}
       {role.dependencies.skills.length > 0 && (
         <div className="space-y-2">
@@ -378,6 +370,14 @@ function RoleDetailPage() {
           </div>
         </div>
       )}
+
+      {/* Comments */}
+      <CommentsSection
+        targetId={role._id}
+        targetKind="role"
+        commentCount={role.stats.comments}
+        currentUser={currentUser}
+      />
     </div>
   );
 }
