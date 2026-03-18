@@ -378,14 +378,6 @@ function SkillDetailPage() {
         userId={currentUser?._id}
       />
 
-      {/* Comments */}
-      <CommentsSection
-        targetId={skill._id}
-        targetKind="skill"
-        commentCount={skill.stats.comments}
-        currentUser={currentUser}
-      />
-
       {/* Dependencies */}
       {skill.dependencies.skills.length > 0 && (
         <div className="space-y-2">
@@ -404,6 +396,14 @@ function SkillDetailPage() {
           </div>
         </div>
       )}
+
+      {/* Comments */}
+      <CommentsSection
+        targetId={skill._id}
+        targetKind="skill"
+        commentCount={skill.stats.comments}
+        currentUser={currentUser}
+      />
     </div>
   );
 }
