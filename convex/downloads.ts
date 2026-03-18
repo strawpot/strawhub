@@ -22,6 +22,7 @@ export const trackDownload = mutation({
     const table = args.targetKind === "skill" ? "skills"
       : args.targetKind === "role" ? "roles"
       : args.targetKind === "memory" ? "memories"
+      : args.targetKind === "integration" ? "integrations"
       : "agents";
     const target = await ctx.db
       .query(table)
@@ -53,6 +54,14 @@ export const trackDownload = mutation({
           .query("memoryVersions")
           .withIndex("by_memory_version", (q) =>
             q.eq("memoryId", target._id as any).eq("version", args.version!),
+          )
+          .first();
+        versionId = ver?._id;
+      } else if (args.targetKind === "integration") {
+        const ver = await ctx.db
+          .query("integrationVersions")
+          .withIndex("by_integration_version", (q) =>
+            q.eq("integrationId", target._id as any).eq("version", args.version!),
           )
           .first();
         versionId = ver?._id;
