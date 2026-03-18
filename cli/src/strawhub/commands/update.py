@@ -144,23 +144,26 @@ def update_role(slug, is_global, skip_tools, yes, save):
 @update.command("agent")
 @click.argument("slug")
 @click.option("--global", "is_global", is_flag=True, default=False, help="Update global packages (~/.strawpot or STRAWPOT_HOME)")
+@click.option("--yes", "-y", is_flag=True, default=False, help="Automatically confirm tool install commands without prompting")
 @click.option("--save", is_flag=True, default=False, help="Update version constraint in strawpot.toml")
-def update_agent(slug, is_global, save):
+def update_agent(slug, is_global, yes, save):
     """Update an installed agent to its latest version."""
-    _update_one_impl(slug, kind="agent", is_global=is_global, save=save)
+    _update_one_impl(slug, kind="agent", is_global=is_global, yes=yes, save=save)
 
 
 @update.command("memory")
 @click.argument("slug")
 @click.option("--global", "is_global", is_flag=True, default=False, help="Update global packages (~/.strawpot or STRAWPOT_HOME)")
+@click.option("--yes", "-y", is_flag=True, default=False, help="Automatically confirm tool install commands without prompting")
 @click.option("--save", is_flag=True, default=False, help="Update version constraint in strawpot.toml")
-def update_memory(slug, is_global, save):
+def update_memory(slug, is_global, yes, save):
     """Update an installed memory to its latest version."""
-    _update_one_impl(slug, kind="memory", is_global=is_global, save=save)
+    _update_one_impl(slug, kind="memory", is_global=is_global, yes=yes, save=save)
 
 
 @update.command("integration")
 @click.argument("slug")
-def update_integration(slug):
+@click.option("--yes", "-y", is_flag=True, default=False, help="Automatically confirm tool install commands without prompting")
+def update_integration(slug, yes):
     """Update an installed integration to its latest version (always global)."""
-    _update_one_impl(slug, kind="integration", is_global=True)
+    _update_one_impl(slug, kind="integration", is_global=True, yes=yes)
