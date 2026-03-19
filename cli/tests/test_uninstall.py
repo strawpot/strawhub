@@ -96,17 +96,23 @@ class TestUninstallImpl:
                 _uninstall_impl("dep", kind="skill", ver=None, is_global=False)
             assert exc_info.value.code == 1
 
-    def test_integration_always_global(self):
-        """Verify uninstall integration uses is_global=True."""
+    def test_integration_defaults_to_local(self):
+        """Verify uninstall integration defaults to is_global=False."""
         runner = CliRunner()
         with patch("strawhub.commands.uninstall._uninstall_impl") as mock_impl:
             result = runner.invoke(cli, ["uninstall", "integration", "test-slug"])
 
         mock_impl.assert_called_once()
-        call_kwargs = mock_impl.call_args
-        assert call_kwargs.kwargs.get("is_global") is True or (
-            len(call_kwargs.args) > 3 and call_kwargs.args[3] is True
-        )
+        assert mock_impl.call_args.kwargs.get("is_global") is False
+
+    def test_integration_global_flag(self):
+        """Verify uninstall integration --global passes is_global=True."""
+        runner = CliRunner()
+        with patch("strawhub.commands.uninstall._uninstall_impl") as mock_impl:
+            result = runner.invoke(cli, ["uninstall", "integration", "test-slug", "--global"])
+
+        mock_impl.assert_called_once()
+        assert mock_impl.call_args.kwargs.get("is_global") is True
 
     def test_save_removes_from_toml(self, tmp_path):
         """Verify --save calls ProjectFile.remove_dependency."""
