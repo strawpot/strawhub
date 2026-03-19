@@ -11,6 +11,15 @@ The project file declares dependencies with optional version constraints:
     implementer = "*"
     reviewer = "==2.0.0"
 
+    [agents]
+    my-agent = "*"
+
+    [memories]
+    shared-context = "==1.0.0"
+
+    [integrations]
+    discord = "*"
+
 Constraint formats:
     "*"       — latest version
     "==X.Y.Z" — exact version
@@ -30,10 +39,15 @@ else:
 class ProjectFile:
     """Manages the strawpot.toml project file."""
 
+    _SECTIONS = ("skills", "roles", "agents", "memories", "integrations")
+
     def __init__(self, path: Path):
         self.path = path
         self.skills: dict[str, str] = {}
         self.roles: dict[str, str] = {}
+        self.agents: dict[str, str] = {}
+        self.memories: dict[str, str] = {}
+        self.integrations: dict[str, str] = {}
 
     @classmethod
     def load(cls, path: Path) -> ProjectFile:
@@ -43,8 +57,8 @@ class ProjectFile:
             return pf
         with open(path, "rb") as f:
             data = tomllib.load(f)
-        pf.skills = {k: str(v) for k, v in data.get("skills", {}).items()}
-        pf.roles = {k: str(v) for k, v in data.get("roles", {}).items()}
+        for section in cls._SECTIONS:
+            setattr(pf, section, {k: str(v) for k, v in data.get(section, {}).items()})
         return pf
 
     @classmethod
@@ -57,25 +71,35 @@ class ProjectFile:
     def save(self) -> None:
         """Write project file to disk."""
         lines: list[str] = []
-        if self.skills:
-            lines.append("[skills]")
-            for slug in sorted(self.skills):
-                lines.append(f'{slug} = "{self.skills[slug]}"')
-            lines.append("")
-        if self.roles:
-            lines.append("[roles]")
-            for slug in sorted(self.roles):
-                lines.append(f'{slug} = "{self.roles[slug]}"')
-            lines.append("")
+        for section in self._SECTIONS:
+            entries: dict[str, str] = getattr(self, section)
+            if entries:
+                lines.append(f"[{section}]")
+                for slug in sorted(entries):
+                    lines.append(f'{slug} = "{entries[slug]}"')
+                lines.append("")
         self.path.write_text("\n".join(lines), encoding="utf-8")
+
+    # Map kind → attribute name (handles irregular plural "memory" → "memories")
+    _KIND_TO_SECTION = {
+        "skill": "skills",
+        "role": "roles",
+        "agent": "agents",
+        "memory": "memories",
+        "integration": "integrations",
+    }
+
+    def _target(self, kind: str) -> dict[str, str]:
+        """Return the dict for the given package kind."""
+        section = self._KIND_TO_SECTION[kind]
+        return getattr(self, section)
 
     def add_dependency(
         self, kind: str, slug: str, version: str, exact: bool = False
     ) -> None:
         """Add or update a dependency with a version constraint."""
         constraint = f"=={version}" if exact else "*"
-        target = self.skills if kind == "skill" else self.roles
-        target[slug] = constraint
+        self._target(kind)[slug] = constraint
 
     def update_dependency(self, kind: str, slug: str, new_version: str) -> bool:
         """Update the version in an existing constraint, preserving the operator.
@@ -85,7 +109,7 @@ class ProjectFile:
 
         Returns True if the dependency existed and was updated.
         """
-        target = self.skills if kind == "skill" else self.roles
+        target = self._target(kind)
         if slug not in target:
             return False
         current = target[slug]
@@ -99,31 +123,34 @@ class ProjectFile:
 
     def get_constraint(self, kind: str, slug: str) -> str | None:
         """Get the constraint string for a dependency, or None."""
-        target = self.skills if kind == "skill" else self.roles
+        target = self._target(kind)
         return target.get(slug)
 
     def remove_dependency(self, kind: str, slug: str) -> bool:
         """Remove a dependency. Returns True if it was present."""
-        target = self.skills if kind == "skill" else self.roles
+        target = self._target(kind)
         if slug in target:
             del target[slug]
             return True
         return False
 
+    # Reverse map: section name → kind
+    _SECTION_TO_KIND = {v: k for k, v in _KIND_TO_SECTION.items()}
+
     def get_all_dependencies(self) -> list[tuple[str, str, str]]:
         """Return all dependencies as (kind, slug, constraint) tuples."""
         deps: list[tuple[str, str, str]] = []
-        for slug, constraint in self.skills.items():
-            deps.append(("skill", slug, constraint))
-        for slug, constraint in self.roles.items():
-            deps.append(("role", slug, constraint))
+        for section in self._SECTIONS:
+            kind = self._SECTION_TO_KIND[section]
+            for slug, constraint in getattr(self, section).items():
+                deps.append((kind, slug, constraint))
         return deps
 
     def has_dependency(self, kind: str, slug: str) -> bool:
         """Check if a dependency is declared."""
-        target = self.skills if kind == "skill" else self.roles
+        target = self._target(kind)
         return slug in target
 
     @property
     def is_empty(self) -> bool:
-        return not self.skills and not self.roles
+        return all(not getattr(self, s) for s in self._SECTIONS)

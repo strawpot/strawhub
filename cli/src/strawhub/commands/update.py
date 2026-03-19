@@ -163,7 +163,9 @@ def update_memory(slug, is_global, yes, save):
 
 @update.command("integration")
 @click.argument("slug")
+@click.option("--global", "is_global", is_flag=True, default=False, help="Update global packages (~/.strawpot or STRAWPOT_HOME)")
 @click.option("--yes", "-y", is_flag=True, default=False, help="Automatically confirm tool install commands without prompting")
-def update_integration(slug, yes):
-    """Update an installed integration to its latest version (always global)."""
-    _update_one_impl(slug, kind="integration", is_global=True, yes=yes)
+@click.option("--save", is_flag=True, default=False, help="Update version constraint in strawpot.toml")
+def update_integration(slug, is_global, yes, save):
+    """Update an installed integration to its latest version."""
+    _update_one_impl(slug, kind="integration", is_global=is_global, yes=yes, save=save)

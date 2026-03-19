@@ -120,9 +120,11 @@ def uninstall_memory(slug, ver, is_global, save):
 @uninstall.command("integration")
 @click.argument("slug")
 @click.option("--version", "ver", default=None, help="Specific version to remove (removes all versions if omitted)")
-def uninstall_integration(slug, ver):
-    """Remove an installed integration (always global)."""
-    _uninstall_impl(slug, kind="integration", ver=ver, is_global=True)
+@click.option("--global", "is_global", is_flag=True, default=False, help="Remove from global directory (~/.strawpot or STRAWPOT_HOME)")
+@click.option("--save", is_flag=True, default=False, help="Also remove from strawpot.toml")
+def uninstall_integration(slug, ver, is_global, save):
+    """Remove an installed integration."""
+    _uninstall_impl(slug, kind="integration", ver=ver, is_global=is_global, save=save)
 
 
 def _find_targets(
