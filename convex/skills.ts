@@ -284,11 +284,16 @@ export const publishInternal = internalMutation({
 
     // Validate skill dependencies
     if (dependencies?.skills?.length) {
+      const errors: string[] = [];
       const notFound: string[] = [];
       const versionMismatch: string[] = [];
       let selfDep = false;
       for (const depSpec of dependencies.skills) {
-        const spec = parseDependencySpec(depSpec);
+        let spec;
+        try { spec = parseDependencySpec(depSpec); } catch (e: any) {
+          errors.push(`Invalid skill dependency: '${depSpec}'`);
+          continue;
+        }
         if (spec.operator === "wildcard") continue;
         if (spec.slug === args.slug) {
           selfDep = true;
@@ -315,7 +320,6 @@ export const publishInternal = internalMutation({
           }
         }
       }
-      const errors: string[] = [];
       if (selfDep) errors.push("Skill cannot depend on itself");
       if (notFound.length > 0) errors.push(`Dependency skill(s) not found in registry: ${JSON.stringify(notFound)}`);
       if (versionMismatch.length > 0) errors.push(`No matching version for skill(s): ${JSON.stringify(versionMismatch)}`);
@@ -463,11 +467,16 @@ export const publish = mutation({
 
     // Validate skill dependencies
     if (dependencies?.skills?.length) {
+      const errors: string[] = [];
       const notFound: string[] = [];
       const versionMismatch: string[] = [];
       let selfDep = false;
       for (const depSpec of dependencies.skills) {
-        const spec = parseDependencySpec(depSpec);
+        let spec;
+        try { spec = parseDependencySpec(depSpec); } catch (e: any) {
+          errors.push(`Invalid skill dependency: '${depSpec}'`);
+          continue;
+        }
         if (spec.operator === "wildcard") continue;
         if (spec.slug === args.slug) {
           selfDep = true;
@@ -494,7 +503,6 @@ export const publish = mutation({
           }
         }
       }
-      const errors: string[] = [];
       if (selfDep) errors.push("Skill cannot depend on itself");
       if (notFound.length > 0) errors.push(`Dependency skill(s) not found in registry: ${JSON.stringify(notFound)}`);
       if (versionMismatch.length > 0) errors.push(`No matching version for skill(s): ${JSON.stringify(versionMismatch)}`);

@@ -257,6 +257,7 @@ export const publishInternal = internalMutation({
     }
 
     // Validate all dependencies (collect errors by category)
+    const depErrors: string[] = [];
     const skillsNotFound: string[] = [];
     const skillVersionMismatch: string[] = [];
     const rolesNotFound: string[] = [];
@@ -265,7 +266,11 @@ export const publishInternal = internalMutation({
 
     if (dependencies?.skills?.length) {
       for (const depSpec of dependencies.skills) {
-        const spec = parseDependencySpec(depSpec);
+        let spec;
+        try { spec = parseDependencySpec(depSpec); } catch (e: any) {
+          depErrors.push(`Invalid skill dependency: '${depSpec}'`);
+          continue;
+        }
         if (spec.operator === "wildcard") continue;
         const skill = await ctx.db
           .query("skills")
@@ -292,7 +297,11 @@ export const publishInternal = internalMutation({
 
     if (dependencies?.roles?.length) {
       for (const depSpec of dependencies.roles) {
-        const spec = parseDependencySpec(depSpec);
+        let spec;
+        try { spec = parseDependencySpec(depSpec); } catch (e: any) {
+          depErrors.push(`Invalid role dependency: '${depSpec}'`);
+          continue;
+        }
         if (spec.operator === "wildcard") continue;
         if (spec.slug === args.slug) {
           selfDep = true;
@@ -321,7 +330,6 @@ export const publishInternal = internalMutation({
       }
     }
 
-    const depErrors: string[] = [];
     if (selfDep) depErrors.push("Role cannot depend on itself");
     if (skillsNotFound.length > 0) depErrors.push(`Dependency skill(s) not found in registry: ${JSON.stringify(skillsNotFound)}`);
     if (rolesNotFound.length > 0) depErrors.push(`Dependency role(s) not found in registry: ${JSON.stringify(rolesNotFound)}`);
@@ -444,6 +452,7 @@ export const publish = mutation({
     }
 
     // Validate all dependencies (collect errors by category)
+    const depErrors: string[] = [];
     const skillsNotFound: string[] = [];
     const skillVersionMismatch: string[] = [];
     const rolesNotFound: string[] = [];
@@ -452,7 +461,11 @@ export const publish = mutation({
 
     if (dependencies?.skills?.length) {
       for (const depSpec of dependencies.skills) {
-        const spec = parseDependencySpec(depSpec);
+        let spec;
+        try { spec = parseDependencySpec(depSpec); } catch (e: any) {
+          depErrors.push(`Invalid skill dependency: '${depSpec}'`);
+          continue;
+        }
         if (spec.operator === "wildcard") continue;
         const skill = await ctx.db
           .query("skills")
@@ -479,7 +492,11 @@ export const publish = mutation({
 
     if (dependencies?.roles?.length) {
       for (const depSpec of dependencies.roles) {
-        const spec = parseDependencySpec(depSpec);
+        let spec;
+        try { spec = parseDependencySpec(depSpec); } catch (e: any) {
+          depErrors.push(`Invalid role dependency: '${depSpec}'`);
+          continue;
+        }
         if (spec.operator === "wildcard") continue;
         if (spec.slug === args.slug) {
           selfDep = true;
@@ -508,7 +525,6 @@ export const publish = mutation({
       }
     }
 
-    const depErrors: string[] = [];
     if (selfDep) depErrors.push("Role cannot depend on itself");
     if (skillsNotFound.length > 0) depErrors.push(`Dependency skill(s) not found in registry: ${JSON.stringify(skillsNotFound)}`);
     if (rolesNotFound.length > 0) depErrors.push(`Dependency role(s) not found in registry: ${JSON.stringify(rolesNotFound)}`);
