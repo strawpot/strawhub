@@ -267,29 +267,53 @@ def _install_impl(
             # Run package install scripts (non-fatal)
             if not skip_tools:
                 for dep in installed_deps:
-                    run_package_install(
-                        root, dep["kind"], dep["slug"], yes=yes
+                    try:
+                        run_package_install(
+                            root, dep["kind"], dep["slug"], yes=yes
+                        )
+                    except Exception as e:
+                        console.print(
+                            f"[yellow]Warning:[/yellow] Install script for "
+                            f"'{dep['slug']}' failed: {e}"
+                        )
+                try:
+                    run_package_install(root, kind, slug, yes=yes)
+                except Exception as e:
+                    console.print(
+                        f"[yellow]Warning:[/yellow] Install script for "
+                        f"'{slug}' failed: {e}"
                     )
-                run_package_install(root, kind, slug, yes=yes)
 
             # Run tool installs (non-fatal)
             if not skip_tools:
                 seen: set[str] = set()
                 all_results: list[dict] = []
                 for dep in installed_deps:
+                    try:
+                        results = run_tool_installs_for_package(
+                            root,
+                            dep["kind"],
+                            dep["slug"],
+                            dep["version"],
+                            yes=yes,
+                            seen=seen,
+                        )
+                        all_results.extend(results)
+                    except Exception as e:
+                        console.print(
+                            f"[yellow]Warning:[/yellow] Tool check for "
+                            f"'{dep['slug']}' failed: {e}"
+                        )
+                try:
                     results = run_tool_installs_for_package(
-                        root,
-                        dep["kind"],
-                        dep["slug"],
-                        dep["version"],
-                        yes=yes,
-                        seen=seen,
+                        root, kind, slug, target_version, yes=yes, seen=seen
                     )
                     all_results.extend(results)
-                results = run_tool_installs_for_package(
-                    root, kind, slug, target_version, yes=yes, seen=seen
-                )
-                all_results.extend(results)
+                except Exception as e:
+                    console.print(
+                        f"[yellow]Warning:[/yellow] Tool check for "
+                        f"'{slug}' failed: {e}"
+                    )
                 failed = [r for r in all_results if r["status"] == "failed"]
                 if failed:
                     names = ", ".join(r["tool"] for r in failed)

@@ -86,6 +86,20 @@ class TestExtractTools:
         fm = {"metadata": {"strawpot": {"tools": "invalid"}}}
         assert extract_tools(fm) is None
 
+    def test_returns_none_when_metadata_is_empty_string(self):
+        """Regression: custom parser returns '' for empty YAML values."""
+        assert extract_tools({"metadata": ""}) is None
+
+    def test_returns_none_when_strawpot_is_empty_string(self):
+        """Regression: 'metadata:\n  strawpot:' with no content yields ''."""
+        assert extract_tools({"metadata": {"strawpot": ""}}) is None
+
+    def test_returns_none_when_metadata_is_list(self):
+        assert extract_tools({"metadata": ["a", "b"]}) is None
+
+    def test_returns_none_when_strawpot_is_list(self):
+        assert extract_tools({"metadata": {"strawpot": ["a"]}}) is None
+
 
 # ── parse_tool_specs ──────────────────────────────────────────────────────────
 
