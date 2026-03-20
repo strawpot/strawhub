@@ -171,8 +171,8 @@ class TestResolveErrors:
                 local_root=strawpot_dir, global_root=strawpot_dir,
             )
 
-    def test_circular_dependency(self, strawpot_dir):
-        """Two skills that depend on each other."""
+    def test_circular_dependency_resolves(self, strawpot_dir):
+        """Two skills that depend on each other should resolve successfully."""
         d = strawpot_dir / "skills" / "a"
         d.mkdir(parents=True)
         (d / "SKILL.md").write_text(
@@ -187,11 +187,13 @@ class TestResolveErrors:
         )
         (d / ".version").write_text("1.0.0\n")
 
-        with pytest.raises(DependencyError, match="Circular dependency"):
-            resolve(
-                "a", kind="skill",
-                local_root=strawpot_dir, global_root=strawpot_dir,
-            )
+        result = resolve(
+            "a", kind="skill",
+            local_root=strawpot_dir, global_root=strawpot_dir,
+        )
+        assert result["slug"] == "a"
+        dep_slugs = {d["slug"] for d in result["dependencies"]}
+        assert dep_slugs == {"b"}
 
     def test_kind_required(self, strawpot_dir, make_skill):
         """kind is a required argument."""
@@ -270,3 +272,59 @@ class TestResolveRoleDeps:
         assert "*" not in dep_slugs
         assert "reviewer" in dep_slugs
         assert "testing" in dep_slugs
+
+
+class TestCircularDependencies:
+    """Circular dependencies should resolve gracefully, not error."""
+
+    def test_two_roles_circular(self, strawpot_dir, make_role):
+        """Role A ↔ Role B (the design-system-architect ↔ visual-qa-reviewer case)."""
+        make_role("design-system-architect", "1.0.0", role_deps=["visual-qa-reviewer"])
+        make_role("visual-qa-reviewer", "1.0.0", role_deps=["design-system-architect"])
+
+        result = resolve(
+            "design-system-architect", kind="role",
+            local_root=strawpot_dir, global_root=strawpot_dir,
+        )
+        assert result["slug"] == "design-system-architect"
+        dep_slugs = {d["slug"] for d in result["dependencies"]}
+        assert dep_slugs == {"visual-qa-reviewer"}
+
+    def test_three_way_cycle(self, strawpot_dir, make_skill):
+        """A → B → C → A."""
+        make_skill("a", "1.0.0", deps=["b"])
+        make_skill("b", "1.0.0", deps=["c"])
+        make_skill("c", "1.0.0", deps=["a"])
+
+        result = resolve(
+            "a", kind="skill",
+            local_root=strawpot_dir, global_root=strawpot_dir,
+        )
+        assert result["slug"] == "a"
+        dep_slugs = {d["slug"] for d in result["dependencies"]}
+        assert dep_slugs == {"b", "c"}
+
+    def test_circular_with_shared_deps(self, strawpot_dir, make_skill, make_role):
+        """Roles A ↔ B, both depending on skill S."""
+        make_skill("shared-skill", "1.0.0")
+        make_role("role-a", "1.0.0", skill_deps=["shared-skill"], role_deps=["role-b"])
+        make_role("role-b", "1.0.0", skill_deps=["shared-skill"], role_deps=["role-a"])
+
+        result = resolve(
+            "role-a", kind="role",
+            local_root=strawpot_dir, global_root=strawpot_dir,
+        )
+        assert result["slug"] == "role-a"
+        dep_slugs = {d["slug"] for d in result["dependencies"]}
+        assert dep_slugs == {"role-b", "shared-skill"}
+
+    def test_self_dependency(self, strawpot_dir, make_skill):
+        """A skill that depends on itself."""
+        make_skill("self-dep", "1.0.0", deps=["self-dep"])
+
+        result = resolve(
+            "self-dep", kind="skill",
+            local_root=strawpot_dir, global_root=strawpot_dir,
+        )
+        assert result["slug"] == "self-dep"
+        assert result["dependencies"] == []

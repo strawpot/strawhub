@@ -100,9 +100,7 @@ def resolve(
         if key in resolved:
             return
         if key in visiting:
-            raise DependencyError(
-                f"Circular dependency detected: {pkg_kind} '{pkg_slug}'"
-            )
+            return  # circular dep — node is being resolved up the stack
         visiting.add(key)
 
         pkg_candidates = index.get(key, [])

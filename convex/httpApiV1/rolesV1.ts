@@ -120,9 +120,7 @@ export async function handleResolveRoleDeps(ctx: any, request: Request): Promise
     if (spec.operator === "wildcard") return; // "*" is not a real package
     const key = `skill:${spec.slug}`;
     if (resolvedKeys.has(key)) return;
-    if (visiting.has(key)) {
-      throw new Error(`Circular dependency: ${spec.slug}`);
-    }
+    if (visiting.has(key)) return; // circular dep — node is being resolved up the stack
     visiting.add(key);
 
     const skill = await ctx.runQuery(api.skills.getBySlug, { slug: spec.slug });
@@ -164,9 +162,7 @@ export async function handleResolveRoleDeps(ctx: any, request: Request): Promise
     if (spec.operator === "wildcard") return; // "*" is not a real package
     const key = `role:${spec.slug}`;
     if (resolvedKeys.has(key)) return;
-    if (visiting.has(key)) {
-      throw new Error(`Circular dependency: ${spec.slug}`);
-    }
+    if (visiting.has(key)) return; // circular dep — node is being resolved up the stack
     visiting.add(key);
 
     const depRole = await ctx.runQuery(api.roles.getBySlug, { slug: spec.slug });
