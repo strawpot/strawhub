@@ -46,6 +46,19 @@ describe("parseDependencySpec", () => {
     expect(spec.slug).toBe("my-skill");
   });
 
+  it("strips inline comments", () => {
+    const spec = parseDependencySpec("strawpot-ceo  # escalation target");
+    expect(spec.slug).toBe("strawpot-ceo");
+    expect(spec.operator).toBe("latest");
+  });
+
+  it("strips inline comment from versioned spec", () => {
+    const spec = parseDependencySpec("code-review==1.0.0 # pinned");
+    expect(spec.slug).toBe("code-review");
+    expect(spec.operator).toBe("==");
+    expect(spec.version).toBe("1.0.0");
+  });
+
   it("throws on invalid spec", () => {
     expect(() => parseDependencySpec("INVALID_SLUG")).toThrow();
     expect(() => parseDependencySpec("has spaces")).toThrow();

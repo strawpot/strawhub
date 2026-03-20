@@ -56,6 +56,14 @@ class TestParseDependencySpec:
     def test_wildcard(self):
         assert parse_dependency_spec("*") == DependencySpec("*", "wildcard", None)
 
+    def test_strips_inline_comments(self):
+        assert parse_dependency_spec("strawpot-ceo  # escalation target") == DependencySpec(
+            "strawpot-ceo", "latest", None
+        )
+        assert parse_dependency_spec("code-review==1.0.0 # pinned") == DependencySpec(
+            "code-review", "==", "1.0.0"
+        )
+
     def test_strips_surrounding_quotes(self):
         assert parse_dependency_spec('"*"') == DependencySpec("*", "wildcard", None)
         assert parse_dependency_spec("'git-workflow'") == DependencySpec(

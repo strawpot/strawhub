@@ -72,6 +72,19 @@ describe("parseDependencySpec", () => {
     });
   });
 
+  it("strips inline comments", () => {
+    expect(parseDependencySpec("strawpot-ceo  # escalation target")).toEqual({
+      slug: "strawpot-ceo",
+      operator: "latest",
+      version: null,
+    });
+    expect(parseDependencySpec("code-review==1.0.0 # pinned")).toEqual({
+      slug: "code-review",
+      operator: "==",
+      version: "1.0.0",
+    });
+  });
+
   it("strips surrounding quotes", () => {
     expect(parseDependencySpec('"*"')).toEqual({
       slug: "*",

@@ -25,6 +25,11 @@ export function parseDependencySpec(spec: string): DependencySpec {
   if ((input.startsWith('"') && input.endsWith('"')) || (input.startsWith("'") && input.endsWith("'"))) {
     input = input.slice(1, -1);
   }
+  // Strip inline YAML comments (e.g. "slug  # some note")
+  const commentIdx = input.indexOf("#");
+  if (commentIdx >= 0) {
+    input = input.slice(0, commentIdx).trim();
+  }
 
   if (input === "*") {
     return { slug: "*", operator: "wildcard", version: null };
