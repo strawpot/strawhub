@@ -121,9 +121,7 @@ export async function handleResolveSkillDeps(ctx: any, request: Request): Promis
     if (spec.operator === "wildcard") return; // "*" is not a real package
     const key = `skill:${spec.slug}`;
     if (resolvedKeys.has(key)) return;
-    if (visiting.has(key)) {
-      throw new Error(`Circular dependency: ${spec.slug}`);
-    }
+    if (visiting.has(key)) return; // circular dep — node is being resolved up the stack
     visiting.add(key);
 
     const depSkill = await ctx.runQuery(api.skills.getBySlug, { slug: spec.slug });
