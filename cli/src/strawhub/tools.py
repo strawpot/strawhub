@@ -55,11 +55,13 @@ def extract_tools(fm: dict) -> dict | None:
     Reads from metadata.strawpot.tools.
     Returns the tools dict or None if not present.
     """
-    tools = (
-        fm.get("metadata", {})
-        .get("strawpot", {})
-        .get("tools")
-    )
+    metadata = fm.get("metadata")
+    if not isinstance(metadata, dict):
+        return None
+    strawpot = metadata.get("strawpot")
+    if not isinstance(strawpot, dict):
+        return None
+    tools = strawpot.get("tools")
     if not isinstance(tools, dict) or not tools:
         return None
     return tools
