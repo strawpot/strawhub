@@ -42,6 +42,9 @@ def parse_dependency_spec(spec: str) -> DependencySpec:
     # Strip surrounding quotes that some YAML parsers may preserve
     if (s.startswith('"') and s.endswith('"')) or (s.startswith("'") and s.endswith("'")):
         s = s[1:-1]
+    # Strip inline YAML comments (e.g. "slug  # some note")
+    if "#" in s:
+        s = s[: s.index("#")].strip()
 
     if s == "*":
         return DependencySpec(slug="*", operator="wildcard", version=None)
