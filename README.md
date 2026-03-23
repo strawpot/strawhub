@@ -206,6 +206,40 @@ User task → StrawPot runtime → Role (ai-ceo)
                                      └─ Agent (gemini)
 ```
 
+## Use without StrawPot
+
+StrawHub roles work in **vanilla Claude Code** -- no StrawPot runtime needed. The `export` command strips StrawPot-specific metadata and inlines skill dependencies into a single Markdown file you can drop into any project.
+
+```bash
+# Export a role to stdout
+strawhub export role code-reviewer
+
+# Save to a file
+strawhub export role code-reviewer -o .claude/roles/code-reviewer.md
+
+# Export without inlining skill dependencies
+strawhub export role code-reviewer --no-skills
+```
+
+Then add it to your project:
+
+```bash
+# Option A: Append to CLAUDE.md
+strawhub export role code-reviewer >> CLAUDE.md
+
+# Option B: Use Claude Code's .claude/ directory
+mkdir -p .claude/roles
+strawhub export role code-reviewer -o .claude/roles/code-reviewer.md
+```
+
+Open Claude Code and the role's instructions take effect immediately. No runtime, no configuration, no orchestrator.
+
+### Which roles work standalone?
+
+**Instruction-set roles** (code-reviewer, implementation-planner, github-triager, code-simplifier, implementer) retain 85-95% of their value standalone. Their knowledge and workflows work unchanged.
+
+**Orchestrator roles** (pr-reviewer, pipeline-orchestrator) depend on multi-agent delegation and need the full StrawPot runtime. Use `strawhub install` for those.
+
 ## Documentation
 
 - [CLI Reference](docs/cli.md)

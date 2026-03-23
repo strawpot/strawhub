@@ -21,6 +21,7 @@ from strawhub.commands.ban_user import ban_user
 from strawhub.commands.set_role import set_role
 from strawhub.commands.install_tools import install_tools
 from strawhub.commands.validate import validate
+from strawhub.commands.export import export
 
 
 @click.group()
@@ -59,3 +60,4 @@ cli.add_command(unstar)
 cli.add_command(delete)
 cli.add_command(ban_user)
 cli.add_command(set_role)
+cli.add_command(export)
