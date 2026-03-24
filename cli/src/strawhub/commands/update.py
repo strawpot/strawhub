@@ -45,14 +45,24 @@ from strawhub.project_file import ProjectFile
     default=False,
     help="Update version constraints in strawpot.toml to match installed versions",
 )
+@click.option(
+    "--type",
+    "kind_filter",
+    type=click.Choice(["role", "skill", "agent", "memory", "integration"], case_sensitive=False),
+    default=None,
+    help="Only update packages of this type (used with --all)",
+)
 @click.pass_context
-def update(ctx, update_all, is_global, skip_tools, yes, save):
+def update(ctx, update_all, is_global, skip_tools, yes, save, kind_filter):
     """Update installed skills/roles/agents/memories/integrations to their latest versions."""
     if save and is_global:
         print_error("--save cannot be used with --global")
         raise SystemExit(1)
+    if kind_filter and not update_all:
+        print_error("--type requires --all")
+        raise SystemExit(1)
     if update_all:
-        _update_all_impl(is_global, skip_tools=skip_tools, yes=yes, save=save)
+        _update_all_impl(is_global, skip_tools=skip_tools, yes=yes, save=save, kind_filter=kind_filter)
         return
     if ctx.invoked_subcommand is None:
         click.echo("Specify 'skill <slug>', 'role <slug>', 'agent <slug>', 'memory <slug>', 'integration <slug>', or use --all.")
@@ -71,7 +81,7 @@ def _save_updated_version(kind: str, slug: str) -> None:
         console.print(f"Updated '{slug}' to {constraint} in strawpot.toml")
 
 
-def _update_all_impl(is_global, skip_tools=False, yes=False, save=False):
+def _update_all_impl(is_global, skip_tools=False, yes=False, save=False, kind_filter=None):
     from strawhub.paths import _local_root_override
 
     if is_global and _local_root_override is not None:
@@ -81,11 +91,16 @@ def _update_all_impl(is_global, skip_tools=False, yes=False, save=False):
     root = get_root(is_global)
     lockfile = Lockfile.load(get_lockfile_path(root))
 
-    if not lockfile.direct_installs:
-        print_error("No packages installed.")
+    refs = list(lockfile.direct_installs)
+    if kind_filter:
+        refs = [r for r in refs if r.kind == kind_filter]
+
+    if not refs:
+        label = f" {kind_filter}s" if kind_filter else ""
+        print_error(f"No{label} packages installed.")
         raise SystemExit(1)
 
-    for ref in list(lockfile.direct_installs):
+    for ref in refs:
         _install_impl(
             ref.slug,
             kind=ref.kind,
