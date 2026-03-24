@@ -6,6 +6,7 @@ import click
 from strawhub.client import StrawHubClient
 from strawhub.display import print_success, print_error, console
 from strawhub.errors import StrawHubError
+from strawhub.logging import log_operation, log_exception
 from strawhub.frontmatter import parse_frontmatter, extract_dependencies, rewrite_frontmatter_name
 
 
@@ -113,11 +114,20 @@ def _publish_impl(path, kind, ver, changelog, tags):
                 result = client.publish_integration(form_data, files)
             else:
                 result = client.publish_agent(form_data, files)
-            print_success(
-                f"Published {kind} '{slug}' v{result.get('version', version)}"
+            published_version = result.get("version", version)
+            print_success(f"Published {kind} '{slug}' v{published_version}")
+            log_operation(
+                operation="publish",
+                kind=kind,
+                slug=slug,
+                version=published_version,
+                status="success",
             )
         except StrawHubError as e:
             print_error(str(e))
+            log_exception(
+                operation="publish", kind=kind, slug=slug, version=version, exc=e,
+            )
             raise SystemExit(1)
 
 

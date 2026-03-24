@@ -6,6 +6,7 @@ import click
 from strawhub.client import StrawHubClient
 from strawhub.display import print_success, print_error, console
 from strawhub.errors import NotFoundError, StrawHubError, DependencyError
+from strawhub.logging import log_operation, log_exception
 from strawhub.lockfile import Lockfile, PackageRef
 from strawhub.paths import (
     get_root,
@@ -253,6 +254,13 @@ def _install_impl(
 
             lockfile.save()
             print_success(f"Installed {kind} '{slug}' v{target_version}")
+            log_operation(
+                operation="install",
+                kind=kind,
+                slug=slug,
+                version=target_version,
+                status="success",
+            )
 
             # Save to project file if requested
             if save or save_exact:
@@ -322,11 +330,17 @@ def _install_impl(
                         f"{names}. Run 'strawhub install-tools' to retry."
                     )
 
-        except NotFoundError:
+        except NotFoundError as e:
             print_error(f"'{slug}' not found.")
+            log_exception(
+                operation="install", kind=kind, slug=slug, version=version, exc=e,
+            )
             raise SystemExit(1)
         except (StrawHubError, DependencyError) as e:
             print_error(str(e))
+            log_exception(
+                operation="install", kind=kind, slug=slug, version=version, exc=e,
+            )
             raise SystemExit(1)
 
 

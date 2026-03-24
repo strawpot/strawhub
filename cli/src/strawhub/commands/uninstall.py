@@ -4,6 +4,7 @@ import click
 
 from strawhub.display import print_success, print_error, console
 from strawhub.lockfile import Lockfile, PackageRef
+from strawhub.logging import log_operation
 from strawhub.paths import (
     get_root,
     get_lockfile_path,
@@ -38,12 +39,20 @@ def _uninstall_impl(slug, kind, ver, is_global, save=False):
 
     if not lockfile.packages:
         print_error("No packages installed (lockfile is empty).")
+        log_operation(
+            operation="uninstall", kind=kind, slug=slug, version=ver,
+            status="failure", error="lockfile is empty",
+        )
         raise SystemExit(1)
 
     # Find matching direct installs
     targets = _find_targets(lockfile, slug, kind, ver)
     if not targets:
         print_error(f"'{slug}' is not a direct install. Nothing to remove.")
+        log_operation(
+            operation="uninstall", kind=kind, slug=slug, version=ver,
+            status="failure", error="not a direct install",
+        )
         raise SystemExit(1)
 
     # Remove each target from direct installs
@@ -75,6 +84,14 @@ def _uninstall_impl(slug, kind, ver, is_global, save=False):
             console.print(f"Removed '{slug}' from strawpot.toml")
 
     print_success("Uninstall complete.")
+    for ref in targets:
+        log_operation(
+            operation="uninstall",
+            kind=ref.kind,
+            slug=ref.slug,
+            version=ref.version,
+            status="success",
+        )
 
 
 @uninstall.command("skill")
