@@ -268,17 +268,28 @@ class TestSearchQueryAlias:
         assert result.exit_code == 0
         mock.search.assert_called_once_with("code-reviewer", kind="all", limit=20)
 
-    def test_search_positional_wins_over_option(self):
-        """When both positional and --query are given, positional takes precedence."""
+    def test_search_positional_wins_when_matching_option(self):
+        """When both positional and --query match, no error."""
         data = {"results": [], "count": 0}
         mock = self._mock_client(data)
         with patch("strawhub.commands.search.StrawHubClient", return_value=mock):
-            result = CliRunner().invoke(cli, ["search", "positional-val", "--query", "option-val"])
+            result = CliRunner().invoke(cli, ["search", "same-val", "--query", "same-val"])
         assert result.exit_code == 0
-        mock.search.assert_called_once_with("positional-val", kind="all", limit=20)
+        mock.search.assert_called_once_with("same-val", kind="all", limit=20)
+
+    def test_search_conflicting_queries_error(self):
+        """When positional and --query differ, show a conflict error."""
+        result = CliRunner().invoke(cli, ["search", "positional-val", "--query", "option-val"])
+        assert result.exit_code != 0
+        assert "Conflicting" in result.output
 
     def test_search_no_query_error(self):
         result = CliRunner().invoke(cli, ["search"])
+        assert result.exit_code != 0
+        assert "Missing search query" in result.output
+
+    def test_search_empty_string_query_error(self):
+        result = CliRunner().invoke(cli, ["search", ""])
         assert result.exit_code != 0
         assert "Missing search query" in result.output
 
@@ -339,8 +350,7 @@ class TestListPositionalFilter:
             result = CliRunner().invoke(cli, ["list", "--json"])
         assert result.exit_code == 0
         parsed = json.loads(result.output)
-        assert "skills" in parsed
-        assert "roles" in parsed
+        assert set(parsed.keys()) == {"skills", "roles", "agents", "memories", "integrations"}
 
     def test_list_invalid_filter(self):
         result = CliRunner().invoke(cli, ["list", "foobar"])

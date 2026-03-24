@@ -22,6 +22,10 @@ def search(query, query_opt, kind, limit, as_json):
       strawhub search --query code-reviewer
       strawhub search code-reviewer --kind role
     """
+    if query and query_opt and query != query_opt:
+        raise click.UsageError(
+            f"Conflicting queries: positional '{query}' vs --query '{query_opt}'."
+        )
     query = query or query_opt
     if not query:
         raise click.UsageError(
