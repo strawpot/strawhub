@@ -7,11 +7,15 @@ from strawhub.display import print_list_table, print_error, console
 from strawhub.errors import StrawHubError
 
 
+_VALID_KINDS = ("skills", "roles", "agents", "memories", "integrations", "all")
+
+
 @click.command("list")
+@click.argument("resource_type", required=False, default=None)
 @click.option(
     "--kind",
-    type=click.Choice(["skills", "roles", "agents", "memories", "integrations", "all"]),
-    default="all",
+    type=click.Choice(list(_VALID_KINDS)),
+    default=None,
 )
 @click.option("--limit", type=int, default=50, help="Max results (1-200)")
 @click.option(
@@ -20,8 +24,29 @@ from strawhub.errors import StrawHubError
     default="updated",
 )
 @click.option("--json", "as_json", is_flag=True, default=False, help="Output as JSON")
-def list_cmd(kind, limit, sort, as_json):
-    """List skills, roles, agents, memories, and/or integrations."""
+def list_cmd(resource_type, kind, limit, sort, as_json):
+    """List skills, roles, agents, memories, and/or integrations.
+
+    \b
+    Optionally pass a resource type as a positional filter:
+      strawhub list roles
+      strawhub list skills --sort downloads
+
+    This is equivalent to --kind:
+      strawhub list --kind roles
+    """
+    if resource_type:
+        if resource_type not in _VALID_KINDS:
+            raise click.UsageError(
+                f"Unknown resource type '{resource_type}'.\n\n"
+                f"Valid types: {', '.join(_VALID_KINDS)}"
+            )
+        if kind and kind != resource_type:
+            raise click.UsageError(
+                f"Conflicting filters: positional '{resource_type}' vs --kind '{kind}'."
+            )
+        kind = resource_type
+    kind = kind or "all"
     with StrawHubClient() as client:
         try:
             result = {}

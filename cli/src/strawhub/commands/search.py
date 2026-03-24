@@ -8,12 +8,26 @@ from strawhub.errors import StrawHubError
 
 
 @click.command()
-@click.argument("query")
+@click.argument("query", required=False, default=None)
+@click.option("--query", "query_opt", default=None, help="Search query (alternative to positional argument).")
 @click.option("--kind", type=click.Choice(["skill", "role", "agent", "memory", "integration", "all"]), default="all")
 @click.option("--limit", type=int, default=20, help="Max results (1-100)")
 @click.option("--json", "as_json", is_flag=True, default=False, help="Output as JSON")
-def search(query, kind, limit, as_json):
-    """Search for skills, roles, agents, memories, and integrations."""
+def search(query, query_opt, kind, limit, as_json):
+    """Search for skills, roles, agents, memories, and integrations.
+
+    \b
+    Examples:
+      strawhub search code-reviewer
+      strawhub search --query code-reviewer
+      strawhub search code-reviewer --kind role
+    """
+    query = query or query_opt
+    if not query:
+        raise click.UsageError(
+            "Missing search query.\n\n"
+            "Usage: strawhub search <query>  or  strawhub search --query <query>"
+        )
     with StrawHubClient() as client:
         try:
             data = client.search(query, kind=kind, limit=limit)
