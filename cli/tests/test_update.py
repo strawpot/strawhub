@@ -74,11 +74,12 @@ class TestUpdateAllImpl:
             "bar", kind="role", is_global=False, skip_tools=False, yes=False, update=True,
         )
 
+    @patch("strawhub.commands.update.click")
     @patch("strawhub.commands.update.Lockfile")
     @patch("strawhub.commands.update.get_lockfile_path")
     @patch("strawhub.commands.update.get_root")
     def test_no_packages_returns_successfully(
-        self, mock_root, mock_lf_path, mock_lockfile_cls, tmp_path
+        self, mock_root, mock_lf_path, mock_lockfile_cls, mock_click, tmp_path
     ):
         """Empty lockfile should exit cleanly, not raise SystemExit."""
         mock_root.return_value = tmp_path
@@ -89,6 +90,29 @@ class TestUpdateAllImpl:
         mock_lockfile_cls.load.return_value = lockfile
 
         _update_all_impl(is_global=False)  # should NOT raise
+        mock_click.echo.assert_called_once_with("No packages to update.")
+
+    @patch("strawhub.commands.update.click")
+    @patch("strawhub.commands.update.Lockfile")
+    @patch("strawhub.commands.update.get_lockfile_path")
+    @patch("strawhub.commands.update.get_root")
+    def test_no_packages_for_filtered_type(
+        self, mock_root, mock_lf_path, mock_lockfile_cls, mock_click, tmp_path
+    ):
+        """kind_filter that excludes all packages should return cleanly."""
+        from strawhub.lockfile import PackageRef
+
+        mock_root.return_value = tmp_path
+        mock_lf_path.return_value = tmp_path / "strawpot.lock"
+
+        lockfile = MagicMock()
+        lockfile.direct_installs = [
+            PackageRef(kind="skill", slug="foo", version="1.0.0"),
+        ]
+        mock_lockfile_cls.load.return_value = lockfile
+
+        _update_all_impl(is_global=False, kind_filter="agent")
+        mock_click.echo.assert_called_once_with("No agent packages to update.")
 
     def test_root_and_global_conflict(self):
         with patch("strawhub.paths._local_root_override", "/tmp/x"):
