@@ -77,9 +77,10 @@ class TestUpdateAllImpl:
     @patch("strawhub.commands.update.Lockfile")
     @patch("strawhub.commands.update.get_lockfile_path")
     @patch("strawhub.commands.update.get_root")
-    def test_error_when_no_packages(
+    def test_no_packages_returns_successfully(
         self, mock_root, mock_lf_path, mock_lockfile_cls, tmp_path
     ):
+        """Empty lockfile should exit cleanly, not raise SystemExit."""
         mock_root.return_value = tmp_path
         mock_lf_path.return_value = tmp_path / "strawpot.lock"
 
@@ -87,8 +88,7 @@ class TestUpdateAllImpl:
         lockfile.direct_installs = []
         mock_lockfile_cls.load.return_value = lockfile
 
-        with pytest.raises(SystemExit):
-            _update_all_impl(is_global=False)
+        _update_all_impl(is_global=False)  # should NOT raise
 
     def test_root_and_global_conflict(self):
         with patch("strawhub.paths._local_root_override", "/tmp/x"):

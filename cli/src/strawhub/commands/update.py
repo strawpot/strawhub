@@ -96,9 +96,9 @@ def _update_all_impl(is_global, skip_tools=False, yes=False, save=False, kind_fi
         refs = [r for r in refs if r.kind == kind_filter]
 
     if not refs:
-        label = f" {kind_filter}s" if kind_filter else ""
-        print_error(f"No{label} packages installed.")
-        raise SystemExit(1)
+        label = f" {kind_filter}" if kind_filter else ""
+        click.echo(f"No{label} packages to update.")
+        return
 
     for ref in refs:
         _install_impl(
