@@ -52,7 +52,7 @@ Everything needed to create, validate, and install packages locally:
 - **File constraints** — Max 100 files, 10 MB each, 50 MB total. Slug format: lowercase alphanumeric + hyphens, max 64 chars. Semver versioning.
 - **CLI** — `strawhub validate` checks a package locally. `strawhub install` / `publish` / `resolve` work against any registry endpoint (override via `STRAWHUB_API_URL`).
 
-The format and CLI are MIT-licensed. Anyone can build tools that produce or consume StrawHub packages without depending on strawhub.dev.
+The format and CLI are licensed under the Elastic License 2.0 (ELv2). Anyone can build tools that produce or consume StrawHub packages without depending on strawhub.dev.
 
 ### Hosted layer (strawhub.dev)
 

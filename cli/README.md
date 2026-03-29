@@ -2,7 +2,7 @@
 
 [![CI](https://img.shields.io/github/actions/workflow/status/strawpot/strawhub/ci.yml?branch=main)](https://github.com/strawpot/strawhub/actions/workflows/ci.yml?branch=main)
 [![PyPI](https://img.shields.io/pypi/v/strawhub)](https://pypi.org/project/strawhub/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/strawpot/strawhub/blob/main/LICENSE)
+[![License: Elastic-2.0](https://img.shields.io/badge/License-Elastic--2.0-blue.svg)](https://github.com/strawpot/strawhub/blob/main/LICENSE)
 
 Command-line client for [StrawHub](https://strawhub.dev), the public registry for [StrawPot](https://strawpot.com) agents.
 
