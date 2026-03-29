@@ -6,7 +6,7 @@ Browse, install, and publish the roles, skills, agents, memories, and integratio
 
 <p align="center">
   <a href="https://github.com/strawpot/strawhub/actions/workflows/ci.yml?branch=main"><img src="https://img.shields.io/github/actions/workflow/status/strawpot/strawhub/ci.yml?branch=main&style=for-the-badge" alt="CI"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="MIT License"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-Elastic--2.0-blue.svg?style=for-the-badge" alt="Elastic License 2.0"></a>
 </p>
 
 ```
@@ -215,7 +215,7 @@ User task → StrawPot runtime → Role (ai-ceo)
 
 ## License
 
-[MIT](LICENSE)
+[Elastic License 2.0 (ELv2)](LICENSE)
 
 ---
 
