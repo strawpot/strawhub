@@ -331,11 +331,11 @@ export const publishInternal = internalMutation({
     }
 
     if (selfDep) depErrors.push("Role cannot depend on itself");
-    if (skillsNotFound.length > 0) depErrors.push(`Dependency skill(s) not found in registry: ${JSON.stringify(skillsNotFound)}`);
-    if (rolesNotFound.length > 0) depErrors.push(`Dependency role(s) not found in registry: ${JSON.stringify(rolesNotFound)}`);
-    if (skillVersionMismatch.length > 0) depErrors.push(`No matching version for skill(s): ${JSON.stringify(skillVersionMismatch)}`);
-    if (roleVersionMismatch.length > 0) depErrors.push(`No matching version for role(s): ${JSON.stringify(roleVersionMismatch)}`);
-    if (depErrors.length > 0) throw new Error(depErrors.join(". "));
+    if (skillsNotFound.length > 0) depErrors.push(`Dependency skill(s) not found in registry: ${skillsNotFound.join(", ")}. Publish ${skillsNotFound.length === 1 ? "this skill" : "these skills"} first, then retry publishing '${args.slug}'`);
+    if (rolesNotFound.length > 0) depErrors.push(`Dependency role(s) not found in registry: ${rolesNotFound.join(", ")}. Publish ${rolesNotFound.length === 1 ? "this role" : "these roles"} first, then retry publishing '${args.slug}'`);
+    if (skillVersionMismatch.length > 0) depErrors.push(`No matching version for skill dependency of '${args.slug}': ${skillVersionMismatch.join(", ")}`);
+    if (roleVersionMismatch.length > 0) depErrors.push(`No matching version for role dependency of '${args.slug}': ${roleVersionMismatch.join(", ")}`);
+    if (depErrors.length > 0) throw new Error(`Failed to publish role '${args.slug}': ${depErrors.join(". ")}`);
 
     let role = await ctx.db
       .query("roles")
@@ -526,11 +526,11 @@ export const publish = mutation({
     }
 
     if (selfDep) depErrors.push("Role cannot depend on itself");
-    if (skillsNotFound.length > 0) depErrors.push(`Dependency skill(s) not found in registry: ${JSON.stringify(skillsNotFound)}`);
-    if (rolesNotFound.length > 0) depErrors.push(`Dependency role(s) not found in registry: ${JSON.stringify(rolesNotFound)}`);
-    if (skillVersionMismatch.length > 0) depErrors.push(`No matching version for skill(s): ${JSON.stringify(skillVersionMismatch)}`);
-    if (roleVersionMismatch.length > 0) depErrors.push(`No matching version for role(s): ${JSON.stringify(roleVersionMismatch)}`);
-    if (depErrors.length > 0) throw new Error(depErrors.join(". "));
+    if (skillsNotFound.length > 0) depErrors.push(`Dependency skill(s) not found in registry: ${skillsNotFound.join(", ")}. Publish ${skillsNotFound.length === 1 ? "this skill" : "these skills"} first, then retry publishing '${args.slug}'`);
+    if (rolesNotFound.length > 0) depErrors.push(`Dependency role(s) not found in registry: ${rolesNotFound.join(", ")}. Publish ${rolesNotFound.length === 1 ? "this role" : "these roles"} first, then retry publishing '${args.slug}'`);
+    if (skillVersionMismatch.length > 0) depErrors.push(`No matching version for skill dependency of '${args.slug}': ${skillVersionMismatch.join(", ")}`);
+    if (roleVersionMismatch.length > 0) depErrors.push(`No matching version for role dependency of '${args.slug}': ${roleVersionMismatch.join(", ")}`);
+    if (depErrors.length > 0) throw new Error(`Failed to publish role '${args.slug}': ${depErrors.join(". ")}`);
 
     // Find or create role
     let role = await ctx.db
