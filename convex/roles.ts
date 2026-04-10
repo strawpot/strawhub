@@ -18,7 +18,7 @@ function throwIfDepErrors(
   roleVersionMismatch: string[],
 ): void {
   const errors = [...depErrors];
-  if (selfDep) errors.push("Role cannot depend on itself");
+  if (selfDep) errors.push(`Role '${slug}' cannot depend on itself`);
   if (skillsNotFound.length > 0) {
     const noun = skillsNotFound.length === 1 ? "this skill" : "these skills";
     errors.push(`Dependency skill(s) not found in registry: ${skillsNotFound.join(", ")}. Publish ${noun} first, then retry publishing '${slug}'`);
