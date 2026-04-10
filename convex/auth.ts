@@ -11,6 +11,10 @@ function getAdminLogins(): Set<string> {
 export const { auth, signIn, signOut, store } = convexAuth({
   providers: [
     GitHub({
+      // GitHub now returns an `iss` parameter per RFC 9207. Without an explicit
+      // issuer, @convex-dev/auth falls back to a dummy string that doesn't match
+      // GitHub's actual issuer, causing oauth4webapi to reject the callback.
+      issuer: "https://github.com",
       profile(githubProfile: any) {
         return {
           id: String(githubProfile.id),
