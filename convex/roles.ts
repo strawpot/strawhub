@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { paginationOptsValidator } from "convex/server";
 import { mutation, query, internalMutation } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
@@ -34,7 +34,7 @@ function throwIfDepErrors(
     errors.push(`No matching version for role dependency of '${slug}': ${roleVersionMismatch.join(", ")}`);
   }
   if (errors.length > 0) {
-    throw new Error(`Failed to publish role '${slug}': ${errors.join(". ")}`);
+    throw new ConvexError(`Failed to publish role '${slug}': ${errors.join(". ")}`);
   }
 }
 
@@ -455,11 +455,11 @@ export const publish = mutation({
     validateRoleFiles(args.files);
 
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    if (!userId) throw new ConvexError("Not authenticated");
 
     const user = await ctx.db.get(userId);
-    if (!user) throw new Error("User not found");
-    if (user.deactivatedAt) throw new Error("Account is deactivated");
+    if (!user) throw new ConvexError("User not found");
+    if (user.deactivatedAt) throw new ConvexError("Account is deactivated");
 
     const now = Date.now();
 
@@ -564,10 +564,10 @@ export const publish = mutation({
 
     if (role) {
       if (role.ownerUserId !== user._id) {
-        throw new Error("You do not own this role");
+        throw new ConvexError("You do not own this role");
       }
       if (role.softDeletedAt) {
-        throw new Error("Role has been deleted");
+        throw new ConvexError("Role has been deleted");
       }
     } else {
       const roleId = await ctx.db.insert("roles", {
@@ -601,12 +601,12 @@ export const publish = mutation({
         q.eq("roleId", role!._id).eq("version", version),
       )
       .first();
-    if (existing) throw new Error(`Version ${version} already exists`);
+    if (existing) throw new ConvexError(`Version ${version} already exists`);
 
     // Check version is greater than latest
     if (latestVer) {
       if (compareVersions(parseVersion(version), parseVersion(latestVer)) <= 0) {
-        throw new Error(
+        throw new ConvexError(
           `Version ${version} must be greater than the latest version ${latestVer}`,
         );
       }
