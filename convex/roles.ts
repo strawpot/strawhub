@@ -7,6 +7,37 @@ import { parseDependencySpec, parseVersion, compareVersions } from "./lib/versio
 import { paginateWithRecovery } from "./lib/pagination";
 import { validateSlug, validateVersion, validateDisplayName, validateChangelog, validateFiles, validateRoleFiles, validateFrontmatterName, resolveDisplayName } from "./lib/publishValidation";
 
+/** Build dependency validation errors and throw if any exist. */
+function throwIfDepErrors(
+  slug: string,
+  depErrors: string[],
+  selfDep: boolean,
+  skillsNotFound: string[],
+  rolesNotFound: string[],
+  skillVersionMismatch: string[],
+  roleVersionMismatch: string[],
+): void {
+  const errors = [...depErrors];
+  if (selfDep) errors.push("Role cannot depend on itself");
+  if (skillsNotFound.length > 0) {
+    const noun = skillsNotFound.length === 1 ? "this skill" : "these skills";
+    errors.push(`Dependency skill(s) not found in registry: ${skillsNotFound.join(", ")}. Publish ${noun} first, then retry publishing '${slug}'`);
+  }
+  if (rolesNotFound.length > 0) {
+    const noun = rolesNotFound.length === 1 ? "this role" : "these roles";
+    errors.push(`Dependency role(s) not found in registry: ${rolesNotFound.join(", ")}. Publish ${noun} first, then retry publishing '${slug}'`);
+  }
+  if (skillVersionMismatch.length > 0) {
+    errors.push(`No matching version for skill dependency of '${slug}': ${skillVersionMismatch.join(", ")}`);
+  }
+  if (roleVersionMismatch.length > 0) {
+    errors.push(`No matching version for role dependency of '${slug}': ${roleVersionMismatch.join(", ")}`);
+  }
+  if (errors.length > 0) {
+    throw new Error(`Failed to publish role '${slug}': ${errors.join(". ")}`);
+  }
+}
+
 /** Resolve version: validate if provided, otherwise auto-increment from latest. */
 function resolveVersion(explicit: string | undefined, latestVersion: string | undefined): string {
   if (explicit) {
@@ -330,12 +361,7 @@ export const publishInternal = internalMutation({
       }
     }
 
-    if (selfDep) depErrors.push("Role cannot depend on itself");
-    if (skillsNotFound.length > 0) depErrors.push(`Dependency skill(s) not found in registry: ${skillsNotFound.join(", ")}. Publish ${skillsNotFound.length === 1 ? "this skill" : "these skills"} first, then retry publishing '${args.slug}'`);
-    if (rolesNotFound.length > 0) depErrors.push(`Dependency role(s) not found in registry: ${rolesNotFound.join(", ")}. Publish ${rolesNotFound.length === 1 ? "this role" : "these roles"} first, then retry publishing '${args.slug}'`);
-    if (skillVersionMismatch.length > 0) depErrors.push(`No matching version for skill dependency of '${args.slug}': ${skillVersionMismatch.join(", ")}`);
-    if (roleVersionMismatch.length > 0) depErrors.push(`No matching version for role dependency of '${args.slug}': ${roleVersionMismatch.join(", ")}`);
-    if (depErrors.length > 0) throw new Error(`Failed to publish role '${args.slug}': ${depErrors.join(". ")}`);
+    throwIfDepErrors(args.slug, depErrors, selfDep, skillsNotFound, rolesNotFound, skillVersionMismatch, roleVersionMismatch);
 
     let role = await ctx.db
       .query("roles")
@@ -525,12 +551,7 @@ export const publish = mutation({
       }
     }
 
-    if (selfDep) depErrors.push("Role cannot depend on itself");
-    if (skillsNotFound.length > 0) depErrors.push(`Dependency skill(s) not found in registry: ${skillsNotFound.join(", ")}. Publish ${skillsNotFound.length === 1 ? "this skill" : "these skills"} first, then retry publishing '${args.slug}'`);
-    if (rolesNotFound.length > 0) depErrors.push(`Dependency role(s) not found in registry: ${rolesNotFound.join(", ")}. Publish ${rolesNotFound.length === 1 ? "this role" : "these roles"} first, then retry publishing '${args.slug}'`);
-    if (skillVersionMismatch.length > 0) depErrors.push(`No matching version for skill dependency of '${args.slug}': ${skillVersionMismatch.join(", ")}`);
-    if (roleVersionMismatch.length > 0) depErrors.push(`No matching version for role dependency of '${args.slug}': ${roleVersionMismatch.join(", ")}`);
-    if (depErrors.length > 0) throw new Error(`Failed to publish role '${args.slug}': ${depErrors.join(". ")}`);
+    throwIfDepErrors(args.slug, depErrors, selfDep, skillsNotFound, rolesNotFound, skillVersionMismatch, roleVersionMismatch);
 
     // Find or create role
     let role = await ctx.db
