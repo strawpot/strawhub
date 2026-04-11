@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { paginationOptsValidator } from "convex/server";
 import { mutation, query, internalMutation } from "./_generated/server";
 import { internal } from "./_generated/api";
@@ -17,6 +17,28 @@ function resolveVersion(explicit: string | undefined, latestVersion: string | un
   if (!latestVersion) return "1.0.0";
   const { major, minor, patch } = parseVersion(latestVersion);
   return `${major}.${minor}.${patch + 1}`;
+}
+
+/** Build dependency validation errors and throw if any exist. */
+function throwIfDepErrors(
+  slug: string,
+  depErrors: string[],
+  selfDep: boolean,
+  skillsNotFound: string[],
+  skillVersionMismatch: string[],
+): void {
+  const errors = [...depErrors];
+  if (selfDep) errors.push(`Skill '${slug}' cannot depend on itself`);
+  if (skillsNotFound.length > 0) {
+    const noun = skillsNotFound.length === 1 ? "this skill" : "these skills";
+    errors.push(`Dependency skill(s) not found in registry: ${skillsNotFound.join(", ")}. Publish ${noun} first, then retry publishing '${slug}'`);
+  }
+  if (skillVersionMismatch.length > 0) {
+    errors.push(`No matching version for skill dependency of '${slug}': ${skillVersionMismatch.join(", ")}`);
+  }
+  if (errors.length > 0) {
+    throw new ConvexError(`Failed to publish skill '${slug}': ${errors.join(". ")}`);
+  }
 }
 
 // ─── Queries ─────────────────────────────────────────────────────────────────
@@ -444,11 +466,11 @@ export const publish = mutation({
     validateSkillFiles(args.files);
 
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    if (!userId) throw new ConvexError("Not authenticated");
 
     const user = await ctx.db.get(userId);
-    if (!user) throw new Error("User not found");
-    if (user.deactivatedAt) throw new Error("Account is deactivated");
+    if (!user) throw new ConvexError("User not found");
+    if (user.deactivatedAt) throw new ConvexError("Account is deactivated");
 
     const now = Date.now();
 
@@ -467,14 +489,14 @@ export const publish = mutation({
 
     // Validate skill dependencies
     if (dependencies?.skills?.length) {
-      const errors: string[] = [];
+      const depErrors: string[] = [];
       const notFound: string[] = [];
       const versionMismatch: string[] = [];
       let selfDep = false;
       for (const depSpec of dependencies.skills) {
         let spec;
         try { spec = parseDependencySpec(depSpec); } catch (e: any) {
-          errors.push(`Invalid skill dependency: '${depSpec}'`);
+          depErrors.push(`Invalid skill dependency: '${depSpec}'`);
           continue;
         }
         if (spec.operator === "wildcard") continue;
@@ -503,10 +525,7 @@ export const publish = mutation({
           }
         }
       }
-      if (selfDep) errors.push("Skill cannot depend on itself");
-      if (notFound.length > 0) errors.push(`Dependency skill(s) not found in registry: ${JSON.stringify(notFound)}`);
-      if (versionMismatch.length > 0) errors.push(`No matching version for skill(s): ${JSON.stringify(versionMismatch)}`);
-      if (errors.length > 0) throw new Error(errors.join(". "));
+      throwIfDepErrors(args.slug, depErrors, selfDep, notFound, versionMismatch);
     }
 
     let skill = await ctx.db
@@ -518,8 +537,8 @@ export const publish = mutation({
     validateDisplayName(displayName);
 
     if (skill) {
-      if (skill.ownerUserId !== user._id) throw new Error("You do not own this skill");
-      if (skill.softDeletedAt) throw new Error("Skill has been deleted");
+      if (skill.ownerUserId !== user._id) throw new ConvexError("You do not own this skill");
+      if (skill.softDeletedAt) throw new ConvexError("Skill has been deleted");
     } else {
       const skillId = await ctx.db.insert("skills", {
         slug: args.slug,
@@ -547,7 +566,7 @@ export const publish = mutation({
       .query("skillVersions")
       .withIndex("by_skill_version", (q) => q.eq("skillId", skill!._id).eq("version", version))
       .first();
-    if (existing) throw new Error(`Version ${version} already exists`);
+    if (existing) throw new ConvexError(`Version ${version} already exists`);
 
     const versionId = await ctx.db.insert("skillVersions", {
       skillId: skill._id,
