@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { paginationOptsValidator } from "convex/server";
 import { mutation, query, internalMutation } from "./_generated/server";
 import { internal } from "./_generated/api";
@@ -333,11 +333,11 @@ export const publish = mutation({
     validateMemoryFiles(args.files);
 
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    if (!userId) throw new ConvexError("Not authenticated");
 
     const user = await ctx.db.get(userId);
-    if (!user) throw new Error("User not found");
-    if (user.deactivatedAt) throw new Error("Account is deactivated");
+    if (!user) throw new ConvexError("User not found");
+    if (user.deactivatedAt) throw new ConvexError("Account is deactivated");
 
     const now = Date.now();
 
@@ -360,10 +360,10 @@ export const publish = mutation({
 
     if (memory) {
       if (memory.ownerUserId !== user._id) {
-        throw new Error("You do not own this memory");
+        throw new ConvexError("You do not own this memory");
       }
       if (memory.softDeletedAt) {
-        throw new Error("Memory has been deleted");
+        throw new ConvexError("Memory has been deleted");
       }
     } else {
       const memoryId = await ctx.db.insert("memories", {
@@ -397,13 +397,13 @@ export const publish = mutation({
         q.eq("memoryId", memory!._id).eq("version", version),
       )
       .first();
-    if (existing) throw new Error(`Version ${version} already exists`);
+    if (existing) throw new ConvexError(`Version ${version} already exists for memory '${args.slug}'`);
 
     // Check version is greater than latest
     if (latestVer) {
       if (compareVersions(parseVersion(version), parseVersion(latestVer)) <= 0) {
-        throw new Error(
-          `Version ${version} must be greater than the latest version ${latestVer}`,
+        throw new ConvexError(
+          `Version ${version} must be greater than the latest version ${latestVer} for memory '${args.slug}'`,
         );
       }
     }
