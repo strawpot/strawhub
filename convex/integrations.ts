@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { paginationOptsValidator } from "convex/server";
 import { mutation, query, internalMutation } from "./_generated/server";
 import { internal } from "./_generated/api";
@@ -331,11 +331,11 @@ export const publish = mutation({
     validateIntegrationFiles(args.files);
 
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    if (!userId) throw new ConvexError("Not authenticated");
 
     const user = await ctx.db.get(userId);
-    if (!user) throw new Error("User not found");
-    if (user.deactivatedAt) throw new Error("Account is deactivated");
+    if (!user) throw new ConvexError("User not found");
+    if (user.deactivatedAt) throw new ConvexError("Account is deactivated");
 
     const now = Date.now();
 
@@ -356,10 +356,10 @@ export const publish = mutation({
 
     if (integration) {
       if (integration.ownerUserId !== user._id) {
-        throw new Error("You do not own this integration");
+        throw new ConvexError("You do not own this integration");
       }
       if (integration.softDeletedAt) {
-        throw new Error("Integration has been deleted");
+        throw new ConvexError("Integration has been deleted");
       }
     } else {
       const integrationId = await ctx.db.insert("integrations", {
@@ -391,12 +391,12 @@ export const publish = mutation({
         q.eq("integrationId", integration!._id).eq("version", version),
       )
       .first();
-    if (existing) throw new Error(`Version ${version} already exists`);
+    if (existing) throw new ConvexError(`Version ${version} already exists for integration '${args.slug}'`);
 
     if (latestVer) {
       if (compareVersions(parseVersion(version), parseVersion(latestVer)) <= 0) {
-        throw new Error(
-          `Version ${version} must be greater than the latest version ${latestVer}`,
+        throw new ConvexError(
+          `Version ${version} must be greater than the latest version ${latestVer} for integration '${args.slug}'`,
         );
       }
     }
